@@ -46,6 +46,7 @@ type Actions = {
   closeTraining: () => void;
 
   setActiveTab: (tab: 'shop' | 'staff') => void;
+  setShowSplash: (show: boolean) => void;
   restart: () => void;
   dismissToast: () => void;
 };
@@ -687,6 +688,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   closeTraining: () => set({ trainingSession: null }),
 
   setActiveTab: (tab) => set({ activeTab: tab }),
+  setShowSplash: (show) => set({ showSplash: show }),
 
   restart: () => {
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];

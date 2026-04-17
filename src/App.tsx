@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
+import { useAuthStore } from '@/store/authStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
 import { companyStage } from '@/lib/utils';
 import { Panel, Badge } from '@/components/Panel';
@@ -7,6 +9,7 @@ import { SplashScreen } from '@/features/splash/SplashScreen';
 import { Tutorial } from '@/features/tutorial/Tutorial';
 import { StatPanel } from '@/features/hud/StatPanel';
 import { DayTimer } from '@/features/hud/DayTimer';
+import { UserBadge } from '@/features/hud/UserBadge';
 import { ResumeCard } from '@/features/recruit/ResumeCard';
 import { OfficeScene } from '@/features/office/OfficeScene';
 import { ShopPanel } from '@/features/shop/ShopPanel';
@@ -20,6 +23,18 @@ import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
 export default function App() {
   useGameLoop();
   const showSplash = useGameStore((s) => s.showSplash);
+  const setShowSplash = useGameStore((s) => s.setShowSplash);
+  const bootstrap = useAuthStore((s) => s.bootstrap);
+  const forcedLogoutReason = useAuthStore((s) => s.forcedLogoutReason);
+  const authedUser = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    bootstrap();
+  }, [bootstrap]);
+
+  useEffect(() => {
+    if (forcedLogoutReason) setShowSplash(true);
+  }, [forcedLogoutReason, setShowSplash]);
   const activeTab = useGameStore((s) => s.activeTab);
   const setTab = useGameStore((s) => s.setActiveTab);
   const bankrupt = useGameStore((s) => s.bankrupt);
@@ -60,9 +75,12 @@ export default function App() {
         style={{ maxWidth: 1440 }}
       >
         <Panel className="pane-left">
-          <div className="flex justify-between items-center mb-2 gap-2">
+          <div className="flex justify-between items-center mb-2 gap-2 flex-wrap">
             <h1 className="text-xl font-extrabold">🐶 狗狗公司</h1>
-            <Badge>第 {day} 天</Badge>
+            <div className="flex items-center gap-2">
+              <Badge>第 {day} 天</Badge>
+              {authedUser && <UserBadge />}
+            </div>
           </div>
           <p className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
             你是狗狗老闆，面試狗狗、決定錄用。公司會每天自動結算，擴建、培養、陪玩都會影響經營。
