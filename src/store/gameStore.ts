@@ -83,6 +83,21 @@ const initialState: GameState = {
   toast: null,
 };
 
+function refillCurrent(state: GameState): GameState {
+  let queue = ensureQueueLength(state.queue);
+  let current = state.current;
+  let candidatePatience = state.candidatePatience;
+  if (!current && !state.vacancy) {
+    const [first, ...rest] = queue;
+    if (first) {
+      current = first;
+      queue = ensureQueueLength(rest);
+      candidatePatience = first.patience;
+    }
+  }
+  return { ...state, queue, current, candidatePatience };
+}
+
 function pushLog(state: GameState, msg: string): GameState {
   const next = [...state.log, { day: state.day, msg }];
   if (next.length > 18) next.splice(0, next.length - 18);
@@ -122,7 +137,7 @@ function atCapacity(state: GameState): boolean {
 }
 
 function hasOverlayOpen(state: GameState): boolean {
-  return !!state.miniGame || !!state.trainingSession || (state.tutorialStep > 0 && state.tutorialStep < 7) || !!state.staffActionModal;
+  return !!state.miniGame || !!state.trainingSession || (state.tutorialStep > 0 && state.tutorialStep < 7);
 }
 
 function runAdvanceDay(prev: GameState): GameState {
@@ -230,8 +245,10 @@ function runAdvanceDay(prev: GameState): GameState {
       s = pushLog(s, `${leavingName} 等太久了，不耐煩走掉了！`);
       s.candidateReaction = `😤 ${leavingName} 等太久了，氣呼呼地自己走掉。`;
       s.current = null;
-      s.queue = ensureQueueLength(s.queue);
+      s = refillCurrent(s);
     }
+  } else {
+    s = refillCurrent(s);
   }
 
   if (s.staff.length > 0) {
@@ -253,7 +270,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   tick: (dt) => {
     const s = get();
     if (s.bankrupt || s.showSplash) return;
-    if (hasOverlayOpen(s) || s.candidateReaction) return;
+    if (hasOverlayOpen(s)) return;
     const BASE_DAY_MS = 7000;
     const newElapsed = s.dayElapsed + dt * s.speedMultiplier;
     if (newElapsed >= BASE_DAY_MS) {
@@ -295,7 +312,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ? `🎉🎉🎉 傳說中的 CEO ${dog.name} 加入了！全公司都沸騰了！`
         : `錄用了 ${dog.name}（${dog.breed} ${dog.role} ${dog.grade}級），${dog.flavor}`,
     );
-    next.queue = ensureQueueLength(next.queue);
+    next = refillCurrent(next);
     set(next as Partial<GameStore>);
   },
 
@@ -309,7 +326,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       current: null,
     };
     next = pushLog(next, `婉拒了 ${dog.name}，下一位！`);
-    next.queue = ensureQueueLength(next.queue);
+    next = refillCurrent(next);
     set(next as Partial<GameStore>);
   },
 
