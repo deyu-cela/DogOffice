@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Dog, GameState, PipTask, ShopItemEffectKey, TrainingSession } from '@/types';
+import type { GameSaveData } from '@/types/save';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { TRAINING_QUESTIONS } from '@/constants/questions';
@@ -47,6 +48,8 @@ type Actions = {
 
   setActiveTab: (tab: 'shop' | 'staff') => void;
   setShowSplash: (show: boolean) => void;
+  applySave: (data: GameSaveData) => void;
+  resetToInitialGame: () => void;
   restart: () => void;
   dismissToast: () => void;
 };
@@ -63,6 +66,7 @@ const initialState: GameState = {
   stabilityBoost: 0,
   trainingBoost: 0,
   officeLevel: 0,
+  purchases: {},
   staff: [],
   staffActionModal: null,
   queue: initialQueue.slice(1),
@@ -274,7 +278,7 @@ function runAdvanceDay(prev: GameState): GameState {
 export const useGameStore = create<GameStore>((set, get) => ({
   ...initialState,
 
-  startGame: () => set({ showSplash: false, tutorialStep: 1 }),
+  startGame: () => set((s) => ({ showSplash: false, tutorialStep: s.tutorialStep > 0 ? s.tutorialStep : 1 })),
   advanceTutorial: () => set((s) => ({ tutorialStep: s.tutorialStep + 1 })),
   skipTutorial: () => set({ tutorialStep: 7 }),
   setSpeed: (speedMultiplier) => set({ speedMultiplier }),
@@ -347,7 +351,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!item) return;
     const s = get();
     if (s.money < item.cost) return;
-    let next: GameState = { ...s, money: s.money - item.cost };
+    let next: GameState = {
+      ...s,
+      money: s.money - item.cost,
+      purchases: { ...s.purchases, [id]: (s.purchases[id] ?? 0) + 1 },
+    };
     switch (id) {
       case 'snack':
         next.morale = clamp(next.morale + 10, 0, 100);
@@ -689,6 +697,53 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setShowSplash: (show) => set({ showSplash: show }),
+
+  resetToInitialGame: () => {
+    const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
+    const [first, ...rest] = fresh;
+    set((s) => ({
+      ...initialState,
+      queue: rest,
+      current: first ?? null,
+      candidatePatience: first?.patience ?? 0,
+      log: [{ day: 1, msg: '公司剛開張，等著第一位狗狗同事。' }],
+      showSplash: s.showSplash,
+    }));
+  },
+
+  applySave: (data) => {
+    const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
+    const [first, ...rest] = fresh;
+    set({
+      day: data.day,
+      money: data.money,
+      morale: data.morale,
+      health: data.health,
+      decor: data.decor,
+      productivityBoost: data.productivityBoost,
+      stabilityBoost: data.stabilityBoost,
+      trainingBoost: data.trainingBoost,
+      officeLevel: data.officeLevel,
+      purchases: data.purchases,
+      vacancy: data.vacancy,
+      vacancyTimer: data.vacancyTimer,
+      bankrupt: data.bankrupt,
+      tutorialStep: data.tutorialStep,
+      staff: data.staff,
+      activeChemistry: data.activeChemistry,
+      log: data.log,
+      queue: rest,
+      current: first ?? null,
+      candidatePatience: first?.patience ?? 0,
+      dayElapsed: 0,
+      speedMultiplier: 1,
+      miniGame: null,
+      trainingSession: null,
+      staffActionModal: null,
+      candidateReaction: null,
+      toast: null,
+    });
+  },
 
   restart: () => {
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];

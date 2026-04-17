@@ -3,12 +3,14 @@ import type { CommonResponseBody, TokenPair } from '@/types/auth';
 export class ApiError extends Error {
   readonly status: number;
   readonly code: number;
+  readonly data: unknown;
 
-  constructor(status: number, code: number, message: string) {
+  constructor(status: number, code: number, message: string, data?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -84,6 +86,7 @@ async function parseResponse<T>(res: Response): Promise<T> {
       res.status,
       typeof body.code === 'number' ? body.code : res.status,
       typeof body.message === 'string' && body.message ? body.message : `HTTP ${res.status}`,
+      body.data,
     );
   }
   return (body.data ?? ({} as T)) as T;

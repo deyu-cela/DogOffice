@@ -5,6 +5,7 @@ import { OFFICE_LEVELS } from '@/constants/officeLevels';
 export function ShopPanel() {
   const money = useGameStore((s) => s.money);
   const officeLevel = useGameStore((s) => s.officeLevel);
+  const purchases = useGameStore((s) => s.purchases);
   const buy = useGameStore((s) => s.buyShopItem);
   const upgrade = useGameStore((s) => s.upgradeOffice);
 
@@ -45,6 +46,7 @@ export function ShopPanel() {
       )}
       {SHOP_ITEMS.map((item) => {
         const canAfford = money >= item.cost;
+        const count = purchases[item.id] ?? 0;
         return (
           <div
             key={item.id}
@@ -55,7 +57,17 @@ export function ShopPanel() {
             }}
           >
             <div className="flex justify-between items-start gap-2">
-              <div className="font-bold">{item.name}</div>
+              <div className="font-bold flex items-center gap-1.5">
+                <span>{item.name}</span>
+                {count > 0 && (
+                  <span
+                    className="text-[11px] px-1.5 py-0.5 rounded-full font-normal"
+                    style={{ background: '#fff7dd', color: '#8a6a2a', border: '1px solid rgba(90,70,54,0.08)' }}
+                  >
+                    已買 ×{count}
+                  </span>
+                )}
+              </div>
               <button
                 disabled={!canAfford}
                 onClick={() => buy(item.id)}
