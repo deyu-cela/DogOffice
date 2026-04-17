@@ -192,6 +192,7 @@ export type GameState = {
   stabilityBoost: number;
   trainingBoost: number;
   officeLevel: number;
+  purchases: Partial<Record<ShopItemEffectKey, number>>;
   staff: Dog[];
   staffActionModal: StaffActionModal | null;
   queue: Dog[];

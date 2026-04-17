@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
+import { useSaveStore } from '@/store/saveStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
+import { useAutoSave } from '@/hooks/useAutoSave';
 import { companyStage } from '@/lib/utils';
 import { Panel, Badge } from '@/components/Panel';
 import { Toast } from '@/components/Toast';
@@ -10,6 +12,9 @@ import { Tutorial } from '@/features/tutorial/Tutorial';
 import { StatPanel } from '@/features/hud/StatPanel';
 import { DayTimer } from '@/features/hud/DayTimer';
 import { UserBadge } from '@/features/hud/UserBadge';
+import { SaveIndicator } from '@/features/hud/SaveIndicator';
+import { RestartButton } from '@/features/hud/RestartButton';
+import { ConflictModal } from '@/features/save/ConflictModal';
 import { ResumeCard } from '@/features/recruit/ResumeCard';
 import { OfficeScene } from '@/features/office/OfficeScene';
 import { ShopPanel } from '@/features/shop/ShopPanel';
@@ -22,11 +27,15 @@ import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
 
 export default function App() {
   useGameLoop();
+  useAutoSave();
   const showSplash = useGameStore((s) => s.showSplash);
   const setShowSplash = useGameStore((s) => s.setShowSplash);
   const bootstrap = useAuthStore((s) => s.bootstrap);
   const forcedLogoutReason = useAuthStore((s) => s.forcedLogoutReason);
   const authedUser = useAuthStore((s) => s.user);
+  const authedUserId = authedUser?.userId ?? null;
+  const loadCloud = useSaveStore((s) => s.loadCloud);
+  const resetSaveStore = useSaveStore((s) => s.reset);
 
   useEffect(() => {
     bootstrap();
@@ -35,6 +44,14 @@ export default function App() {
   useEffect(() => {
     if (forcedLogoutReason) setShowSplash(true);
   }, [forcedLogoutReason, setShowSplash]);
+
+  useEffect(() => {
+    if (authedUserId) {
+      loadCloud();
+    } else {
+      resetSaveStore();
+    }
+  }, [authedUserId, loadCloud, resetSaveStore]);
   const activeTab = useGameStore((s) => s.activeTab);
   const setTab = useGameStore((s) => s.setActiveTab);
   const bankrupt = useGameStore((s) => s.bankrupt);
@@ -77,9 +94,14 @@ export default function App() {
         <Panel className="pane-left">
           <div className="flex justify-between items-center mb-2 gap-2 flex-wrap">
             <h1 className="text-xl font-extrabold">🐶 狗狗公司</h1>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge>第 {day} 天</Badge>
-              {authedUser && <UserBadge />}
+              {authedUser && (
+                <>
+                  <SaveIndicator />
+                  <UserBadge />
+                </>
+              )}
             </div>
           </div>
           <p className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
@@ -89,8 +111,11 @@ export default function App() {
           <StatPanel />
           <ResumeCard />
           <div className="mt-4">
-            <div className="text-xs font-bold mb-1.5" style={{ color: 'var(--muted)' }}>
-              📜 日誌
+            <div className="flex justify-between items-center mb-1.5">
+              <div className="text-xs font-bold" style={{ color: 'var(--muted)' }}>
+                📜 日誌
+              </div>
+              {authedUser && <RestartButton />}
             </div>
             <GameLog />
           </div>
@@ -153,6 +178,7 @@ export default function App() {
       {miniGame?.type === 'memory' && <MemoryGame />}
       {trainingSession && <TrainingQuiz />}
       {staffModal && <StaffActionModal />}
+      <ConflictModal />
 
       {bankrupt && (
         <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/60 p-6">
@@ -170,7 +196,10 @@ export default function App() {
               最終資金 ${money}
             </div>
             <button
-              onClick={restart}
+              onClick={async () => {
+                await useSaveStore.getState().clearCloud();
+                restart();
+              }}
               className="px-8"
               style={{ background: 'linear-gradient(180deg, #ffcf6b, #ff9f43)', color: 'white' }}
             >

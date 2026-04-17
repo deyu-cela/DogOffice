@@ -1,15 +1,21 @@
 import { useGameStore } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
+import { useSaveStore } from '@/store/saveStore';
 import { AuthScreen } from '@/features/auth/AuthScreen';
 
 export function SplashScreen() {
   const startGame = useGameStore((s) => s.startGame);
-  const status = useAuthStore((s) => s.status);
+  const authStatus = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
+  const saveStatus = useSaveStore((s) => s.status);
+  const cloud = useSaveStore((s) => s.cloud);
+  const saveError = useSaveStore((s) => s.error);
   const base = import.meta.env.BASE_URL;
 
-  const authed = status === 'authed' && !!user;
-  const bootstrapping = status === 'bootstrapping';
+  const authed = authStatus === 'authed' && !!user;
+  const bootstrapping = authStatus === 'bootstrapping';
+  const loadingSave = saveStatus === 'loading';
+  const hasSave = !!cloud?.data;
 
   return (
     <div
@@ -38,19 +44,50 @@ export function SplashScreen() {
 
       {!bootstrapping && authed && (
         <>
-          <div className="mb-5 text-base md:text-lg" style={{ color: '#5b3c2b' }}>
+          <div className="mb-3 text-base md:text-lg" style={{ color: '#5b3c2b' }}>
             歡迎回來，<span className="font-extrabold">{user?.account}</span>！
           </div>
+
+          {loadingSave && (
+            <div
+              className="mb-5 px-4 py-2 rounded-xl text-sm"
+              style={{ background: 'rgba(255,255,255,0.85)', color: '#7a685a' }}
+            >
+              ☁️ 讀取雲端存檔中…
+            </div>
+          )}
+
+          {!loadingSave && hasSave && cloud && (
+            <div
+              className="mb-5 px-4 py-2 rounded-xl text-sm"
+              style={{ background: 'rgba(255,255,255,0.85)', color: '#5b3c2b' }}
+            >
+              上次進度：第 {cloud.data.day} 天 ｜ ${cloud.data.money} ｜ {cloud.data.staff.length} 位員工
+              {cloud.data.bankrupt && <span style={{ color: '#d75d5d' }}>（已破產）</span>}
+            </div>
+          )}
+
+          {!loadingSave && saveError && !hasSave && (
+            <div
+              className="mb-5 px-4 py-2 rounded-xl text-xs"
+              style={{ background: '#ffe6e6', color: '#a03d3d' }}
+            >
+              ⚠️ 讀取存檔失敗，可以開新的公司繼續玩
+            </div>
+          )}
+
           <button
             onClick={startGame}
+            disabled={loadingSave}
             className="px-12 py-4 text-2xl rounded-full font-extrabold"
             style={{
-              background: 'linear-gradient(180deg, #ffcf6b, #ff9f43)',
+              background: loadingSave ? '#c9a57b' : 'linear-gradient(180deg, #ffcf6b, #ff9f43)',
               color: 'white',
+              cursor: loadingSave ? 'wait' : 'pointer',
               boxShadow: '0 8px 24px rgba(255,159,67,0.4)',
             }}
           >
-            開始經營
+            {loadingSave ? '讀取中…' : hasSave ? '繼續經營' : '開始經營'}
           </button>
         </>
       )}
