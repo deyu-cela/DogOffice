@@ -1,5 +1,6 @@
 import { useGameStore } from '@/store/gameStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
+import { companyStage } from '@/lib/utils';
 import { Panel, Badge } from '@/components/Panel';
 import { Toast } from '@/components/Toast';
 import { SplashScreen } from '@/features/splash/SplashScreen';
@@ -28,7 +29,11 @@ export default function App() {
   const day = useGameStore((s) => s.day);
   const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
+  const morale = useGameStore((s) => s.morale);
+  const health = useGameStore((s) => s.health);
+  const decor = useGameStore((s) => s.decor);
   const restart = useGameStore((s) => s.restart);
+  const stage = companyStage(health, morale, staff.length, decor);
 
   return (
     <>
@@ -104,7 +109,7 @@ export default function App() {
             <>
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-lg font-extrabold">🛒 商店</h2>
-                <Badge>{companyStage(staff.length, money)}</Badge>
+                <Badge>{stage}</Badge>
               </div>
               <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--muted)' }}>
                 先擴建才能請更多狗。裝飾、設備、制度都會讓辦公室更像真的公司。
@@ -160,10 +165,3 @@ export default function App() {
   );
 }
 
-function companyStage(staffLen: number, money: number): string {
-  const score = staffLen * 10 + (money > 500 ? 30 : money > 200 ? 15 : 0);
-  if (score >= 80) return '巔峰期';
-  if (score >= 40) return '成長期';
-  if (score >= 15) return '發展期';
-  return '草創期';
-}

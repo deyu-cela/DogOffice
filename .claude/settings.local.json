@@ -26,7 +26,8 @@
       "Bash(gh api *)",
       "Bash(gh run *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://deyu-cela.github.io/DogOffice/)",
-      "WebFetch(domain:headers-resolution-gentleman-subsection.trycloudflare.com)"
+      "WebFetch(domain:headers-resolution-gentleman-subsection.trycloudflare.com)",
+      "Bash(npm show *)"
     ]
   }
 }

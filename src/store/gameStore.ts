@@ -87,15 +87,26 @@ function refillCurrent(state: GameState): GameState {
   let queue = ensureQueueLength(state.queue);
   let current = state.current;
   let candidatePatience = state.candidatePatience;
-  if (!current && !state.vacancy) {
-    const [first, ...rest] = queue;
-    if (first) {
-      current = first;
-      queue = ensureQueueLength(rest);
-      candidatePatience = first.patience;
+  let vacancy = state.vacancy;
+  let vacancyTimer = state.vacancyTimer;
+  let log = state.log;
+  if (!current && !vacancy) {
+    if (Math.random() < 0.1) {
+      vacancy = true;
+      vacancyTimer = 1 + Math.floor(Math.random() * 2);
+      const entry = [...log, { day: state.day, msg: '😴 目前沒有狗狗來面試...' }];
+      if (entry.length > 18) entry.splice(0, entry.length - 18);
+      log = entry;
+    } else {
+      const [first, ...rest] = queue;
+      if (first) {
+        current = first;
+        queue = ensureQueueLength(rest);
+        candidatePatience = first.patience;
+      }
     }
   }
-  return { ...state, queue, current, candidatePatience };
+  return { ...state, queue, current, candidatePatience, vacancy, vacancyTimer, log };
 }
 
 function pushLog(state: GameState, msg: string): GameState {
@@ -243,7 +254,7 @@ function runAdvanceDay(prev: GameState): GameState {
     if (s.candidatePatience <= 0) {
       const leavingName = s.current.name;
       s = pushLog(s, `${leavingName} 等太久了，不耐煩走掉了！`);
-      s.candidateReaction = `😤 ${leavingName} 等太久了，氣呼呼地自己走掉。`;
+      s.toast = { msg: `😤 ${leavingName} 等太久了走掉了！`, type: 'negative' };
       s.current = null;
       s = refillCurrent(s);
     }
@@ -300,7 +311,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       money: Math.max(0, s.money - dog.expectedSalary * 2),
       morale: clamp(s.morale + dog.stats.morale * 2, 0, 100),
       health: clamp(s.health + dog.stats.productivity + Math.max(0, dog.stats.stability), 0, 100),
-      candidateReaction: `🥹💼✨ ${dog.name} 開心得尾巴狂搖，立刻抱著 offer 衝進辦公室！`,
+      toast: { msg: `🥹💼✨ ${dog.name} 開心得尾巴狂搖，加入公司！`, type: 'positive' },
       current: null,
     };
     const chem = applyChemistry(next, dog);
@@ -322,7 +333,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const dog = s.current;
     let next: GameState = {
       ...s,
-      candidateReaction: `🥺📄 ${dog.name} 有點可惜地收起履歷，默默離開了。`,
+      toast: { msg: `🥺📄 ${dog.name} 有點可惜地收起履歷，默默離開了。`, type: 'negative' },
       current: null,
     };
     next = pushLog(next, `婉拒了 ${dog.name}，下一位！`);

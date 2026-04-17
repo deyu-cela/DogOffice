@@ -5,33 +5,37 @@ export function ResumeCard() {
   const current = useGameStore((s) => s.current);
   const staff = useGameStore((s) => s.staff);
   const officeLevel = useGameStore((s) => s.officeLevel);
-  const reaction = useGameStore((s) => s.candidateReaction);
+  const vacancy = useGameStore((s) => s.vacancy);
+  const vacancyTimer = useGameStore((s) => s.vacancyTimer);
   const hire = useGameStore((s) => s.hireCandidate);
   const reject = useGameStore((s) => s.rejectCandidate);
   const playMini = useGameStore((s) => s.openPlayMiniGame);
   const openTraining = useGameStore((s) => s.openTraining);
-  const dismissReaction = () => useGameStore.setState({ candidateReaction: null });
 
   const maxStaff = OFFICE_LEVELS[officeLevel].maxStaff;
   const atCapacity = staff.length >= maxStaff;
 
-  if (reaction) {
-    return (
-      <div
-        className="mt-3 p-4 rounded-2xl text-center"
-        style={{ background: 'linear-gradient(180deg, #fffefc, #fff5e7)', border: '2px dashed rgba(90,70,54,0.18)', animation: 'fadeInUp 0.3s ease' }}
-      >
-        <div className="text-base leading-relaxed" style={{ color: 'var(--muted)' }}>
-          {reaction}
-        </div>
-        <button className="mt-3 px-4 text-sm" style={{ background: '#dcecff' }} onClick={dismissReaction}>
-          下一位候選人
-        </button>
-      </div>
-    );
-  }
-
   if (!current) {
+    if (vacancy) {
+      return (
+        <div
+          className="mt-3 p-5 rounded-2xl text-center"
+          style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}
+        >
+          <div className="text-5xl mb-2" style={{ animation: 'bob 2s ease-in-out infinite' }}>
+            😴
+          </div>
+          <div className="font-bold mb-1" style={{ color: 'var(--text)' }}>
+            人才荒期
+          </div>
+          <div className="text-xs leading-relaxed">
+            目前沒有候選狗狗，趁這段時間培訓或買道具吧！
+            <br />
+            （還要等 {vacancyTimer} 天）
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="mt-3 p-4 rounded-2xl text-center" style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}>
         等候下一位候選狗狗...

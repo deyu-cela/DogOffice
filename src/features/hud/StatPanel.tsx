@@ -1,6 +1,6 @@
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
-import { textLevel } from '@/lib/utils';
+import { companyHint, textLevel } from '@/lib/utils';
 
 export function StatPanel() {
   const money = useGameStore((s) => s.money);
@@ -13,7 +13,7 @@ export function StatPanel() {
   const moraleLabel = textLevel(morale, ['爆棚', '尚可', '低落']);
   const healthLabel = textLevel(health, ['穩健', '普通', '危險']);
 
-  const hint = companyHint(health, morale, money);
+  const hint = companyHint(money, health, morale);
 
   return (
     <>
@@ -75,10 +75,3 @@ function StatCell({
   );
 }
 
-function companyHint(health: number, morale: number, money: number): string {
-  const score = health + morale + (money > 100 ? 20 : 0);
-  if (score >= 180) return '💰 公司運作良好，士氣高昂！';
-  if (score >= 120) return '📈 穩健經營中。';
-  if (score >= 70) return '⚠️ 需要加強營運與士氣。';
-  return '🆘 情況危急，先穩住基本盤。';
-}
