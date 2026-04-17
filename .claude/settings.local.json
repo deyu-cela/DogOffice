@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "WebSearch",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(tmux kill-session *)",
+      "Bash(tmux new-session *)",
+      "Bash(npx vite *)",
+      "Bash(tee /tmp/vite.log)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174/DogOffice/)",
+      "Bash(kill %1)",
+      "Bash(lsof -ti:5173,5174)",
+      "Bash(xargs kill *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git add *)"
+    ]
+  }
+}

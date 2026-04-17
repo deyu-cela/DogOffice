@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #f6f1e8;
+  --color-panel: rgba(255, 255, 255, 0.9);
+  --color-text: #3d2f25;
+  --color-muted: #7a685a;
+  --color-accent: #ffb347;
+  --color-accent-2: #8fd3ff;
+  --color-ok: #76c67d;
+  --color-warn: #ef8f52;
+  --color-danger: #d75d5d;
+  --font-rounded: ui-rounded, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+}
+
+:root {
+  --bg: #f6f1e8;
+  --panel: rgba(255, 255, 255, 0.9);
+  --text: #3d2f25;
+  --muted: #7a685a;
+  --accent: #ffb347;
+  --accent-2: #8fd3ff;
+  --ok: #76c67d;
+  --warn: #ef8f52;
+  --danger: #d75d5d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-rounded);
+  background: radial-gradient(circle at top, #fff9f3 0%, #fff1dc 35%, #f7e6d5 100%);
+  color: var(--text);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  color: var(--text);
+  transition: transform 0.08s ease, opacity 0.2s ease;
+  box-shadow: 0 6px 14px rgba(90, 70, 54, 0.08);
+}
+button:hover {
+  transform: translateY(-1px);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
