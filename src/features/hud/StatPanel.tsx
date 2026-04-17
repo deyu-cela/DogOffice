@@ -1,11 +1,8 @@
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
-import { Meter } from '@/components/Meter';
-import { Badge } from '@/components/Panel';
 import { textLevel } from '@/lib/utils';
 
 export function StatPanel() {
-  const day = useGameStore((s) => s.day);
   const money = useGameStore((s) => s.money);
   const morale = useGameStore((s) => s.morale);
   const health = useGameStore((s) => s.health);
@@ -13,43 +10,50 @@ export function StatPanel() {
   const officeLevel = useGameStore((s) => s.officeLevel);
 
   const cap = OFFICE_LEVELS[officeLevel].maxStaff;
-  const moraleLabel = textLevel(morale, ['士氣爆棚', '尚可', '低落']);
-  const healthLabel = textLevel(health, ['營運穩健', '有隱憂', '危險']);
+  const moraleLabel = textLevel(morale, ['爆棚', '尚可', '低落']);
+  const healthLabel = textLevel(health, ['穩健', '普通', '危險']);
 
   const hint = companyHint(health, morale, money);
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-3 gap-2">
-        <h2 className="text-xl font-extrabold">📋 狀態</h2>
-        <Badge>第 {day} 天</Badge>
-      </div>
-      <div className="grid grid-cols-2 gap-2.5">
+    <>
+      <div className="grid grid-cols-2 gap-2.5 mt-3">
         <StatCell label="資金" value={`$${money}`} />
         <StatCell label="員工" value={`${staffLen} / ${cap}`} />
+        <StatCell
+          label="士氣"
+          value={moraleLabel}
+          meterValue={morale}
+          meterColor="linear-gradient(90deg, #a8d8a8, #66bb6a)"
+        />
+        <StatCell
+          label="營運"
+          value={healthLabel}
+          meterValue={health}
+          meterColor="linear-gradient(90deg, #ffb3b3, #ef8f52)"
+        />
       </div>
-      <div className="mt-3">
-        <div className="flex justify-between text-sm">
-          <span>士氣</span>
-          <span className="font-bold">{moraleLabel}</span>
-        </div>
-        <Meter value={morale} color="linear-gradient(90deg, #a8d8a8, #66bb6a)" />
-      </div>
-      <div className="mt-2">
-        <div className="flex justify-between text-sm">
-          <span>營運</span>
-          <span className="font-bold">{healthLabel}</span>
-        </div>
-        <Meter value={health} color="linear-gradient(90deg, #ffb3b3, #ef8f52)" />
-      </div>
-      <div className="mt-3 text-xs" style={{ color: 'var(--muted)' }}>
+      <div
+        className="mt-2.5 p-2.5 rounded-xl text-xs"
+        style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(90,70,54,0.08)', color: 'var(--muted)' }}
+      >
         {hint}
       </div>
-    </div>
+    </>
   );
 }
 
-function StatCell({ label, value }: { label: string; value: string }) {
+function StatCell({
+  label,
+  value,
+  meterValue,
+  meterColor,
+}: {
+  label: string;
+  value: string;
+  meterValue?: number;
+  meterColor?: string;
+}) {
   return (
     <div
       className="p-3 rounded-2xl"
@@ -59,6 +63,14 @@ function StatCell({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div className="text-2xl font-extrabold mt-1">{value}</div>
+      {typeof meterValue === 'number' && (
+        <div className="h-2 rounded-full overflow-hidden mt-2" style={{ background: '#eadfce' }}>
+          <div
+            className="h-full transition-[width] duration-300"
+            style={{ width: `${Math.max(0, Math.min(100, meterValue))}%`, background: meterColor }}
+          />
+        </div>
+      )}
     </div>
   );
 }

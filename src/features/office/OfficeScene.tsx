@@ -37,7 +37,7 @@ export function OfficeScene() {
 
   return (
     <div
-      className="relative overflow-hidden rounded-3xl flex flex-col min-h-[700px]"
+      className="relative overflow-hidden rounded-3xl flex flex-col min-h-[400px] md:min-h-[600px] xl:min-h-[700px]"
       style={{
         border: '2px solid rgba(90,70,54,0.12)',
         background: 'linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.15))',
@@ -62,7 +62,7 @@ export function OfficeScene() {
         )}
       </div>
 
-      <div ref={roomRef} className="relative flex-1 min-h-[540px]">
+      <div ref={roomRef} className="relative flex-1 min-h-[340px] md:min-h-[480px]">
         <div className="absolute inset-0" style={{ background: level.wall }} />
         <div
           className="absolute left-0 right-0 bottom-0"

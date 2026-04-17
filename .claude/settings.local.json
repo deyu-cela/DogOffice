@@ -20,7 +20,13 @@
       "Bash(lsof -ti:5173,5174)",
       "Bash(xargs kill *)",
       "mcp__Claude_Preview__preview_start",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh api *)",
+      "Bash(gh run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://deyu-cela.github.io/DogOffice/)",
+      "WebFetch(domain:headers-resolution-gentleman-subsection.trycloudflare.com)"
     ]
   }
 }

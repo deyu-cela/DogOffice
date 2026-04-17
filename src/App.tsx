@@ -1,6 +1,6 @@
 import { useGameStore } from '@/store/gameStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
-import { Panel } from '@/components/Panel';
+import { Panel, Badge } from '@/components/Panel';
 import { Toast } from '@/components/Toast';
 import { SplashScreen } from '@/features/splash/SplashScreen';
 import { Tutorial } from '@/features/tutorial/Tutorial';
@@ -32,23 +32,52 @@ export default function App() {
 
   return (
     <>
+      <style>{`
+        .app-grid { grid-template-columns: 1fr; }
+        @media (min-width: 768px) {
+          .app-grid {
+            grid-template-columns: 1fr 320px;
+            grid-template-areas: "office right" "left right";
+          }
+          .pane-left { grid-area: left; }
+          .pane-office { grid-area: office; }
+          .pane-right { grid-area: right; }
+        }
+        @media (min-width: 1280px) {
+          .app-grid {
+            grid-template-columns: 340px 1fr 320px;
+            grid-template-areas: "left office right";
+          }
+        }
+      `}</style>
       <div
-        className="mx-auto p-5 gap-4 min-h-screen"
-        style={{
-          maxWidth: 1440,
-          display: 'grid',
-          gridTemplateColumns: '340px 1fr 320px',
-        }}
+        className="app-grid mx-auto p-3 md:p-5 gap-3 md:gap-4 min-h-screen grid"
+        style={{ maxWidth: 1440 }}
       >
-        <Panel>
-          <StatPanel />
+        <Panel className="pane-left">
+          <div className="flex justify-between items-center mb-2 gap-2">
+            <h1 className="text-xl font-extrabold">🐶 狗狗公司</h1>
+            <Badge>第 {day} 天</Badge>
+          </div>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+            你是狗狗老闆，面試狗狗、決定錄用。公司會每天自動結算，擴建、培養、陪玩都會影響經營。
+          </p>
           <DayTimer />
+          <StatPanel />
           <ResumeCard />
+          <div className="mt-4">
+            <div className="text-xs font-bold mb-1.5" style={{ color: 'var(--muted)' }}>
+              📜 日誌
+            </div>
+            <GameLog />
+          </div>
         </Panel>
 
-        <OfficeScene />
+        <div className="pane-office">
+          <OfficeScene />
+        </div>
 
-        <Panel>
+        <Panel className="pane-right">
           <div className="flex gap-2 mb-3">
             <button
               onClick={() => setTab('shop')}
@@ -58,7 +87,7 @@ export default function App() {
                 color: activeTab === 'shop' ? 'white' : 'var(--text)',
               }}
             >
-              🛍️ 商店
+              🛒 商店
             </button>
             <button
               onClick={() => setTab('staff')}
@@ -68,16 +97,29 @@ export default function App() {
                 color: activeTab === 'staff' ? 'white' : 'var(--text)',
               }}
             >
-              🐕 員工 ({staff.length})
+              👥 員工 ({staff.length})
             </button>
           </div>
-          {activeTab === 'shop' ? <ShopPanel /> : <StaffList />}
-          <div className="mt-4">
-            <div className="text-xs font-bold mb-1.5" style={{ color: 'var(--muted)' }}>
-              📜 日誌
-            </div>
-            <GameLog />
-          </div>
+          {activeTab === 'shop' ? (
+            <>
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-extrabold">🛒 商店</h2>
+                <Badge>{companyStage(staff.length, money)}</Badge>
+              </div>
+              <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--muted)' }}>
+                先擴建才能請更多狗。裝飾、設備、制度都會讓辦公室更像真的公司。
+              </p>
+              <ShopPanel />
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-lg font-extrabold">👥 員工狗狗</h2>
+                <Badge>{staff.length} 位</Badge>
+              </div>
+              <StaffList />
+            </>
+          )}
         </Panel>
       </div>
 
@@ -116,4 +158,12 @@ export default function App() {
       )}
     </>
   );
+}
+
+function companyStage(staffLen: number, money: number): string {
+  const score = staffLen * 10 + (money > 500 ? 30 : money > 200 ? 15 : 0);
+  if (score >= 80) return '巔峰期';
+  if (score >= 40) return '成長期';
+  if (score >= 15) return '發展期';
+  return '草創期';
 }
