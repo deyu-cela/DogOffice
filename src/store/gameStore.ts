@@ -57,6 +57,8 @@ type Actions = {
   setMoneyGoal: (goal: number) => void;
   dismissVictory: () => void;
   startNewRunWithGoal: (goal: number) => void;
+
+  toggleRecruitment: () => void;
 };
 
 export type GameStore = GameState & Actions;
@@ -94,6 +96,7 @@ const initialState: GameState = {
   moneyGoal: 50000,
   victoryAt: null,
   victoryDismissed: false,
+  recruitmentClosed: false,
 };
 
 // 排行榜 localStorage helpers
@@ -128,6 +131,10 @@ function recordVictory(entry: LeaderboardEntry): LeaderboardEntry[] {
 }
 
 function refillCurrent(state: GameState): GameState {
+  // 招募暫停時：保持 current=null、vacancy=false、不補 queue，玩家重開後再 refill
+  if (state.recruitmentClosed) {
+    return { ...state, queue: [], current: null, candidatePatience: 0, vacancy: false, vacancyTimer: 0 };
+  }
   let queue = ensureQueueLength(state.queue);
   let current = state.current;
   let candidatePatience = state.candidatePatience;
@@ -168,13 +175,12 @@ function applyChemistry(state: GameState, newDog: Dog): { state: GameState; toas
     if ((newDog.role === r1 && existingRoles.has(r2)) || (newDog.role === r2 && existingRoles.has(r1))) {
       const key = [...combo.roles].sort().join('+');
       if (!s.activeChemistry.find((e) => e.key === key)) {
+        // 觸發時只給一次性 morale 當即時回饋；其他欄位改在每日結算時從 activeChemistry 取
+        // （修復：以前 revenue/stability 是一次性，玩家誤以為每日持續，感覺收入變低）
         s = {
           ...s,
           activeChemistry: [...s.activeChemistry, { key, combo }],
           morale: clamp(s.morale + (combo.bonus.morale ?? 0), 0, 100),
-          health: clamp(s.health + (combo.bonus.stability ?? 0), 0, 100),
-          money: s.money + (combo.bonus.revenue ?? 0) * 5,
-          productivityBoost: s.productivityBoost + (combo.bonus.productivity ?? 0),
         };
         toast = { msg: combo.msg, type: combo.type };
       }
@@ -206,9 +212,21 @@ function runAdvanceDay(prev: GameState): GameState {
   // 讓後期（Lv3-Lv4）真正有財富加速感，配合 $50k 目標達標節奏
   const LEVEL_MULTIPLIER = [1.0, 1.15, 1.35, 1.65, 2.1];
   const levelMul = LEVEL_MULTIPLIER[s.officeLevel] ?? 1;
-  const revenueBase = Math.round(s.staff.reduce((n, d) => n + d.stats.revenue, 0) * 5 * levelMul);
-  const productivity = s.staff.reduce((n, d) => n + d.stats.productivity, 0) + s.productivityBoost;
-  const stability = s.staff.reduce((n, d) => n + d.stats.stability, 0) + s.stabilityBoost;
+
+  // 化學反應每日持續加成（各 combo 的 bonus 累加）
+  const chem = s.activeChemistry.reduce(
+    (acc, { combo }) => ({
+      productivity: acc.productivity + (combo.bonus.productivity ?? 0),
+      stability: acc.stability + (combo.bonus.stability ?? 0),
+      revenue: acc.revenue + (combo.bonus.revenue ?? 0),
+    }),
+    { productivity: 0, stability: 0, revenue: 0 },
+  );
+
+  const staffRevenue = s.staff.reduce((n, d) => n + d.stats.revenue, 0);
+  const revenueBase = Math.round((staffRevenue + chem.revenue) * 5 * levelMul);
+  const productivity = s.staff.reduce((n, d) => n + d.stats.productivity, 0) + s.productivityBoost + chem.productivity;
+  const stability = s.staff.reduce((n, d) => n + d.stats.stability, 0) + s.stabilityBoost + chem.stability;
   const moraleGain = s.staff.reduce((n, d) => n + d.stats.morale, 0);
   const expense = s.staff.reduce((n, d) => n + d.expectedSalary, 0) - (roleCounts['財務'] ?? 0) * 3;
   const scalePenalty = Math.max(0, s.staff.length - maxStaff(s)) * 4;
@@ -223,9 +241,13 @@ function runAdvanceDay(prev: GameState): GameState {
   const qaStability = (roleCounts['QA'] ?? 0) * 3;
   const pmBoost = (roleCounts['PM'] ?? 0) * 3;
   const ceoBoost = (roleCounts['CEO'] ?? 0) * 10;
+  // 營運加成吃一部分辦公室等級倍率（gentler 曲線：Lv0 1.0 → Lv4 約 1.55）
+  // 讓 productivity / stability 高的員工（工程師/PM/營運）在後期也有提升感
+  const opBonusMul = 1 + (levelMul - 1) * 0.5;
   const operationBonus = Math.round(
-    productivity * 1.5 +
-      (stability + translationStability + opsStability + qaStability + pmBoost) * 1.2 +
+    (productivity * 1.5 +
+      (stability + translationStability + opsStability + qaStability + pmBoost) * 1.2) *
+      opBonusMul +
       s.trainingBoost +
       marketingBonus +
       artBoost +
@@ -848,6 +870,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setMoneyGoal: (goal) => set({ moneyGoal: goal }),
 
   dismissVictory: () => set({ victoryDismissed: true }),
+
+  toggleRecruitment: () => {
+    const s = get();
+    const next = !s.recruitmentClosed;
+    if (next) {
+      // 關閉招募：清空候選人與 queue；若當下有 current 也送走
+      set({
+        recruitmentClosed: true,
+        current: null,
+        candidatePatience: 0,
+        queue: [],
+        vacancy: false,
+        vacancyTimer: 0,
+      });
+    } else {
+      // 重開招募：立即補人
+      const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
+      const [first, ...rest] = fresh;
+      set({
+        recruitmentClosed: false,
+        current: first,
+        candidatePatience: first.patience,
+        queue: rest,
+        vacancy: false,
+        vacancyTimer: 0,
+      });
+    }
+  },
 
   startNewRunWithGoal: (goal) => {
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];

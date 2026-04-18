@@ -9,8 +9,11 @@ function maxStaffOf(state: { officeLevel: number }): number {
 
 type EstimateInput = Pick<
   GameState,
-  'staff' | 'productivityBoost' | 'stabilityBoost' | 'trainingBoost' | 'decor' | 'officeLevel'
+  'staff' | 'productivityBoost' | 'stabilityBoost' | 'trainingBoost' | 'decor' | 'officeLevel' | 'activeChemistry'
 >;
+
+// 須與 src/store/gameStore.ts runAdvanceDay 保持同步
+const LEVEL_MULTIPLIER = [1.0, 1.15, 1.35, 1.65, 2.1];
 
 function estimateDaily(s: EstimateInput): { income: number; expense: number; net: number } {
   const roleCounts: Record<string, number> = {};
@@ -19,14 +22,28 @@ function estimateDaily(s: EstimateInput): { income: number; expense: number; net
   });
   const rc = (k: string) => roleCounts[k] ?? 0;
 
-  const revenueBase = s.staff.reduce((n, d) => n + d.stats.revenue, 0) * 4;
-  const productivity = s.staff.reduce((n, d) => n + d.stats.productivity, 0) + s.productivityBoost;
-  const stability = s.staff.reduce((n, d) => n + d.stats.stability, 0) + s.stabilityBoost;
+  // 辦公室等級倍率
+  const levelMul = LEVEL_MULTIPLIER[s.officeLevel] ?? 1;
+
+  // 化學反應每日持續加成
+  const chem = s.activeChemistry.reduce(
+    (acc, { combo }) => ({
+      productivity: acc.productivity + (combo.bonus.productivity ?? 0),
+      stability: acc.stability + (combo.bonus.stability ?? 0),
+      revenue: acc.revenue + (combo.bonus.revenue ?? 0),
+    }),
+    { productivity: 0, stability: 0, revenue: 0 },
+  );
+
+  const staffRevenue = s.staff.reduce((n, d) => n + d.stats.revenue, 0);
+  const revenueBase = Math.round((staffRevenue + chem.revenue) * 5 * levelMul);
+  const productivity = s.staff.reduce((n, d) => n + d.stats.productivity, 0) + s.productivityBoost + chem.productivity;
+  const stability = s.staff.reduce((n, d) => n + d.stats.stability, 0) + s.stabilityBoost + chem.stability;
   const expense = Math.max(0, s.staff.reduce((n, d) => n + d.expectedSalary, 0) - rc('財務') * 3);
   const scalePenalty = Math.max(0, s.staff.length - maxStaffOf(s)) * 4;
-  // 同 runAdvanceDay：沒員工時不扣罰金，有員工但缺角色才扣
-  const hasStaff = s.staff.length > 0;
-  const noManagerPenalty = hasStaff && rc('主管') === 0 ? 5 : 0;
+  // 與 runAdvanceDay 一致：員工 >=3 缺主管才扣，>=4 缺營運才扣
+  const noManagerPenalty = s.staff.length >= 3 && rc('主管') === 0 ? 5 : 0;
+  const noOpsPenalty = s.staff.length >= 4 && rc('營運') === 0 ? 3 : 0;
   const marketingBonus = rc('行銷') * 5;
   const artBoost = rc('美術') * Math.max(1, s.decor);
   const translationStability = rc('翻譯') * 3;
@@ -35,15 +52,19 @@ function estimateDaily(s: EstimateInput): { income: number; expense: number; net
   const pmBoost = rc('PM') * 3;
   const ceoBoost = rc('CEO') * 10;
 
+  const opBonusMul = 1 + (levelMul - 1) * 0.5;
   const operationBonus = Math.round(
-    productivity * 1.5 +
-      (stability + translationStability + opsStability + qaStability + pmBoost) * 1.2 +
+    (productivity * 1.5 +
+      (stability + translationStability + opsStability + qaStability + pmBoost) * 1.2) *
+      opBonusMul +
       s.trainingBoost +
       marketingBonus +
       artBoost +
       ceoBoost,
   );
   const income = Math.max(0, revenueBase + operationBonus - scalePenalty - Math.round(noManagerPenalty * 0.4));
+  // 支出只扣錢不影響 health/morale，這裡僅估算；noOpsPenalty 只影響 health 不影響現金流
+  void noOpsPenalty;
   return { income, expense, net: income - expense };
 }
 
@@ -98,6 +119,7 @@ export function ExtraStats() {
     trainingBoost,
     decor,
     officeLevel,
+    activeChemistry,
   });
   const roleStats = groupByRole(staff);
   const netColor = estimate.net > 0 ? '#3a7a3f' : estimate.net < 0 ? '#a03d3d' : '#7a685a';

@@ -4,6 +4,8 @@ import { RadarChart } from '@/components/RadarChart';
 export function StaffList() {
   const staff = useGameStore((s) => s.staff);
   const openAction = useGameStore((s) => s.openStaffAction);
+  const playMini = useGameStore((s) => s.openPlayMiniGame);
+  const openTraining = useGameStore((s) => s.openTraining);
 
   if (staff.length === 0) {
     return (
@@ -15,6 +17,40 @@ export function StaffList() {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* 員工活動（陪玩 / 培訓）— 原本誤放在 HR drawer，改放這裡比較符合語意 */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <button
+          type="button"
+          disabled={staff.length < 3}
+          onClick={playMini}
+          className="py-2 rounded-full font-bold"
+          style={{
+            background: staff.length < 3 ? '#eee' : 'linear-gradient(180deg, #dcecff, #c6deff)',
+            fontSize: 13,
+            color: staff.length < 3 ? '#999' : '#2b5a8a',
+            cursor: staff.length < 3 ? 'not-allowed' : 'pointer',
+          }}
+          title={staff.length < 3 ? '需要至少 3 位員工' : '全員陪玩，花 $10'}
+        >
+          🎮 陪玩{staff.length < 3 ? `（需 ${3 - staff.length} 位員工）` : ''}
+        </button>
+        <button
+          type="button"
+          disabled={staff.length < 2}
+          onClick={openTraining}
+          className="py-2 rounded-full font-bold"
+          style={{
+            background: staff.length < 2 ? '#eee' : 'linear-gradient(180deg, #dcecff, #c6deff)',
+            fontSize: 13,
+            color: staff.length < 2 ? '#999' : '#2b5a8a',
+            cursor: staff.length < 2 ? 'not-allowed' : 'pointer',
+          }}
+          title={staff.length < 2 ? '需要至少 2 位員工' : '培訓問答，花 $18'}
+        >
+          📚 培訓{staff.length < 2 ? `（需 ${2 - staff.length} 位員工）` : ''}
+        </button>
+      </div>
+
       {staff.map((dog, i) => (
         <div
           key={`${dog.name}-${i}`}

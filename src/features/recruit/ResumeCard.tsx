@@ -1,51 +1,100 @@
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 
+function RecruitmentToggle() {
+  const closed = useGameStore((s) => s.recruitmentClosed);
+  const toggle = useGameStore((s) => s.toggleRecruitment);
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      className="w-full py-2 rounded-full text-xs font-bold mb-2"
+      style={{
+        background: closed
+          ? 'linear-gradient(180deg, #b6efab, #8ee28f)'
+          : 'linear-gradient(180deg, #ffd4d4, #ef8f8f)',
+        color: closed ? '#1e5a29' : '#a03d3d',
+        border: '1.5px solid rgba(90,70,54,0.15)',
+      }}
+    >
+      {closed ? '🟢 重新開啟招募' : '🔴 暫停招募（不再來新候選人）'}
+    </button>
+  );
+}
+
 export function ResumeCard() {
   const current = useGameStore((s) => s.current);
   const staff = useGameStore((s) => s.staff);
   const officeLevel = useGameStore((s) => s.officeLevel);
   const vacancy = useGameStore((s) => s.vacancy);
   const vacancyTimer = useGameStore((s) => s.vacancyTimer);
+  const recruitmentClosed = useGameStore((s) => s.recruitmentClosed);
   const hire = useGameStore((s) => s.hireCandidate);
   const reject = useGameStore((s) => s.rejectCandidate);
-  const playMini = useGameStore((s) => s.openPlayMiniGame);
-  const openTraining = useGameStore((s) => s.openTraining);
 
   const maxStaff = OFFICE_LEVELS[officeLevel].maxStaff;
   const atCapacity = staff.length >= maxStaff;
 
+  if (recruitmentClosed) {
+    return (
+      <div className="mt-3">
+        <RecruitmentToggle />
+        <div
+          className="p-5 rounded-2xl text-center"
+          style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}
+        >
+          <div className="text-5xl mb-2">🚫</div>
+          <div className="font-bold mb-1" style={{ color: 'var(--text)' }}>
+            招募已暫停
+          </div>
+          <div className="text-xs leading-relaxed">
+            不會再有新候選人來了。<br />
+            想繼續擴編時再按上方按鈕重開。
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!current) {
     if (vacancy) {
       return (
-        <div
-          className="mt-3 p-5 rounded-2xl text-center"
-          style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}
-        >
-          <div className="text-5xl mb-2" style={{ animation: 'bob 2s ease-in-out infinite' }}>
-            😴
-          </div>
-          <div className="font-bold mb-1" style={{ color: 'var(--text)' }}>
-            人才荒期
-          </div>
-          <div className="text-xs leading-relaxed">
-            目前沒有候選狗狗，趁這段時間培訓或買道具吧！
-            <br />
-            （還要等 {vacancyTimer} 天）
+        <div className="mt-3">
+          <RecruitmentToggle />
+          <div
+            className="p-5 rounded-2xl text-center"
+            style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}
+          >
+            <div className="text-5xl mb-2" style={{ animation: 'bob 2s ease-in-out infinite' }}>
+              😴
+            </div>
+            <div className="font-bold mb-1" style={{ color: 'var(--text)' }}>
+              人才荒期
+            </div>
+            <div className="text-xs leading-relaxed">
+              目前沒有候選狗狗，趁這段時間培訓或買道具吧！
+              <br />
+              （還要等 {vacancyTimer} 天）
+            </div>
           </div>
         </div>
       );
     }
     return (
-      <div className="mt-3 p-4 rounded-2xl text-center" style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}>
-        等候下一位候選狗狗...
+      <div className="mt-3">
+        <RecruitmentToggle />
+        <div className="p-4 rounded-2xl text-center" style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}>
+          等候下一位候選狗狗...
+        </div>
       </div>
     );
   }
 
   return (
+    <div className="mt-3">
+      <RecruitmentToggle />
     <div
-      className="mt-3 p-4 rounded-2xl"
+      className="p-4 rounded-2xl"
       style={{
         background: 'linear-gradient(180deg, #fffefc, #fff5e7)',
         border: '2px dashed rgba(90,70,54,0.18)',
@@ -135,23 +184,7 @@ export function ResumeCard() {
           辦公室已滿，請先升級或資遣員工
         </div>
       )}
-
-      <div className="grid grid-cols-2 gap-2.5 mt-2.5">
-        <button
-          disabled={staff.length < 3}
-          onClick={playMini}
-          style={{ background: 'linear-gradient(180deg, #dcecff, #c6deff)', fontSize: 13 }}
-        >
-          🎮 陪玩
-        </button>
-        <button
-          disabled={staff.length < 2}
-          onClick={openTraining}
-          style={{ background: 'linear-gradient(180deg, #dcecff, #c6deff)', fontSize: 13 }}
-        >
-          📚 培訓
-        </button>
-      </div>
+    </div>
     </div>
   );
 }
