@@ -4,23 +4,17 @@ import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import { companyStage } from '@/lib/utils';
-import { Panel, Badge } from '@/components/Panel';
 import { Toast } from '@/components/Toast';
 import { SplashScreen } from '@/features/splash/SplashScreen';
 import { Tutorial } from '@/features/tutorial/Tutorial';
-import { StatPanel } from '@/features/hud/StatPanel';
-import { DayTimer } from '@/features/hud/DayTimer';
-import { UserBadge } from '@/features/hud/UserBadge';
-import { SaveIndicator } from '@/features/hud/SaveIndicator';
-import { RestartButton } from '@/features/hud/RestartButton';
 import { ConflictModal } from '@/features/save/ConflictModal';
-import { ResumeCard } from '@/features/recruit/ResumeCard';
 import { OfficeScene } from '@/features/office/OfficeScene';
-import { ShopPanel } from '@/features/shop/ShopPanel';
-import { StaffList } from '@/features/staff/StaffList';
+import { BuildingDrawer } from '@/features/office/BuildingDrawer';
+import { TopBar } from '@/features/hud/TopBar';
+import { RightPanel } from '@/features/hud/RightPanel';
+import { LogBar } from '@/features/hud/LogBar';
+import { InfoButton } from '@/features/hud/InfoButton';
 import { StaffActionModal } from '@/features/staff/StaffActionModal';
-import { GameLog } from '@/features/log/GameLog';
 import { FrisbeeGame } from '@/features/minigames/FrisbeeGame';
 import { MemoryGame } from '@/features/minigames/MemoryGame';
 import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
@@ -52,8 +46,7 @@ export default function App() {
       resetSaveStore();
     }
   }, [authedUserId, loadCloud, resetSaveStore]);
-  const activeTab = useGameStore((s) => s.activeTab);
-  const setTab = useGameStore((s) => s.setActiveTab);
+
   const bankrupt = useGameStore((s) => s.bankrupt);
   const miniGame = useGameStore((s) => s.miniGame);
   const trainingSession = useGameStore((s) => s.trainingSession);
@@ -61,29 +54,39 @@ export default function App() {
   const day = useGameStore((s) => s.day);
   const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
-  const morale = useGameStore((s) => s.morale);
-  const health = useGameStore((s) => s.health);
-  const decor = useGameStore((s) => s.decor);
   const restart = useGameStore((s) => s.restart);
-  const stage = companyStage(health, morale, staff.length, decor);
 
   return (
     <>
       <style>{`
-        .app-grid { grid-template-columns: 1fr; }
-        @media (min-width: 768px) {
-          .app-grid {
-            grid-template-columns: 1fr 320px;
-            grid-template-areas: "office right" "left right";
-          }
-          .pane-left { grid-area: left; }
-          .pane-office { grid-area: office; }
-          .pane-right { grid-area: right; }
+        .app-grid {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 1fr auto;
+          grid-template-areas:
+            "top"
+            "main"
+            "log";
         }
-        @media (min-width: 1280px) {
+        .pane-top { grid-area: top; }
+        .pane-main { grid-area: main; min-width: 0; }
+        .pane-log { grid-area: log; }
+        .pane-right { display: none; }
+
+        @media (min-width: 1024px) {
           .app-grid {
-            grid-template-columns: 340px 1fr 320px;
-            grid-template-areas: "left office right";
+            grid-template-columns: 1fr 360px;
+            grid-template-rows: auto 1fr auto;
+            grid-template-areas:
+              "top top"
+              "main right"
+              "log log";
+          }
+          .pane-right {
+            display: flex;
+            flex-direction: column;
+            grid-area: right;
+            min-width: 0;
+            min-height: 0;
           }
         }
       `}</style>
@@ -91,89 +94,29 @@ export default function App() {
         className="app-grid mx-auto p-3 md:p-5 gap-3 md:gap-4 min-h-screen grid"
         style={{ maxWidth: 1440 }}
       >
-        <Panel className="pane-left">
-          <div className="flex justify-between items-center mb-2 gap-2 flex-wrap">
-            <h1 className="text-xl font-extrabold">🐶 狗狗公司</h1>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge>第 {day} 天</Badge>
-              {authedUser && (
-                <>
-                  <SaveIndicator />
-                  <UserBadge />
-                </>
-              )}
-            </div>
-          </div>
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
-            你是狗狗老闆，面試狗狗、決定錄用。公司會每天自動結算，擴建、培養、陪玩都會影響經營。
-          </p>
-          <DayTimer />
-          <StatPanel />
-          <ResumeCard />
-          <div className="mt-4">
-            <div className="flex justify-between items-center mb-1.5">
-              <div className="text-xs font-bold" style={{ color: 'var(--muted)' }}>
-                📜 日誌
-              </div>
-              {authedUser && <RestartButton />}
-            </div>
-            <GameLog />
-          </div>
-        </Panel>
+        <div className="pane-top">
+          <TopBar />
+        </div>
 
-        <div className="pane-office">
+        <div className="pane-main">
           <OfficeScene />
         </div>
 
-        <Panel className="pane-right">
-          <div className="flex gap-2 mb-3">
-            <button
-              onClick={() => setTab('shop')}
-              className="flex-1 text-sm"
-              style={{
-                background: activeTab === 'shop' ? 'linear-gradient(180deg, #ffcf6b, #ff9f43)' : '#fff',
-                color: activeTab === 'shop' ? 'white' : 'var(--text)',
-              }}
-            >
-              🛒 商店
-            </button>
-            <button
-              onClick={() => setTab('staff')}
-              className="flex-1 text-sm"
-              style={{
-                background: activeTab === 'staff' ? 'linear-gradient(180deg, #ffcf6b, #ff9f43)' : '#fff',
-                color: activeTab === 'staff' ? 'white' : 'var(--text)',
-              }}
-            >
-              👥 員工 ({staff.length})
-            </button>
-          </div>
-          {activeTab === 'shop' ? (
-            <>
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-extrabold">🛒 商店</h2>
-                <Badge>{stage}</Badge>
-              </div>
-              <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--muted)' }}>
-                先擴建才能請更多狗。裝飾、設備、制度都會讓辦公室更像真的公司。
-              </p>
-              <ShopPanel />
-            </>
-          ) : (
-            <>
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-lg font-extrabold">👥 員工狗狗</h2>
-                <Badge>{staff.length} 位</Badge>
-              </div>
-              <StaffList />
-            </>
-          )}
-        </Panel>
+        <div className="pane-right">
+          <RightPanel />
+        </div>
+
+        <div className="pane-log">
+          <LogBar />
+        </div>
       </div>
+
+      <InfoButton />
 
       <Toast />
       {showSplash && <SplashScreen />}
       <Tutorial />
+      <BuildingDrawer />
       {miniGame?.type === 'frisbee' && <FrisbeeGame />}
       {miniGame?.type === 'memory' && <MemoryGame />}
       {trainingSession && <TrainingQuiz />}
@@ -211,4 +154,3 @@ export default function App() {
     </>
   );
 }
-

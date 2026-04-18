@@ -23,6 +23,20 @@
   --ok: #76c67d;
   --warn: #ef8f52;
   --danger: #d75d5d;
+
+  /* 日系色盤 */
+  --jp-washi: #fdf7ea;       /* 和紙米 */
+  --jp-washi-warm: #fbeccf;  /* 暖和紙 */
+  --jp-wood-light: #e8d2a8;  /* 淺木 */
+  --jp-wood-mid: #c8a274;    /* 中木 */
+  --jp-wood-dark: #8b6a45;   /* 深木 */
+  --jp-wood-shadow: #5d3f22; /* 木框影 */
+  --jp-sakura: #f8c7ce;      /* 櫻花粉 */
+  --jp-sakura-deep: #f0a0ab; /* 深櫻 */
+  --jp-matcha: #9ec29c;      /* 抹茶綠 */
+  --jp-tatami: #d9c183;      /* 榻榻米黃 */
+  --jp-tatami-edge: #6d5a32; /* 榻榻米邊 */
+  --jp-shoji-frame: #7a5638; /* 障子框 */
 }
 
 * {
@@ -102,4 +116,93 @@ button:disabled {
     opacity: 1;
     transform: translate(-50%, 0);
   }
+}
+
+@keyframes sakura-drift {
+  0% {
+    transform: translate(0, -20px) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--drift-x, 40px), var(--drift-y, 420px)) rotate(320deg);
+    opacity: 0;
+  }
+}
+
+@keyframes maneki-wave {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(14deg);
+  }
+}
+
+@keyframes lantern-sway {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+/* 日系質地 utilities */
+.jp-tatami-floor {
+  background-color: var(--jp-tatami);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 78px,
+      var(--jp-tatami-edge) 78px,
+      var(--jp-tatami-edge) 82px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 56px,
+      rgba(109, 90, 50, 0.25) 56px,
+      rgba(109, 90, 50, 0.25) 58px
+    );
+}
+
+.jp-wood-floor {
+  background-color: var(--jp-wood-light);
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(139, 106, 69, 0.18) 0,
+    rgba(139, 106, 69, 0.18) 1px,
+    transparent 1px,
+    transparent 64px
+  ),
+  repeating-linear-gradient(
+    0deg,
+    rgba(139, 106, 69, 0.12) 0,
+    rgba(139, 106, 69, 0.12) 1px,
+    transparent 1px,
+    transparent 14px
+  );
+}
+
+.jp-washi-wall {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(248, 199, 206, 0.12), transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(158, 194, 156, 0.1), transparent 50%),
+    linear-gradient(180deg, var(--jp-washi) 0%, var(--jp-washi-warm) 100%);
+}
+
+.jp-shoji-grid {
+  background-image:
+    linear-gradient(90deg, var(--jp-shoji-frame) 0 3px, transparent 3px),
+    linear-gradient(0deg, var(--jp-shoji-frame) 0 3px, transparent 3px);
+  background-size: 33.33% 33.33%;
 }
