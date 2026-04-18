@@ -67,12 +67,17 @@ export type TrainingQuestion = {
   reward: number;
 };
 
+export type OfficeTheme = 'kawaii' | 'shibuya' | 'skyline' | 'zen';
+
 export type OfficeLevel = {
   name: string;
   maxStaff: number;
   upgradeCost: number;
-  wall: string;
+  wall: string;         // 左牆
+  wallRight?: string;   // 右牆（若無則與 wall 同色）
   floor: string;
+  accent?: string;      // 裝飾帶色（牆中間橫條）
+  theme?: OfficeTheme;  // 窗外風景 + 整體氛圍
   desks: number;
   windows: number;
   shelves: number;

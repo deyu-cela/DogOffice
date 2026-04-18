@@ -2,7 +2,16 @@ import { create } from 'zustand';
 import type { Dog, Walker } from '@/types';
 import { nextWalkerId } from '@/lib/utils';
 
-type RoomBounds = { w: number; h: number; floorTop: number };
+type Obstacle = { x: number; y: number; w: number; h: number };
+type RoomBounds = { w: number; h: number; floorTop: number; obstacles?: Obstacle[] };
+
+function inObstacle(px: number, py: number, obstacles?: Obstacle[]): boolean {
+  if (!obstacles) return false;
+  for (const o of obstacles) {
+    if (px >= o.x && px <= o.x + o.w && py >= o.y && py <= o.y + o.h) return true;
+  }
+  return false;
+}
 
 type WalkerActions = {
   setBounds: (bounds: RoomBounds) => void;
@@ -19,9 +28,14 @@ type WalkerStore = {
 
 function randomPosition(bounds: RoomBounds): { x: number; y: number } {
   const floorH = bounds.h - bounds.floorTop;
+  for (let i = 0; i < 10; i++) {
+    const x = 100 + Math.random() * Math.max(20, bounds.w - 180);
+    const y = bounds.floorTop + 20 + Math.random() * Math.max(20, floorH - 70);
+    if (!inObstacle(x, y, bounds.obstacles)) return { x, y };
+  }
   return {
-    x: 100 + Math.random() * Math.max(20, bounds.w - 180),
-    y: bounds.floorTop + 20 + Math.random() * Math.max(20, floorH - 70),
+    x: bounds.w * 0.5,
+    y: bounds.floorTop + floorH * 0.7,
   };
 }
 
@@ -78,18 +92,31 @@ export const useWalkerStore = create<WalkerStore>((set, get) => ({
       const dy = w.targetY - w.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 4) {
+        const target = randomPosition(bounds);
         return {
           ...w,
-          targetX: 80 + Math.random() * Math.max(20, bounds.w - 160),
-          targetY: bounds.floorTop + 20 + Math.random() * Math.max(20, floorH - 70),
+          targetX: target.x,
+          targetY: target.y,
           idleTimer: 35 + Math.floor(Math.random() * 80),
+        };
+      }
+      const nextX = w.x + (dx / dist) * w.speed * speedPenalty;
+      const nextY = w.y + (dy / dist) * w.speed * speedPenalty;
+      // 撞到障礙物 → 重選 target、保持原位
+      if (inObstacle(nextX, nextY, bounds.obstacles)) {
+        const target = randomPosition(bounds);
+        return {
+          ...w,
+          targetX: target.x,
+          targetY: target.y,
+          idleTimer: 8,
         };
       }
       return {
         ...w,
         facingRight: dx > 0,
-        x: w.x + (dx / dist) * w.speed * speedPenalty,
-        y: w.y + (dy / dist) * w.speed * speedPenalty,
+        x: nextX,
+        y: nextY,
       };
     });
     set({ walkers: next });

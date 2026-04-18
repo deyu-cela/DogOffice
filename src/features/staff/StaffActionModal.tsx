@@ -15,7 +15,7 @@ export function StaffActionModal() {
   const idx = modal.staffIndex;
 
   return (
-    <div className="fixed inset-0 z-[700] flex items-center justify-center bg-black/40 p-4" onClick={close}>
+    <div className="fixed inset-0 z-[850] flex items-center justify-center bg-black/40 p-4" onClick={close}>
       <div
         className="p-5 rounded-3xl max-w-lg w-full"
         style={{ background: '#fffaf0', border: '2px solid rgba(90,70,54,0.12)' }}

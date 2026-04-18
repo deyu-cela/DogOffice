@@ -36,8 +36,8 @@ export function generateCandidate(): Dog {
   });
 
   const score = stats.productivity + stats.morale + stats.stability + stats.revenue;
-  const baseSalary = isCeoRoll ? 80 : 12 + Math.max(0, score) * 3;
-  const expectedSalary = Math.round(baseSalary + (Math.random() * 10 - 5));
+  const baseSalary = isCeoRoll ? 55 : 7 + Math.max(0, score) * 1.8;
+  const expectedSalary = Math.round(baseSalary + (Math.random() * 6 - 3));
   const severance = Math.round(expectedSalary * 3);
   const patience = isCeoRoll ? 1 : 2 + Math.floor(Math.random() * 3);
 

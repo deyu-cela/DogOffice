@@ -72,14 +72,14 @@ export function StatPanel() {
         <StatCell label="👥 員工" value={`${staffLen} / ${cap}`} tooltip={staffTip} />
         <StatCell
           label="❤️ 士氣"
-          value={moraleLabel}
+          value={`${morale} · ${moraleLabel}`}
           meterValue={morale}
           meterColor="linear-gradient(90deg, #a8d8a8, #66bb6a)"
           tooltip={moraleTip}
         />
         <StatCell
           label="📈 營運"
-          value={healthLabel}
+          value={`${health} · ${healthLabel}`}
           meterValue={health}
           meterColor="linear-gradient(90deg, #ffb3b3, #ef8f52)"
           tooltip={healthTip}

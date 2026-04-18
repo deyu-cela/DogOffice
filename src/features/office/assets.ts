@@ -14,6 +14,7 @@ export const JP_ASSETS = {
   snackJar: `${BASE}snack_jar.png`,
   toyBall: `${BASE}toy_ball.png`,
   clipboard: `${BASE}clipboard.png`,
+  policyWall: `${BASE}policy_wall.png`,
   crtMonitor: `${BASE}crt_monitor.png`,
   dumbbell: `${BASE}dumbbell.png`,
   shojiWindow: `${BASE}shoji_window.png`,
@@ -27,6 +28,7 @@ export const JP_ASSETS = {
   hrOffice: `${BASE}hr_office.png`,
   wallClock: `${BASE}wall_clock.png`,
   wallScroll: `${BASE}wall_scroll.png`,
+  gymArea: `${BASE}gym_area.png`,
 } as const;
 
 export const PIXEL_IMG_STYLE: React.CSSProperties = {
