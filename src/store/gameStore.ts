@@ -279,7 +279,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ...initialState,
 
   startGame: () => set((s) => ({ showSplash: false, tutorialStep: s.tutorialStep > 0 ? s.tutorialStep : 1 })),
-  advanceTutorial: () => set((s) => ({ tutorialStep: s.tutorialStep + 1 })),
+  advanceTutorial: () => set((s) => ({ tutorialStep: Math.min(s.tutorialStep + 1, 7) })),
   skipTutorial: () => set({ tutorialStep: 7 }),
   setSpeed: (speedMultiplier) => set({ speedMultiplier }),
 
