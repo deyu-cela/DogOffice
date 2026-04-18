@@ -24,7 +24,9 @@ function estimateDaily(s: EstimateInput): { income: number; expense: number; net
   const stability = s.staff.reduce((n, d) => n + d.stats.stability, 0) + s.stabilityBoost;
   const expense = Math.max(0, s.staff.reduce((n, d) => n + d.expectedSalary, 0) - rc('財務') * 3);
   const scalePenalty = Math.max(0, s.staff.length - maxStaffOf(s)) * 4;
-  const noManagerPenalty = rc('主管') === 0 ? 9 : 0;
+  // 同 runAdvanceDay：沒員工時不扣罰金，有員工但缺角色才扣
+  const hasStaff = s.staff.length > 0;
+  const noManagerPenalty = hasStaff && rc('主管') === 0 ? 5 : 0;
   const marketingBonus = rc('行銷') * 5;
   const artBoost = rc('美術') * Math.max(1, s.decor);
   const translationStability = rc('翻譯') * 3;

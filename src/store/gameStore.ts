@@ -60,7 +60,7 @@ const initialState: GameState = {
   day: 1,
   money: 300,
   morale: 58,
-  health: 55,
+  health: 70,
   decor: 1,
   productivityBoost: 0,
   stabilityBoost: 0,
@@ -169,9 +169,11 @@ function runAdvanceDay(prev: GameState): GameState {
   const moraleGain = s.staff.reduce((n, d) => n + d.stats.morale, 0);
   const expense = s.staff.reduce((n, d) => n + d.expectedSalary, 0) - (roleCounts['財務'] ?? 0) * 3;
   const scalePenalty = Math.max(0, s.staff.length - maxStaff(s)) * 4;
-  const noManagerPenalty = (roleCounts['主管'] ?? 0) === 0 ? 9 : 0;
-  const noOpsPenalty = (roleCounts['營運'] ?? 0) === 0 ? 7 : 0;
-  const managerMoodBonus = (roleCounts['主管'] ?? 0) === 0 ? 3 : 0;
+  // 沒員工時不扣罰金（新手緩衝）；有員工但缺角色才扣
+  const hasStaff = s.staff.length > 0;
+  const noManagerPenalty = hasStaff && (roleCounts['主管'] ?? 0) === 0 ? 5 : 0;
+  const noOpsPenalty = hasStaff && (roleCounts['營運'] ?? 0) === 0 ? 3 : 0;
+  const managerMoodBonus = (roleCounts['主管'] ?? 0) >= 1 ? 3 : 0;
   const marketingBonus = (roleCounts['行銷'] ?? 0) * 5;
   const artBoost = (roleCounts['美術'] ?? 0) * Math.max(1, s.decor);
   const translationStability = (roleCounts['翻譯'] ?? 0) * 3;
