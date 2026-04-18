@@ -1,16 +1,20 @@
+import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
 import { AuthScreen } from '@/features/auth/AuthScreen';
+import { LeaderboardPanel } from '@/features/leaderboard/LeaderboardPanel';
 
 export function SplashScreen() {
   const startGame = useGameStore((s) => s.startGame);
+  const moneyGoal = useGameStore((s) => s.moneyGoal);
   const authStatus = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
   const saveStatus = useSaveStore((s) => s.status);
   const cloud = useSaveStore((s) => s.cloud);
   const saveError = useSaveStore((s) => s.error);
   const base = import.meta.env.BASE_URL;
+  const [lbOpen, setLbOpen] = useState(false);
 
   const authed = authStatus === 'authed' && !!user;
   const bootstrapping = authStatus === 'bootstrapping';
@@ -76,6 +80,16 @@ export function SplashScreen() {
             </div>
           )}
 
+          {!hasSave && !loadingSave && (
+            <div
+              className="mb-4 px-4 py-2 rounded-full text-xs"
+              style={{ background: 'rgba(255,255,255,0.85)', color: '#5b3c2b', border: '1px solid rgba(90,70,54,0.15)' }}
+            >
+              🎯 目標：$
+              <span className="font-extrabold">{moneyGoal.toLocaleString()}</span>
+            </div>
+          )}
+
           <button
             onClick={startGame}
             disabled={loadingSave}
@@ -89,10 +103,21 @@ export function SplashScreen() {
           >
             {loadingSave ? '讀取中…' : hasSave ? '繼續經營' : '開始經營'}
           </button>
+
+          <button
+            type="button"
+            onClick={() => setLbOpen(true)}
+            className="mt-3 px-4 py-1.5 rounded-full text-xs font-bold"
+            style={{ background: 'rgba(255,255,255,0.85)', color: '#7a685a', border: '1px solid rgba(90,70,54,0.15)' }}
+          >
+            🏆 查看排行榜
+          </button>
         </>
       )}
 
       {!bootstrapping && !authed && <AuthScreen />}
+
+      {lbOpen && <LeaderboardPanel onClose={() => setLbOpen(false)} />}
     </div>
   );
 }

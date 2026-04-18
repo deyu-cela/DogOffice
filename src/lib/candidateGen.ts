@@ -36,8 +36,10 @@ export function generateCandidate(): Dog {
   });
 
   const score = stats.productivity + stats.morale + stats.stability + stats.revenue;
-  const baseSalary = isCeoRoll ? 55 : 7 + Math.max(0, score) * 1.8;
-  const expectedSalary = Math.round(baseSalary + (Math.random() * 6 - 3));
+  // 薪水權重：revenue / productivity 是真收入來源，給較高權重；morale / stability 只算一半
+  const contribution = stats.revenue * 2 + stats.productivity * 1.2 + stats.stability * 0.6 + stats.morale * 0.4;
+  const baseSalary = isCeoRoll ? 55 : 6 + Math.max(0, contribution) * 1.3;
+  const expectedSalary = Math.round(baseSalary + (Math.random() * 8 - 4));
   const severance = Math.round(expectedSalary * 3);
   const patience = isCeoRoll ? 1 : 2 + Math.floor(Math.random() * 3);
 

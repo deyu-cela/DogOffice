@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { Dog, GameState, PipTask, ShopItemEffectKey, TrainingSession } from '@/types';
+import type { Dog, GameState, LeaderboardEntry, PipTask, ShopItemEffectKey, TrainingSession } from '@/types';
+import { submitLeaderboard, isIgnorableApiError } from '@/lib/leaderboardApi';
 import type { GameSaveData } from '@/types/save';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
@@ -52,13 +53,17 @@ type Actions = {
   resetToInitialGame: () => void;
   restart: () => void;
   dismissToast: () => void;
+
+  setMoneyGoal: (goal: number) => void;
+  dismissVictory: () => void;
+  startNewRunWithGoal: (goal: number) => void;
 };
 
 export type GameStore = GameState & Actions;
 
 const initialState: GameState = {
   day: 1,
-  money: 300,
+  money: 380,
   morale: 58,
   health: 70,
   decor: 1,
@@ -86,7 +91,41 @@ const initialState: GameState = {
   speedMultiplier: 1,
   dayElapsed: 0,
   toast: null,
+  moneyGoal: 50000,
+  victoryAt: null,
+  victoryDismissed: false,
 };
+
+// 排行榜 localStorage helpers
+const LB_KEY = 'dogoffice_leaderboard_v1';
+function loadLeaderboard(): LeaderboardEntry[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LB_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw) as LeaderboardEntry[];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+function saveLeaderboard(list: LeaderboardEntry[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(LB_KEY, JSON.stringify(list));
+  } catch {
+    // ignore quota / private mode errors
+  }
+}
+function recordVictory(entry: LeaderboardEntry): LeaderboardEntry[] {
+  const list = loadLeaderboard();
+  list.push(entry);
+  // 按達標天數升冪排序（越快越前面）；同天數則 money 高者優先
+  list.sort((a, b) => a.days - b.days || b.money - a.money);
+  const top = list.slice(0, 20);
+  saveLeaderboard(top);
+  return top;
+}
 
 function refillCurrent(state: GameState): GameState {
   let queue = ensureQueueLength(state.queue);
@@ -163,16 +202,19 @@ function runAdvanceDay(prev: GameState): GameState {
     roleCounts[d.role] = (roleCounts[d.role] ?? 0) + 1;
   });
 
-  const revenueBase = s.staff.reduce((n, d) => n + d.stats.revenue, 0) * 4;
+  // 辦公室等級倍率：Lv0-Lv4 分別 1.0 / 1.15 / 1.35 / 1.65 / 2.1
+  // 讓後期（Lv3-Lv4）真正有財富加速感，配合 $50k 目標達標節奏
+  const LEVEL_MULTIPLIER = [1.0, 1.15, 1.35, 1.65, 2.1];
+  const levelMul = LEVEL_MULTIPLIER[s.officeLevel] ?? 1;
+  const revenueBase = Math.round(s.staff.reduce((n, d) => n + d.stats.revenue, 0) * 5 * levelMul);
   const productivity = s.staff.reduce((n, d) => n + d.stats.productivity, 0) + s.productivityBoost;
   const stability = s.staff.reduce((n, d) => n + d.stats.stability, 0) + s.stabilityBoost;
   const moraleGain = s.staff.reduce((n, d) => n + d.stats.morale, 0);
   const expense = s.staff.reduce((n, d) => n + d.expectedSalary, 0) - (roleCounts['財務'] ?? 0) * 3;
   const scalePenalty = Math.max(0, s.staff.length - maxStaff(s)) * 4;
-  // 沒員工時不扣罰金（新手緩衝）；有員工但缺角色才扣
-  const hasStaff = s.staff.length > 0;
-  const noManagerPenalty = hasStaff && (roleCounts['主管'] ?? 0) === 0 ? 5 : 0;
-  const noOpsPenalty = hasStaff && (roleCounts['營運'] ?? 0) === 0 ? 3 : 0;
+  // 早期緩衝：必須有足夠員工才會觸發缺角色懲罰（<3 人不罰主管、<4 人不罰營運）
+  const noManagerPenalty = s.staff.length >= 3 && (roleCounts['主管'] ?? 0) === 0 ? 5 : 0;
+  const noOpsPenalty = s.staff.length >= 4 && (roleCounts['營運'] ?? 0) === 0 ? 3 : 0;
   const managerMoodBonus = (roleCounts['主管'] ?? 0) >= 1 ? 3 : 0;
   const marketingBonus = (roleCounts['行銷'] ?? 0) * 5;
   const artBoost = (roleCounts['美術'] ?? 0) * Math.max(1, s.decor);
@@ -204,7 +246,7 @@ function runAdvanceDay(prev: GameState): GameState {
     s.morale +
       moraleGain -
       Math.max(0, s.staff.length - 5) -
-      (s.money < 40 ? 4 : 0) +
+      (s.money < 25 && s.day > 5 ? 4 : 0) +
       managerMoodBonus +
       Math.min(4, roleCounts['美術'] ?? 0) +
       ceoBoost,
@@ -213,7 +255,8 @@ function runAdvanceDay(prev: GameState): GameState {
   );
 
   s.day += 1;
-  s.trainingBoost = Math.max(0, Math.round(s.trainingBoost * 0.35));
+  // 培訓加成衰減從 0.35 提升到 0.55，讓一次培訓持續 2-3 天
+  s.trainingBoost = Math.max(0, Math.round(s.trainingBoost * 0.55));
 
   // PIP
   s.staff = s.staff.map((dog) => {
@@ -273,6 +316,34 @@ function runAdvanceDay(prev: GameState): GameState {
     s = pushLog(s, `本日結算：收入 $${income}，支出 $${Math.max(0, expense)}，淨變動 $${income - Math.max(0, expense)}`);
   } else {
     s = pushLog(s, '今天還沒有正式員工，辦公室很安靜。');
+  }
+
+  // 達成資金目標：記錄一次排行榜，之後每天仍可繼續玩（不鎖住）
+  if (s.victoryAt === null && s.money >= s.moneyGoal) {
+    s.victoryAt = s.day;
+    s.victoryDismissed = false;
+    recordVictory({
+      days: s.day,
+      money: s.money,
+      goal: s.moneyGoal,
+      officeLevel: s.officeLevel,
+      staffCount: s.staff.length,
+      date: new Date().toISOString(),
+    });
+    // 若已登入，fire-and-forget 上傳到後端排行榜（失敗不打擾使用者）
+    void submitLeaderboard({
+      days: s.day,
+      money: s.money,
+      goal: s.moneyGoal,
+      office_level: s.officeLevel,
+      staff_count: s.staff.length,
+    }).catch((err) => {
+      if (!isIgnorableApiError(err)) {
+        console.warn('[leaderboard] submit failed:', err);
+      }
+    });
+    s = pushLog(s, `🏆 達成 $${s.moneyGoal} 資金目標！用時 ${s.day} 天。`);
+    s.toast = { msg: `🏆 資金目標達成！${s.day} 天`, type: 'positive' };
   }
   return s;
 }
@@ -558,15 +629,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!s.miniGame || s.miniGame.type !== 'frisbee') return;
     const score = s.miniGame.score;
     const moraleGain = 6 + Math.min(14, score);
+    // 飛盤除 morale 外，依分數回饋現金（讓小遊戲 CP 值正向）
+    const cashReward = 3 + Math.floor(score / 3);
     let next: GameState = {
       ...s,
       miniGame: null,
       morale: clamp(s.morale + moraleGain, 0, 100),
-      money: Math.max(0, s.money - 10),
+      money: Math.max(0, s.money - 10 + cashReward),
     };
     next = pushLog(
       next,
-      endedEarly ? `提早結束陪玩，得 ${score} 分，士氣 +${moraleGain}。` : `陪玩結束！得 ${score} 分，士氣 +${moraleGain}。`,
+      endedEarly
+        ? `提早結束陪玩，得 ${score} 分，士氣 +${moraleGain}，回饋 $${cashReward}。`
+        : `陪玩結束！得 ${score} 分，士氣 +${moraleGain}，回饋 $${cashReward}。`,
     );
     set(next as Partial<GameStore>);
   },
@@ -619,13 +694,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const mg = s.miniGame;
     const bonus = mg.matches >= 8 ? 15 : Math.round(mg.matches * 2);
     const moraleGain = 8 + bonus;
+    // 配對 6+ 對給 $5 / 8/8 全滿給 $10，鼓勵認真玩
+    const cashReward = mg.matches >= 8 ? 10 : mg.matches >= 6 ? 5 : 0;
     let next: GameState = {
       ...s,
       miniGame: null,
       morale: clamp(s.morale + moraleGain, 0, 100),
-      money: Math.max(0, s.money - 10),
+      money: Math.max(0, s.money - 10 + cashReward),
     };
-    next = pushLog(next, `翻牌遊戲結束！配對 ${mg.matches}/8，${mg.moves} 步，士氣 +${moraleGain}。`);
+    const cashMsg = cashReward > 0 ? `，回饋 $${cashReward}` : '';
+    next = pushLog(next, `翻牌遊戲結束！配對 ${mg.matches}/8，${mg.moves} 步，士氣 +${moraleGain}${cashMsg}。`);
     set(next as Partial<GameStore>);
   },
 
@@ -638,6 +716,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       selected: null,
       correct: null,
       totalReward: 0,
+      correctCount: 0,
       questionIndex: 0,
       maxQuestions: questions.length,
       finished: false,
@@ -654,12 +733,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const q = bank[s.trainingSession.questionIndex];
     const correct = optionIndex === q.answer;
     const totalReward = s.trainingSession.totalReward + (correct ? q.reward : 0);
+    const correctCount = s.trainingSession.correctCount + (correct ? 1 : 0);
     set({
       trainingSession: {
         ...s.trainingSession,
         selected: optionIndex,
         correct,
         totalReward,
+        correctCount,
       },
     });
   },
@@ -672,14 +753,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (ts.questionIndex >= ts.maxQuestions - 1) {
       const gain = Math.round(ts.totalReward * 0.8);
       const healthGain = Math.max(4, Math.round(ts.totalReward * 0.35));
+      // 每答對一題回饋 $2，5/5 正好抵掉培訓一半成本
+      const cashReward = ts.correctCount * 2;
       let next: GameState = {
         ...s,
         trainingBoost: s.trainingBoost + gain,
         health: clamp(s.health + healthGain, 0, 100),
-        money: Math.max(0, s.money - 18),
+        money: Math.max(0, s.money - 18 + cashReward),
         trainingSession: { ...ts, finished: true },
       };
-      next = pushLog(next, `培訓完成，問答 ${ts.totalReward} 分，產能加成 +${gain}（每日衰減型）`);
+      const cashMsg = cashReward > 0 ? `，回饋 $${cashReward}` : '';
+      next = pushLog(next, `培訓完成，答對 ${ts.correctCount}/${ts.maxQuestions}，產能加成 +${gain}${cashMsg}（每日衰減型）`);
       set(next as Partial<GameStore>);
     } else {
       const nextIndex = ts.questionIndex + 1;
@@ -749,12 +833,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   restart: () => {
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
-    set({
+    set((s) => ({
       ...initialState,
+      moneyGoal: s.moneyGoal, // 保留玩家選的目標
       queue: fresh.slice(1),
       current: fresh[0],
       candidatePatience: fresh[0].patience,
       log: [{ day: 1, msg: '公司剛開張，等著第一位狗狗同事。' }],
+      showSplash: false,
+      tutorialStep: 7,
+    }));
+  },
+
+  setMoneyGoal: (goal) => set({ moneyGoal: goal }),
+
+  dismissVictory: () => set({ victoryDismissed: true }),
+
+  startNewRunWithGoal: (goal) => {
+    const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
+    set({
+      ...initialState,
+      moneyGoal: goal,
+      queue: fresh.slice(1),
+      current: fresh[0],
+      candidatePatience: fresh[0].patience,
+      log: [{ day: 1, msg: `公司剛開張，目標 $${goal}！` }],
       showSplash: false,
       tutorialStep: 7,
     });
