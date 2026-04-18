@@ -36,9 +36,10 @@ export function generateCandidate(): Dog {
   });
 
   const score = stats.productivity + stats.morale + stats.stability + stats.revenue;
-  // 薪水權重：revenue / productivity 是真收入來源，給較高權重；morale / stability 只算一半
-  const contribution = stats.revenue * 2 + stats.productivity * 1.2 + stats.stability * 0.6 + stats.morale * 0.4;
-  const baseSalary = isCeoRoll ? 55 : 6 + Math.max(0, contribution) * 1.3;
+  // 薪水權重：revenue / productivity 是真收入來源，給較高權重；morale 只算 0.3 因為不直接產生金錢
+  const contribution = stats.revenue * 2 + stats.productivity * 1.2 + stats.stability * 0.5 + stats.morale * 0.3;
+  // 薪水倍率從 1.3 降到 1.05，讓高階員工的回本期從 ~7 天縮到 ~4 天，初期也清楚感覺得到雇用收益
+  const baseSalary = isCeoRoll ? 55 : 5 + Math.max(0, contribution) * 1.05;
   const expectedSalary = Math.round(baseSalary + (Math.random() * 8 - 4));
   const severance = Math.round(expectedSalary * 3);
   const patience = isCeoRoll ? 1 : 2 + Math.floor(Math.random() * 3);

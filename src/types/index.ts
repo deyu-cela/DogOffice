@@ -222,6 +222,7 @@ export type GameState = {
   moneyGoal: number;
   victoryAt: number | null; // 達標時的 day 數（null = 未達標）
   victoryDismissed: boolean; // 達標 modal 已被關閉（避免一直跳）
+  recruitmentClosed: boolean; // true 時暫停招募：不補新人、候選人走掉後不自動遞補
 };
 
 export type LeaderboardEntry = {

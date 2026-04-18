@@ -8,7 +8,7 @@ export function MemoryGame() {
   if (!mg || mg.type !== 'memory') return null;
 
   return (
-    <div className="fixed inset-0 z-[700] flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[850] flex items-center justify-center bg-black/40 p-4">
       <div className="rounded-3xl p-5 w-[520px] max-w-full" style={{ background: '#fffaf0', border: '2px solid rgba(90,70,54,0.12)' }}>
         <div className="flex justify-between items-center mb-3">
           <div className="font-extrabold">🎴 翻牌記憶遊戲</div>
