@@ -162,6 +162,7 @@ export type TrainingSession = {
   selected: number | null;
   correct: boolean | null;
   totalReward: number;
+  correctCount: number;
   questionIndex: number;
   maxQuestions: number;
   finished: boolean;
@@ -217,4 +218,18 @@ export type GameState = {
   speedMultiplier: number;
   dayElapsed: number;
   toast: { msg: string; type: 'positive' | 'negative' } | null;
+  // Race-to-target：資金目標 + 達標紀錄 + 本機排行榜
+  moneyGoal: number;
+  victoryAt: number | null; // 達標時的 day 數（null = 未達標）
+  victoryDismissed: boolean; // 達標 modal 已被關閉（避免一直跳）
+};
+
+export type LeaderboardEntry = {
+  days: number;        // 用了幾天達標
+  money: number;       // 達標當下資金
+  goal: number;        // 當局目標（$20k / $50k / $100k）
+  officeLevel: number; // 當時辦公室等級
+  staffCount: number;  // 員工數
+  date: string;        // ISO timestamp
+  nickname?: string;   // 可選暱稱
 };
