@@ -32,7 +32,7 @@ export function UserBadge() {
         disabled={busy}
         className="px-2.5 py-1 rounded-full text-xs font-bold"
         style={{
-          background: busy ? '#e5d5c3' : 'linear-gradient(180deg, #fff7dd, #ffe8bf)',
+          background: busy ? '#e5d5c3' : 'linear-gradient(180deg, #fff0f3, #fbd5db)',
           color: '#7a685a',
           border: '1px solid rgba(90,70,54,0.12)',
           cursor: busy ? 'wait' : 'pointer',

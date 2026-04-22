@@ -37,7 +37,7 @@ export function DayTimer() {
               onClick={() => setSpeed(s)}
               className={`px-3 py-1 text-xs rounded-lg font-bold`}
               style={{
-                background: speedMultiplier === s ? '#ffb347' : '#fff',
+                background: speedMultiplier === s ? '#f4a8b8' : '#fff',
                 color: speedMultiplier === s ? 'white' : 'var(--text)',
                 boxShadow: 'none',
               }}

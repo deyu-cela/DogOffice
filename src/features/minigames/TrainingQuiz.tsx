@@ -63,7 +63,7 @@ export function TrainingQuiz() {
               <button onClick={close} style={{ background: '#dcecff' }}>
                 結束
               </button>
-              <button disabled={selected === null} onClick={next} style={{ background: 'linear-gradient(180deg, #ffcf6b, #ff9f43)', color: 'white' }}>
+              <button disabled={selected === null} onClick={next} style={{ background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)', color: 'white' }}>
                 {questionIndex >= maxQuestions - 1 ? '完成培訓' : '下一題'}
               </button>
             </div>

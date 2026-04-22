@@ -5,6 +5,8 @@ import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { Badge } from '@/components/Panel';
 import { companyHint, companyStage } from '@/lib/utils';
 import { ThreeRoom } from './ThreeRoom';
+import { computeGridObstacles } from './layout';
+import { ROOM_GRID } from './iso';
 
 export function OfficeScene() {
   const officeLevel = useGameStore((s) => s.officeLevel);
@@ -15,6 +17,7 @@ export function OfficeScene() {
   const health = useGameStore((s) => s.health);
   const setBounds = useWalkerStore((s) => s.setBounds);
   const syncWalkers = useWalkerStore((s) => s.syncWithStaff);
+  const purchases = useGameStore((s) => s.purchases);
   const roomRef = useRef<HTMLDivElement>(null);
 
   const level = OFFICE_LEVELS[officeLevel];
@@ -30,22 +33,21 @@ export function OfficeScene() {
       const h = rect.height;
       const floorTop = h * 0.25;
       const floorH = h - floorTop;
-      // 三個建築的 walker 禁區（百分比對應 iso 地板上的 sprite 投影）
-      const obstacles = [
-        // 商店：後牆中央
-        { x: w * 0.38, y: floorTop + floorH * 0.05, w: w * 0.22, h: floorH * 0.28 },
-        // 宿舍：左中
-        { x: w * 0.05, y: floorTop + floorH * 0.28, w: w * 0.28, h: floorH * 0.32 },
-        // 人資：右前
-        { x: w * 0.58, y: floorTop + floorH * 0.55, w: w * 0.3, h: floorH * 0.35 },
-      ];
+      // 從 grid 空間 obstacle 轉 px 空間（共用 layout.ts 的定義，確保 3D 場景與 walker 碰撞一致）
+      const gridObs = computeGridObstacles(purchases);
+      const obstacles = gridObs.map((g) => ({
+        x: ((g.cx - g.w / 2) / ROOM_GRID) * w,
+        y: floorTop + ((g.cy - g.h / 2) / ROOM_GRID) * floorH,
+        w: (g.w / ROOM_GRID) * w,
+        h: (g.h / ROOM_GRID) * floorH,
+      }));
       setBounds({ w, h, floorTop, obstacles });
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [setBounds]);
+  }, [setBounds, purchases]);
 
   useEffect(() => {
     syncWalkers(staff);
@@ -55,15 +57,16 @@ export function OfficeScene() {
     <div
       className="relative overflow-hidden rounded-3xl flex flex-col min-h-[400px] md:min-h-[600px] xl:min-h-[700px]"
       style={{
-        border: '2px solid rgba(139,106,69,0.25)',
+        border: '2px solid rgba(214,145,150,0.3)',
         background: 'var(--jp-washi)',
-        boxShadow: '0 10px 30px rgba(90,70,54,0.12)',
+        boxShadow:
+          'inset 0 1.5px 0 rgba(255,255,255,0.9), 0 4px 10px rgba(214,145,150,0.12), 0 18px 40px rgba(180,100,130,0.18)',
       }}
     >
       <div
         className="flex items-center justify-between px-4 py-3 gap-2"
         style={{
-          borderBottom: '2px solid var(--jp-wood-dark)',
+          borderBottom: '2px dashed rgba(214,145,150,0.5)',
           background: 'linear-gradient(180deg, var(--jp-washi-warm), var(--jp-washi))',
         }}
       >

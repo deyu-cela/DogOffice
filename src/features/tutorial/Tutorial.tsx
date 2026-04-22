@@ -28,7 +28,7 @@ export function Tutorial() {
             width: 96,
             height: 96,
             fontSize: 56,
-            background: 'linear-gradient(180deg, #fff7dd, #ffe8bf)',
+            background: 'linear-gradient(180deg, #fff0f3, #fbd5db)',
             border: '3px solid rgba(255,179,71,0.4)',
             boxShadow: '0 6px 16px rgba(255,179,71,0.25)',
             animation: 'bob 1.8s ease-in-out infinite',
@@ -57,7 +57,7 @@ export function Tutorial() {
                 style={{
                   width: active ? 24 : 10,
                   height: 10,
-                  background: done ? '#ffb347' : active ? '#ff9f43' : '#e8dcc9',
+                  background: done ? '#f4a8b8' : active ? '#eb93a3' : '#e8dcc9',
                   transition: 'all 0.3s ease',
                 }}
               />
@@ -77,7 +77,7 @@ export function Tutorial() {
           <button
             onClick={advance}
             className="px-7"
-            style={{ background: 'linear-gradient(180deg, #ffcf6b, #ff9f43)', color: 'white' }}
+            style={{ background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)', color: 'white' }}
           >
             {isLast ? '開始經營！🚀' : '下一步 →'}
           </button>

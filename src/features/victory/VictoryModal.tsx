@@ -21,7 +21,7 @@ export function VictoryModal() {
         className="p-7 rounded-3xl max-w-md w-full text-center"
         style={{
           background: 'linear-gradient(180deg, #fffefc, #fff5e7)',
-          border: '2px solid #ffcf6b',
+          border: '2px solid #ffc7d1',
           boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
         }}
       >
@@ -84,7 +84,7 @@ export function VictoryModal() {
             type="button"
             onClick={restart}
             className="py-2.5 rounded-full font-extrabold text-sm"
-            style={{ background: 'linear-gradient(180deg, #ffcf6b, #ff9f43)', color: 'white' }}
+            style={{ background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)', color: 'white' }}
           >
             再開一局
           </button>

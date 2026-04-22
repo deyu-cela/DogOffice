@@ -146,7 +146,7 @@ export default function App() {
                 restart();
               }}
               className="px-8"
-              style={{ background: 'linear-gradient(180deg, #ffcf6b, #ff9f43)', color: 'white' }}
+              style={{ background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)', color: 'white' }}
             >
               重新開始
             </button>

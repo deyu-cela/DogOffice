@@ -4,7 +4,7 @@ type Props = {
   color?: string;
 };
 
-export function Meter({ value, max = 100, color = 'linear-gradient(90deg, #ffcf6b, #ff9f43)' }: Props) {
+export function Meter({ value, max = 100, color = 'linear-gradient(90deg, #ffc7d1, #eb93a3)' }: Props) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
     <div className="h-2.5 rounded-full overflow-hidden mt-2" style={{ background: '#eadfce' }}>

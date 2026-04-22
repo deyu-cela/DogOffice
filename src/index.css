@@ -1,42 +1,42 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-bg: #f6f1e8;
-  --color-panel: rgba(255, 255, 255, 0.9);
-  --color-text: #3d2f25;
-  --color-muted: #7a685a;
-  --color-accent: #ffb347;
-  --color-accent-2: #8fd3ff;
-  --color-ok: #76c67d;
-  --color-warn: #ef8f52;
-  --color-danger: #d75d5d;
+  --color-bg: #fef2ec;
+  --color-panel: rgba(255, 250, 248, 0.92);
+  --color-text: #5a3a3a;
+  --color-muted: #9a7878;
+  --color-accent: #f4a8b8;
+  --color-accent-2: #c8a2d3;
+  --color-ok: #7fc8a2;
+  --color-warn: #f0a595;
+  --color-danger: #e08b8b;
   --font-rounded: ui-rounded, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
 }
 
 :root {
-  --bg: #f6f1e8;
-  --panel: rgba(255, 255, 255, 0.9);
-  --text: #3d2f25;
-  --muted: #7a685a;
-  --accent: #ffb347;
-  --accent-2: #8fd3ff;
-  --ok: #76c67d;
-  --warn: #ef8f52;
-  --danger: #d75d5d;
+  --bg: #fef2ec;
+  --panel: rgba(255, 250, 248, 0.92);
+  --text: #5a3a3a;
+  --muted: #9a7878;
+  --accent: #f4a8b8;
+  --accent-2: #c8a2d3;
+  --ok: #7fc8a2;
+  --warn: #f0a595;
+  --danger: #e08b8b;
 
-  /* 日系色盤 */
-  --jp-washi: #fdf7ea;       /* 和紙米 */
-  --jp-washi-warm: #fbeccf;  /* 暖和紙 */
-  --jp-wood-light: #e8d2a8;  /* 淺木 */
-  --jp-wood-mid: #c8a274;    /* 中木 */
-  --jp-wood-dark: #8b6a45;   /* 深木 */
-  --jp-wood-shadow: #5d3f22; /* 木框影 */
+  /* kawaii home shop 色盤（沿用舊變數名以相容既有程式碼） */
+  --jp-washi: #fef5f3;       /* 淡奶油粉 */
+  --jp-washi-warm: #fbe3dc;  /* 蜜桃粉 */
+  --jp-wood-light: #f3c8b5;  /* 淡珊瑚粉 */
+  --jp-wood-mid: #e5a595;    /* 中珊瑚粉 */
+  --jp-wood-dark: #c87e78;   /* 深玫瑰粉 */
+  --jp-wood-shadow: #a05a5a; /* 深暗粉影 */
   --jp-sakura: #f8c7ce;      /* 櫻花粉 */
   --jp-sakura-deep: #f0a0ab; /* 深櫻 */
   --jp-matcha: #9ec29c;      /* 抹茶綠 */
-  --jp-tatami: #d9c183;      /* 榻榻米黃 */
-  --jp-tatami-edge: #6d5a32; /* 榻榻米邊 */
-  --jp-shoji-frame: #7a5638; /* 障子框 */
+  --jp-tatami: #f5d2bd;      /* 粉橘 */
+  --jp-tatami-edge: #d68e7a; /* 粉橘邊 */
+  --jp-shoji-frame: #c87e78; /* 框色 */
 }
 
 * {
@@ -46,7 +46,7 @@
 body {
   margin: 0;
   font-family: var(--font-rounded);
-  background: radial-gradient(circle at top, #fff9f3 0%, #fff1dc 35%, #f7e6d5 100%);
+  background: radial-gradient(circle at top, #fff7f9 0%, #fde4e9 40%, #fbd5db 100%);
   color: var(--text);
 }
 
@@ -64,16 +64,45 @@ button {
   font-weight: 800;
   cursor: pointer;
   color: var(--text);
-  transition: transform 0.08s ease, opacity 0.2s ease;
-  box-shadow: 0 6px 14px rgba(90, 70, 54, 0.08);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.2s ease;
+  /* 糖霜多層陰影：內上高光 + 近淺影 + 遠散影 */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 2px 4px rgba(200, 130, 140, 0.18),
+    0 6px 14px rgba(180, 100, 130, 0.18);
 }
 button:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 4px 8px rgba(200, 130, 140, 0.22),
+    0 10px 20px rgba(180, 100, 130, 0.22);
+}
+button:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 1px 2px rgba(180, 100, 130, 0.2),
+    0 1px 2px rgba(200, 130, 140, 0.15);
 }
 button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;
+}
+
+/* kawaii 裝飾 utilities：虛線框、虛線分隔 */
+.kawaii-dashed {
+  border: 2px dashed rgba(214, 145, 150, 0.45);
+  border-radius: 14px;
+}
+.kawaii-divider {
+  border: 0;
+  border-top: 2px dashed rgba(214, 145, 150, 0.35);
+  margin: 8px 0;
+}
+.kawaii-dotted {
+  border: 2px dotted rgba(214, 145, 150, 0.5);
+  border-radius: 14px;
 }
 
 @keyframes pulse {

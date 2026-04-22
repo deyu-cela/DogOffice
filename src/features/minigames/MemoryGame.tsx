@@ -23,7 +23,7 @@ export function MemoryGame() {
               onClick={() => flip(c.id)}
               className="aspect-square text-4xl rounded-2xl flex items-center justify-center"
               style={{
-                background: c.matched ? '#c8e6c9' : c.flipped ? '#fff7e0' : 'linear-gradient(180deg, #ffcf6b, #ff9f43)',
+                background: c.matched ? '#c8e6c9' : c.flipped ? '#fff7e0' : 'linear-gradient(180deg, #ffc7d1, #eb93a3)',
                 color: c.matched || c.flipped ? 'inherit' : 'white',
                 opacity: c.matched ? 0.6 : 1,
                 cursor: c.matched ? 'default' : 'pointer',

@@ -382,7 +382,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const s = get();
     if (s.bankrupt || s.showSplash) return;
     if (hasOverlayOpen(s)) return;
-    const BASE_DAY_MS = 7000;
+    const BASE_DAY_MS = 15000;
     const newElapsed = s.dayElapsed + dt * s.speedMultiplier;
     if (newElapsed >= BASE_DAY_MS) {
       const next = runAdvanceDay({ ...s, dayElapsed: 0 });

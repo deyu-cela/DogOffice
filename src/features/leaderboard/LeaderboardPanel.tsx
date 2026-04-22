@@ -133,7 +133,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             onClick={() => setTab('global')}
             className="py-1.5 rounded-full text-xs font-bold"
             style={{
-              background: tab === 'global' ? 'linear-gradient(180deg, #ffcf6b, #ff9f43)' : '#eeeae4',
+              background: tab === 'global' ? 'linear-gradient(180deg, #ffc7d1, #eb93a3)' : '#eeeae4',
               color: tab === 'global' ? 'white' : '#5b3c2b',
             }}
           >
@@ -144,7 +144,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             onClick={() => setTab('mine')}
             className="py-1.5 rounded-full text-xs font-bold"
             style={{
-              background: tab === 'mine' ? 'linear-gradient(180deg, #ffcf6b, #ff9f43)' : '#eeeae4',
+              background: tab === 'mine' ? 'linear-gradient(180deg, #ffc7d1, #eb93a3)' : '#eeeae4',
               color: tab === 'mine' ? 'white' : '#5b3c2b',
             }}
           >
@@ -257,9 +257,9 @@ function EntryRow({
       className="flex items-center gap-3 p-2.5 rounded-xl"
       style={{
         background: highlight
-          ? 'linear-gradient(90deg, #fff4dc, #ffe8bf)'
+          ? 'linear-gradient(90deg, #fff0f3, #fbd5db)'
           : isFirst && !compact
-            ? 'linear-gradient(90deg, #fff4dc, #ffe8bf)'
+            ? 'linear-gradient(90deg, #fff0f3, #fbd5db)'
             : 'rgba(255,255,255,0.7)',
         border: highlight
           ? '2px solid #e0c280'

@@ -54,7 +54,7 @@ export function SaveIndicator() {
       aria-label={tooltip}
       className="px-2.5 py-1.5 rounded-full text-xs whitespace-nowrap leading-none"
       style={{
-        background: 'linear-gradient(180deg, #fff7dd, #ffe8bf)',
+        background: 'linear-gradient(180deg, #fff0f3, #fbd5db)',
         border: '1px solid rgba(90,70,54,0.08)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,.6)',
         cursor: disabled ? 'wait' : 'pointer',

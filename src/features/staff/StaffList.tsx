@@ -57,7 +57,7 @@ export function StaffList() {
           className="p-3 rounded-2xl cursor-pointer"
           style={{
             background: dog.status === 'pip' ? 'rgba(255,230,200,0.6)' : 'rgba(255,255,255,0.9)',
-            border: dog.status === 'pip' ? '2px solid #ff9f43' : '1px solid rgba(90,70,54,0.12)',
+            border: dog.status === 'pip' ? '2px solid #eb93a3' : '1px solid rgba(90,70,54,0.12)',
           }}
           onClick={() => openAction(i)}
         >
@@ -74,11 +74,11 @@ export function StaffList() {
             <div className="flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-bold">{dog.name}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#ffb347', color: 'white' }}>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#f4a8b8', color: 'white' }}>
                   {dog.grade}
                 </span>
                 {dog.status === 'pip' && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#ffe0b2', color: '#e65100' }}>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#fbd5db', color: '#e65100' }}>
                     PIP {dog.pipDaysLeft}天
                   </span>
                 )}

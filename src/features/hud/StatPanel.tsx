@@ -100,7 +100,7 @@ export function StatPanel() {
       {activeChemistry.length > 0 && (
         <div
           className="p-2.5 rounded-xl text-xs"
-          style={{ background: '#fff4dc', border: '1.5px solid #e0c280' }}
+          style={{ background: '#fff0f3', border: '1.5px solid #e0c280' }}
         >
           <div className="font-bold mb-1" style={{ color: '#8a6a2a' }}>
             ✨ 化學反應 ({activeChemistry.length})

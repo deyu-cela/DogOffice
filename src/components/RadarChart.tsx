@@ -58,7 +58,7 @@ export function RadarChart({ stats, size = 160 }: Props) {
     ctx.closePath();
     ctx.fillStyle = 'rgba(255,179,71,0.3)';
     ctx.fill();
-    ctx.strokeStyle = '#ffb347';
+    ctx.strokeStyle = '#f4a8b8';
     ctx.lineWidth = 2.5;
     ctx.stroke();
 

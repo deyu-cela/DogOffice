@@ -67,7 +67,7 @@ export function ConflictModal() {
             disabled={busy}
             className="py-2.5 rounded-full font-extrabold text-sm"
             style={{
-              background: 'linear-gradient(180deg, #ffcf6b, #ff9f43)',
+              background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)',
               color: 'white',
               cursor: busy ? 'wait' : 'pointer',
             }}

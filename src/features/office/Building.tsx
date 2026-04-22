@@ -73,7 +73,6 @@ export function Building({ kind, gx, gy, width, height, anchor = 'bottom' }: Pro
         alt={LABEL_MAP[kind]}
         draggable={false}
         style={{
-          imageRendering: 'pixelated',
           width: '100%',
           height: '100%',
           pointerEvents: 'none',

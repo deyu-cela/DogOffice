@@ -46,7 +46,7 @@ export function AuthScreen() {
           onClick={() => onTab('login')}
           className="flex-1 text-sm font-bold py-2 rounded-full"
           style={{
-            background: mode === 'login' ? 'linear-gradient(180deg, #ffcf6b, #ff9f43)' : 'transparent',
+            background: mode === 'login' ? 'linear-gradient(180deg, #ffc7d1, #eb93a3)' : 'transparent',
             color: mode === 'login' ? 'white' : '#7a685a',
           }}
         >
@@ -57,7 +57,7 @@ export function AuthScreen() {
           onClick={() => onTab('register')}
           className="flex-1 text-sm font-bold py-2 rounded-full"
           style={{
-            background: mode === 'register' ? 'linear-gradient(180deg, #ffcf6b, #ff9f43)' : 'transparent',
+            background: mode === 'register' ? 'linear-gradient(180deg, #ffc7d1, #eb93a3)' : 'transparent',
             color: mode === 'register' ? 'white' : '#7a685a',
           }}
         >

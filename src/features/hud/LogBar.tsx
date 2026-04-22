@@ -33,7 +33,7 @@ export function LogBar() {
         </button>
       </div>
       {open && (
-        <div className="mt-2" style={{ maxHeight: 140, overflowY: 'auto' }}>
+        <div className="mt-2">
           <GameLog />
         </div>
       )}

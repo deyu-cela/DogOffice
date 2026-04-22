@@ -37,7 +37,7 @@ export function TopBar() {
           className="flex items-center gap-2 px-3 py-1 rounded-full cursor-pointer hover:opacity-90"
           style={{
             background: victoryAt !== null
-              ? 'linear-gradient(90deg, #fff4dc, #ffe8bf)'
+              ? 'linear-gradient(90deg, #fff0f3, #fbd5db)'
               : 'rgba(255,255,255,0.7)',
             border: victoryAt !== null ? '1.5px solid #e0c280' : '1px solid rgba(90,70,54,0.12)',
             minWidth: 180,
@@ -69,7 +69,7 @@ export function TopBar() {
           onClick={() => setLbOpen(true)}
           className="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap flex items-center gap-1"
           style={{
-            background: 'linear-gradient(180deg, #fff7dd, #ffe8bf)',
+            background: 'linear-gradient(180deg, #fff0f3, #fbd5db)',
             border: '1.5px solid #e0c280',
             color: '#8a6a2a',
             boxShadow: '0 2px 6px rgba(224, 194, 128, 0.3)',

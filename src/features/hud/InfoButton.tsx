@@ -23,7 +23,7 @@ export function InfoButton() {
           width: 56,
           height: 56,
           fontSize: 24,
-          background: 'linear-gradient(180deg, #ffcf6b, #ff9f43)',
+          background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)',
           color: 'white',
           boxShadow: '0 6px 16px rgba(90,70,54,0.3)',
           border: '2px solid #fff',

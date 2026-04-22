@@ -24,7 +24,7 @@ export function ShopPanel() {
       ) : (
         <div
           className="p-3 rounded-2xl"
-          style={{ background: 'linear-gradient(135deg,#fff8e1,#ffe0b2)', border: '2px solid #ffb347' }}
+          style={{ background: 'linear-gradient(135deg,#fff0f3,#fbd5db)', border: '2px solid #f4a8b8' }}
         >
           <div className="flex justify-between items-start gap-2">
             <div>
@@ -62,7 +62,7 @@ export function ShopPanel() {
                 {count > 0 && (
                   <span
                     className="text-[11px] px-1.5 py-0.5 rounded-full font-normal"
-                    style={{ background: '#fff7dd', color: '#8a6a2a', border: '1px solid rgba(90,70,54,0.08)' }}
+                    style={{ background: '#fff0f3', color: '#8a6a2a', border: '1px solid rgba(90,70,54,0.08)' }}
                   >
                     已買 ×{count}
                   </span>

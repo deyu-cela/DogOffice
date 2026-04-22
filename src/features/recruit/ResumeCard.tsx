@@ -122,7 +122,7 @@ export function ResumeCard() {
             <span className="font-extrabold text-lg">{current.name}</span>
             <span
               className="px-2 py-0.5 rounded-full text-[11px] font-bold"
-              style={{ background: '#ffb347', color: 'white' }}
+              style={{ background: '#f4a8b8', color: 'white' }}
             >
               {current.grade}
             </span>

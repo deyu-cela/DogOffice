@@ -1,7 +1,7 @@
 import { Component, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useTexture, Billboard, Html } from '@react-three/drei';
-import { CanvasTexture, DoubleSide, NearestFilter, Object3D, type InstancedMesh as ThreeInstancedMesh, type Texture } from 'three';
+import { CanvasTexture, DoubleSide, LinearFilter, LinearMipmapLinearFilter, NearestFilter, Object3D, type InstancedMesh as ThreeInstancedMesh, type Texture } from 'three';
 import { JP_ASSETS } from './assets';
 import { gridToWorld } from './threeIso';
 import { useUiStore, type BuildingKind } from '@/store/uiStore';
@@ -10,6 +10,7 @@ import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { ROLE_IMAGE_MAP } from '@/constants/dogRoles';
 import { useWalkerStore } from '@/store/walkerStore';
 import { ROOM_GRID } from './iso';
+import { BUILDING_LAYOUT, PURCHASE_LAYOUT } from './layout';
 import type { ShopItemEffectKey } from '@/types';
 
 // 房間尺寸（world units）
@@ -31,17 +32,97 @@ const PRELOAD_URLS = [
   JP_ASSETS.toyBall,
   JP_ASSETS.gymArea,
   JP_ASSETS.sakuraPetal,
+  JP_ASSETS.gptFloor,
+  JP_ASSETS.gptWall,
 ];
 
 function usePixelTexture(src: string): Texture {
   const tex = useTexture(src);
   useLayoutEffect(() => {
-    tex.magFilter = NearestFilter;
-    tex.minFilter = NearestFilter;
-    tex.generateMipmaps = false;
+    tex.magFilter = LinearFilter;
+    tex.minFilter = LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
+    tex.anisotropy = 8;
     tex.needsUpdate = true;
   }, [tex]);
   return tex;
+}
+
+// kawaii 主題地板：貼 gpt_floor.png 當 texture + 厚度讓地板浮起來
+// 原圖 1536x1024，pattern 實際在 x=270~1266（~996 寬、置中），左右是深棕邊框
+// 用 BoxGeometry 做厚度，頂面貼圖、側面給偏暗粉色（模仿 kawaii home shop 浮起地板的立體感）
+const FLOOR_THICKNESS = 0.5;
+const FLOOR_SIDE_COLOR = '#dca997'; // 稍深的奶茶粉，當地板側邊
+// 地板要延伸到牆外緣下方（-x 和 -z 各多一個 WALL_THICKNESS），讓牆看起來是站在地板上
+// 只向左後擴，前與右邊（-x/-z 視為後左，+x/+z 視為前右）保持 HALF 不變
+function FloorImageMesh() {
+  const tex = usePixelTexture(JP_ASSETS.gptFloor);
+  useLayoutEffect(() => {
+    tex.repeat.set(996 / 1536, 1020 / 1024);
+    tex.offset.set(270 / 1536, 2 / 1024);
+    tex.needsUpdate = true;
+  }, [tex]);
+  const floorW = ROOM + WALL_THICKNESS;
+  const floorCx = -WALL_THICKNESS / 2;
+  return (
+    <mesh position={[floorCx, -FLOOR_THICKNESS / 2, floorCx]}>
+      <boxGeometry args={[floorW, FLOOR_THICKNESS, floorW]} />
+      {/* BoxGeometry 面序：[+x, -x, +y(top), -y, +z, -z] */}
+      <meshBasicMaterial attach="material-0" color={FLOOR_SIDE_COLOR} />
+      <meshBasicMaterial attach="material-1" color={FLOOR_SIDE_COLOR} />
+      <meshBasicMaterial attach="material-2" map={tex} />
+      <meshBasicMaterial attach="material-3" color={FLOOR_SIDE_COLOR} />
+      <meshBasicMaterial attach="material-4" color={FLOOR_SIDE_COLOR} />
+      <meshBasicMaterial attach="material-5" color={FLOOR_SIDE_COLOR} />
+    </mesh>
+  );
+}
+
+// kawaii 主題牆壁：BoxGeometry 向外延伸出厚度，iso 視角會看到牆頂和側邊的立體邊
+// 兩面牆共用同一個 useTexture 來源，需 clone 才能各自設定 repeat/offset
+const WALL_THICKNESS = 0.5;
+const WALL_CAP_COLOR = '#ebc9b4'; // 牆面 cap（頂 + 端）顏色，比貼圖底色稍深
+function WallImageMesh({ variant }: { variant: 'left' | 'right' }) {
+  const baseTex = usePixelTexture(JP_ASSETS.gptWall);
+  const tex = useMemo(() => baseTex.clone(), [baseTex]);
+  useLayoutEffect(() => {
+    if (variant === 'right') {
+      tex.repeat.set(-1, 1);
+      tex.offset.set(1, 0);
+    } else {
+      tex.repeat.set(1, 1);
+      tex.offset.set(0, 0);
+    }
+    tex.needsUpdate = true;
+  }, [tex, variant]);
+
+  if (variant === 'left') {
+    // 左牆：box 向 -x 方向延伸，內面（+x）貼圖
+    return (
+      <mesh position={[-HALF - WALL_THICKNESS / 2, WALL_H / 2, 0]}>
+        <boxGeometry args={[WALL_THICKNESS, WALL_H, ROOM]} />
+        {/* [+x, -x, +y, -y, +z, -z] */}
+        <meshBasicMaterial attach="material-0" map={tex} />
+        <meshBasicMaterial attach="material-1" color={WALL_CAP_COLOR} />
+        <meshBasicMaterial attach="material-2" color={WALL_CAP_COLOR} />
+        <meshBasicMaterial attach="material-3" color={WALL_CAP_COLOR} />
+        <meshBasicMaterial attach="material-4" color={WALL_CAP_COLOR} />
+        <meshBasicMaterial attach="material-5" color={WALL_CAP_COLOR} />
+      </mesh>
+    );
+  }
+  // 右牆：box 向 -z 方向延伸，內面（+z）貼圖
+  return (
+    <mesh position={[0, WALL_H / 2, -HALF - WALL_THICKNESS / 2]}>
+      <boxGeometry args={[ROOM, WALL_H, WALL_THICKNESS]} />
+      <meshBasicMaterial attach="material-0" color={WALL_CAP_COLOR} />
+      <meshBasicMaterial attach="material-1" color={WALL_CAP_COLOR} />
+      <meshBasicMaterial attach="material-2" color={WALL_CAP_COLOR} />
+      <meshBasicMaterial attach="material-3" color={WALL_CAP_COLOR} />
+      <meshBasicMaterial attach="material-4" map={tex} />
+      <meshBasicMaterial attach="material-5" color={WALL_CAP_COLOR} />
+    </mesh>
+  );
 }
 
 class CanvasErrorBoundary extends Component<
@@ -76,7 +157,7 @@ class CanvasErrorBoundary extends Component<
           <button
             type="button"
             className="mt-3 text-xs px-3 py-1.5 rounded-full"
-            style={{ background: '#ffcf6b', color: 'white' }}
+            style={{ background: '#ffc7d1', color: 'white' }}
             onClick={() => {
               this.props.onReset();
               this.setState({ error: null });
@@ -173,7 +254,7 @@ export function ThreeRoom() {
           type="button"
           onClick={manualResume}
           className="text-xs px-4 py-2 rounded-full font-bold"
-          style={{ background: 'linear-gradient(180deg, #ffcf6b, #ff9f43)', color: 'white' }}
+          style={{ background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)', color: 'white' }}
         >
           重新啟動 3D
         </button>
@@ -194,9 +275,9 @@ export function ThreeRoom() {
         key={remountKey}
         orthographic
         flat
-        dpr={[1, 1.2]}
+        dpr={[1, 2]}
         performance={{ min: 0.5 }}
-        gl={{ antialias: false, alpha: true, powerPreference: 'low-power', preserveDrawingBuffer: false, stencil: false, depth: true }}
+        gl={{ antialias: true, alpha: true, powerPreference: 'default', preserveDrawingBuffer: false, stencil: false, depth: true }}
         camera={{ position: [20, 18, 20], zoom: 38, near: -30, far: 100 }}
         onCreated={({ camera, gl }) => {
           camera.lookAt(0, 4, 0);
@@ -221,23 +302,36 @@ export function ThreeRoom() {
       >
         <CameraKeepLookAt />
 
-        {/* 地板（單一 mesh：底色 + 格線烘焙進 CanvasTexture，省 drei Grid 的 shader 成本） */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-          <planeGeometry args={[ROOM, ROOM]} />
-          <meshBasicMaterial map={getFloorTexture(floorCol, floorGridColorFor(level?.theme, floorCol))} />
-        </mesh>
+        {/* 地板：kawaii 主題用 gpt_floor.png 貼圖，其他主題保留程式繪製 */}
+        {level?.theme === 'kawaii' ? (
+          <FloorImageMesh />
+        ) : (
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+            <planeGeometry args={[ROOM, ROOM]} />
+            <meshBasicMaterial map={getFloorTexture(floorCol, floorGridColorFor(level?.theme, floorCol))} />
+          </mesh>
+        )}
 
         {/* 左後牆（依 officeLevel 變色） */}
-        <mesh position={[-HALF, WALL_H / 2, 0]} rotation={[0, Math.PI / 2, 0]}>
-          <planeGeometry args={[ROOM, WALL_H]} />
-          <meshBasicMaterial color={wallLeft} side={DoubleSide} />
-        </mesh>
+        {level?.theme === 'kawaii' ? (
+          <WallImageMesh variant="left" />
+        ) : (
+          <mesh position={[-HALF, WALL_H / 2, 0]} rotation={[0, Math.PI / 2, 0]}>
+            <planeGeometry args={[ROOM, WALL_H]} />
+            <meshBasicMaterial map={getWallTexture(wallLeft)} side={DoubleSide} />
+          </mesh>
+        )}
 
-        {/* 右後牆 */}
-        <mesh position={[0, WALL_H / 2, -HALF]}>
-          <planeGeometry args={[ROOM, WALL_H]} />
-          <meshBasicMaterial color={wallRight} side={DoubleSide} />
-        </mesh>
+        {/* 右後牆（kawaii 主題水平鏡像避免和左牆完全一樣） */}
+        {level?.theme === 'kawaii' ? (
+          <WallImageMesh variant="right" />
+        ) : (
+          <mesh position={[0, WALL_H / 2, -HALF]}>
+            <planeGeometry args={[ROOM, WALL_H]} />
+            <meshBasicMaterial map={getWallTexture(wallRight)} side={DoubleSide} />
+          </mesh>
+        )}
+
 
         {/* Accent 橫帶（中型以上有：左牆 + 右牆各一條） */}
         {accent && (
@@ -261,9 +355,9 @@ export function ThreeRoom() {
 
         {/* Phase 4-8：互動建築 + 家具 + walker + 粒子 + HUD */}
         <Suspense fallback={null}>
-          <Building3D kind="shop" gx={5} gy={0.7} w={3} h={4} />
-          <Building3D kind="dorm" gx={1.8} gy={5.5} w={4.9} h={4.0} />
-          <Building3D kind="hr" gx={7} gy={9.1} w={3.5} h={3.2} />
+          {BUILDING_LAYOUT.map((b) => (
+            <Building3D key={b.kind} kind={b.kind} gx={b.gx} gy={b.gy} w={b.w} h={b.h} />
+          ))}
           {/* 家具 sprite 角度不符 iso，暫時隱藏，待重產 */}
           {/* <ZoneFurniture3D /> */}
           <Walkers3D />
@@ -277,26 +371,6 @@ export function ThreeRoom() {
     </div>
   );
 }
-
-const PURCHASE_LAYOUT: Array<{
-  id: ShopItemEffectKey;
-  src: string;
-  gx: number;
-  gy: number;
-  w: number;
-  h: number;
-  yOffset?: number;
-}> = [
-  { id: 'gym', src: JP_ASSETS.gymArea, gx: 1, gy: 1, w: 2.5, h: 2.5 },
-  { id: 'desk', src: JP_ASSETS.woodenDesk, gx: 5, gy: 3.5, w: 1.8, h: 1.4 },
-  // 22001 kawaii 咖啡機 + PIL 畫的 iso 木桌（整張含桌腳落地），縱向較長所以 h>w
-  { id: 'coffee', src: JP_ASSETS.coffeeMachine, gx: 6.0, gy: 0.4, w: 2, h: 2.8, yOffset: 0 },
-  { id: 'sofa', src: JP_ASSETS.beanBag, gx: 6, gy: 5.3, w: 1.6, h: 1.2 },
-  // policy 改為左牆掛件，不在地面出現（見 WallPolicy3D）
-  { id: 'snack', src: JP_ASSETS.snackJar, gx: 5.3, gy: 3.65, w: 0.45, h: 0.6, yOffset: 1.0 },
-  { id: 'toy', src: JP_ASSETS.toyBall, gx: 9, gy: 1.5, w: 0.8, h: 0.8 },
-  { id: 'artwall', src: JP_ASSETS.pictureFrame, gx: 3.5, gy: 0.3, w: 1.4, h: 1.1 },
-];
 
 function PurchaseArea3D() {
   const purchases = useGameStore((s) => s.purchases);
@@ -969,29 +1043,159 @@ function getSceneryTextureFor(theme: WindowTheme): CanvasTexture {
 
 // 地板 grid（烘焙到 CanvasTexture，零 shader cost；不同底色獨立 cache）
 const _floorTexCache = new Map<string, CanvasTexture>();
+function shadeHex(hex: string, amount: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const adj = (v: number) => {
+    const t = amount >= 0 ? 255 - v : v;
+    return Math.max(0, Math.min(255, Math.round(v + t * amount)));
+  };
+  return `rgb(${adj(r)},${adj(g)},${adj(b)})`;
+}
+
+function randSeed(seed: number): number {
+  const s = Math.sin(seed * 12.9898) * 43758.5453;
+  return s - Math.floor(s);
+}
+
 function getFloorTexture(floorCol: string, gridCol: string): CanvasTexture {
   const key = `${floorCol}|${gridCol}`;
   const hit = _floorTexCache.get(key);
   if (hit) return hit;
+  const SIZE = 1024;
+  const GRID = 17;
+  const CELL = SIZE / GRID;
   const canvas = document.createElement('canvas');
-  canvas.width = 512; canvas.height = 512;
+  canvas.width = SIZE; canvas.height = SIZE;
   const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = floorCol;
-  ctx.fillRect(0, 0, 512, 512);
-  // 17 格 → 每格 ~30px
-  ctx.strokeStyle = gridCol; ctx.lineWidth = 1;
-  for (let i = 0; i <= 17; i++) {
-    const p = (i / 17) * 512;
-    ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, 512); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(512, p); ctx.stroke();
+
+  const lightCol = shadeHex(floorCol, 0.10);
+  const darkCol = shadeHex(floorCol, -0.06);
+
+  // 西洋棋盤：淡 vs 稍深交錯
+  for (let gy = 0; gy < GRID; gy++) {
+    for (let gx = 0; gx < GRID; gx++) {
+      ctx.fillStyle = (gx + gy) % 2 === 0 ? lightCol : darkCol;
+      ctx.fillRect(gx * CELL, gy * CELL, CELL, CELL);
+    }
   }
+
+  // 淡大理石紋路：每格 1-2 條柔和曲線
+  ctx.strokeStyle = shadeHex(floorCol, 0.20);
+  ctx.lineWidth = 1.2;
+  ctx.globalAlpha = 0.32;
+  for (let gy = 0; gy < GRID; gy++) {
+    for (let gx = 0; gx < GRID; gx++) {
+      const cx = gx * CELL;
+      const cy = gy * CELL;
+      const lineN = 1 + Math.floor(randSeed(gx * 13 + gy * 17) * 2);
+      for (let i = 0; i < lineN; i++) {
+        ctx.beginPath();
+        const x1 = cx + randSeed(gx + gy * 11 + i * 3) * CELL;
+        const y1 = cy + randSeed(gx + gy * 7 + i * 5) * CELL;
+        const x2 = cx + randSeed(gx + gy * 5 + i * 7) * CELL;
+        const y2 = cy + randSeed(gx + gy * 3 + i * 11) * CELL;
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(
+          cx + randSeed(gx + gy * 2 + i * 2) * CELL,
+          cy + randSeed(gx + gy + i * 5) * CELL,
+          x2,
+          y2,
+        );
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // 淡粉色縫線
+  ctx.strokeStyle = shadeHex(floorCol, -0.15);
+  ctx.globalAlpha = 0.55;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= GRID; i++) {
+    const p = i * CELL;
+    ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, SIZE); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(SIZE, p); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  void gridCol;
+
   const tex = new CanvasTexture(canvas);
-  tex.magFilter = NearestFilter;
-  tex.minFilter = NearestFilter;
-  tex.generateMipmaps = false;
+  tex.magFilter = LinearFilter;
+  tex.minFilter = LinearMipmapLinearFilter;
+  tex.generateMipmaps = true;
+  tex.anisotropy = 8;
   tex.needsUpdate = true;
   _floorTexCache.set(key, tex);
   return tex;
+}
+
+const _wallTexCache = new Map<string, CanvasTexture>();
+function getWallTexture(wallCol: string): CanvasTexture {
+  const hit = _wallTexCache.get(wallCol);
+  if (hit) return hit;
+  const W = 1024;
+  const H = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  // 底色
+  ctx.fillStyle = wallCol;
+  ctx.fillRect(0, 0, W, H);
+
+  // 直向細條紋（比底色再深一點點的壁紙條紋）
+  ctx.fillStyle = shadeHex(wallCol, -0.08);
+  ctx.globalAlpha = 0.45;
+  const STRIPE_GAP = 24;
+  const STRIPE_W = 1;
+  for (let x = 0; x < W; x += STRIPE_GAP) {
+    ctx.fillRect(x, 0, STRIPE_W, H);
+  }
+  ctx.globalAlpha = 1;
+
+  // 肉球 paw prints：交錯分佈、稀疏
+  const pawCol = shadeHex(wallCol, -0.14);
+  ctx.fillStyle = pawCol;
+  ctx.globalAlpha = 0.28;
+  const ROWS = 5;
+  const COLS = 7;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const offset = r % 2 === 0 ? 0.25 : 0.75;
+      const cx = (c + offset) * (W / COLS);
+      const cy = (r + 0.5) * (H / ROWS);
+      drawPaw(ctx, cx, cy, 9);
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  const tex = new CanvasTexture(canvas);
+  tex.magFilter = LinearFilter;
+  tex.minFilter = LinearMipmapLinearFilter;
+  tex.generateMipmaps = true;
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  _wallTexCache.set(wallCol, tex);
+  return tex;
+}
+
+function drawPaw(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
+  // 主掌
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + size * 0.35, size * 0.65, size * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // 四個腳趾（扇形排列在上方）
+  const toeAngles = [-0.75, -0.28, 0.28, 0.75];
+  for (const a of toeAngles) {
+    const tx = cx + Math.sin(a) * size * 0.85;
+    const ty = cy - Math.cos(a) * size * 0.55;
+    ctx.beginPath();
+    ctx.ellipse(tx, ty, size * 0.25, size * 0.33, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 // 每個主題配對應的 grid 色（避免暗底板上畫暗格看不到、亮底板上畫亮格太刺眼）

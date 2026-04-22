@@ -141,7 +141,7 @@ export function AuthForm({ mode, loading, error, onSubmit }: Props) {
         disabled={loading}
         className="px-6 py-3 text-base rounded-full font-extrabold mt-1"
         style={{
-          background: loading ? '#c9a57b' : 'linear-gradient(180deg, #ffcf6b, #ff9f43)',
+          background: loading ? '#c9a57b' : 'linear-gradient(180deg, #ffc7d1, #eb93a3)',
           color: 'white',
           cursor: loading ? 'wait' : 'pointer',
           boxShadow: '0 6px 18px rgba(255,159,67,0.35)',

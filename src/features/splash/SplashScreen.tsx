@@ -95,7 +95,7 @@ export function SplashScreen() {
             disabled={loadingSave}
             className="px-12 py-4 text-2xl rounded-full font-extrabold"
             style={{
-              background: loadingSave ? '#c9a57b' : 'linear-gradient(180deg, #ffcf6b, #ff9f43)',
+              background: loadingSave ? '#c9a57b' : 'linear-gradient(180deg, #ffc7d1, #eb93a3)',
               color: 'white',
               cursor: loadingSave ? 'wait' : 'pointer',
               boxShadow: '0 8px 24px rgba(255,159,67,0.4)',
