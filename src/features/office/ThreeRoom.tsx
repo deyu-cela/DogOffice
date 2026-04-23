@@ -7,7 +7,7 @@ import { gridToWorld } from './threeIso';
 import { useUiStore, type BuildingKind } from '@/store/uiStore';
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
-import { ROLE_IMAGE_MAP } from '@/constants/dogRoles';
+import { ROLE_IMAGE_MAP, ROLE_WAITING_IMAGE_MAP } from '@/constants/dogRoles';
 import { useWalkerStore } from '@/store/walkerStore';
 import { ROOM_GRID } from './iso';
 import { BUILDING_LAYOUT, PURCHASE_LAYOUT } from './layout';
@@ -574,6 +574,7 @@ function HrNotice3D() {
       : candidatePatience <= 1 ? '#c0392b'
         : candidatePatience <= 2 ? '#b45a1c'
           : '#2f7a3a';
+  const waitingImage = current ? ROLE_WAITING_IMAGE_MAP[current.role] : null;
 
   // 不用 distanceFactor（orthographic 下會偶發 scale 失控變巨大橢圓），改用固定 HTML 大小
   return (
@@ -596,12 +597,18 @@ function HrNotice3D() {
         </div>
         {current && (
           <>
-            <div style={{ fontSize: 28, marginTop: 2, filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.25))' }}>
-              {current.emoji}
-            </div>
+            {waitingImage ? (
+              <span className="waiting-dog-idle">
+                <img src={waitingImage} alt={`${current.role} 候選狗狗`} draggable={false} />
+              </span>
+            ) : (
+              <div style={{ fontSize: 28, marginTop: 2, filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.25))' }}>
+                {current.emoji}
+              </div>
+            )}
             <span
               className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
-              style={{ background: patienceBg, color: patienceColor, marginTop: 2 }}
+              style={{ background: patienceBg, color: patienceColor, marginTop: waitingImage ? -3 : 2 }}
             >
               剩 {candidatePatience} 天
             </span>

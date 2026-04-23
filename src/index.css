@@ -125,6 +125,62 @@ button:disabled {
   }
 }
 
+.waiting-dog-idle {
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 60px;
+  margin-top: 3px;
+  transform-origin: 50% 88%;
+  animation: waiting-dog-idle 1.15s steps(2, end) infinite;
+  will-change: transform;
+}
+
+.waiting-dog-idle::after {
+  content: '';
+  position: absolute;
+  left: 19%;
+  right: 14%;
+  bottom: 5px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(78, 48, 36, 0.22);
+  animation: waiting-dog-shadow 1.15s steps(2, end) infinite;
+}
+
+.waiting-dog-idle img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.18));
+}
+
+@keyframes waiting-dog-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(1px, -3px, 0) rotate(-1.5deg);
+  }
+}
+
+@keyframes waiting-dog-shadow {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scaleX(0.84);
+  }
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

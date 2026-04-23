@@ -55,3 +55,23 @@ export const ROLE_IMAGE_MAP: Record<string, string> = {
   開發: `${base}assets/dog-profiles/dev.png`,
   CEO: `${base}assets/dog-profiles/ceo.png`,
 };
+
+export const ROLE_WAITING_IMAGE_MAP: Partial<Record<string, string>> = {
+  HR: `${base}assets/dog-sprites/hr-waiting.png`,
+  工程師: `${base}assets/dog-sprites/engineering-waiting.png`,
+  主管: `${base}assets/dog-sprites/manager-waiting.png`,
+  業務: `${base}assets/dog-sprites/business-waiting.png`,
+  企劃: `${base}assets/dog-sprites/planning-waiting.png`,
+  行政: `${base}assets/dog-sprites/admin-waiting.png`,
+  客服: `${base}assets/dog-sprites/customer-service-waiting.png`,
+  數據分析: `${base}assets/dog-sprites/data-waiting.png`,
+  美術: `${base}assets/dog-sprites/design-waiting.png`,
+  翻譯: `${base}assets/dog-sprites/translation-waiting.png`,
+  行銷: `${base}assets/dog-sprites/marketing-waiting.png`,
+  營運: `${base}assets/dog-sprites/operations-waiting.png`,
+  QA: `${base}assets/dog-sprites/qa-waiting.png`,
+  PM: `${base}assets/dog-sprites/pm-waiting.png`,
+  財務: `${base}assets/dog-sprites/finance-waiting.png`,
+  開發: `${base}assets/dog-sprites/dev-waiting.png`,
+  CEO: `${base}assets/dog-sprites/ceo-waiting.png`,
+};
