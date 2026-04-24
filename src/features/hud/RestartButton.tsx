@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from '@/components/Icon';
 import { useGameStore } from '@/store/gameStore';
 import { useSaveStore } from '@/store/saveStore';
 
@@ -32,7 +33,10 @@ export function RestartButton() {
           cursor: 'pointer',
         }}
       >
-        🔄 重來
+        <span className="flex items-center gap-1.5">
+          <Icon name="refresh" size={14} />
+          <span>重來</span>
+        </span>
       </button>
       {open && (
         <div className="fixed inset-0 z-[920] bg-black/60 flex items-center justify-center p-5">

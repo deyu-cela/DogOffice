@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '@/components/Icon';
 import type { LeaderboardEntry } from '@/types';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import {
@@ -112,7 +113,10 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-lg font-extrabold">🏆 排行榜</h2>
+            <h2 className="text-lg font-extrabold flex items-center gap-2">
+              <Icon name="trophy" size={18} style={{ color: '#b9892b' }} />
+              <span>排行榜</span>
+            </h2>
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
               最快達標 $50,000
             </p>
@@ -137,7 +141,10 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
               color: tab === 'global' ? 'white' : '#5b3c2b',
             }}
           >
-            🌍 全球榜
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="globe" size={13} />
+              <span>全球榜</span>
+            </span>
           </button>
           <button
             type="button"
@@ -148,7 +155,10 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
               color: tab === 'mine' ? 'white' : '#5b3c2b',
             }}
           >
-            📋 我的紀錄
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="list" size={13} />
+              <span>我的紀錄</span>
+            </span>
           </button>
         </div>
 
@@ -162,7 +172,10 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             className="text-center py-1.5 rounded-lg text-[11px] mb-2"
             style={{ background: '#fff0dc', color: '#8a6a2a' }}
           >
-            ℹ️ {error}
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="info" size={13} />
+              <span>{error}</span>
+            </span>
           </div>
         )}
 

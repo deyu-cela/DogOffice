@@ -1,4 +1,5 @@
 import { useGameStore } from '@/store/gameStore';
+import { Icon } from '@/components/Icon';
 import { SHOP_ITEMS } from '@/constants/shopItems';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 
@@ -19,7 +20,10 @@ export function ShopPanel() {
           className="p-3 rounded-2xl text-center"
           style={{ background: '#e8f5e9', border: '2px solid #66bb6a' }}
         >
-          <strong>🎉 已達最大規模！</strong>
+          <strong className="inline-flex items-center gap-2">
+            <Icon name="trophy" size={16} />
+            <span>已達最大規模！</span>
+          </strong>
         </div>
       ) : (
         <div
@@ -28,7 +32,10 @@ export function ShopPanel() {
         >
           <div className="flex justify-between items-start gap-2">
             <div>
-              <div className="font-bold">🏗️ 擴建 → {nextLv.name}</div>
+              <div className="font-bold flex items-center gap-1.5">
+                <Icon name="building" size={15} />
+                <span>擴建 → {nextLv.name}</span>
+              </div>
               <div className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
                 最大員工數 {nextLv.maxStaff} 隻
               </div>

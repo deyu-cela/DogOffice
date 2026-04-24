@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from '@/components/Icon';
 import { Panel } from '@/components/Panel';
 import { GameLog } from '@/features/log/GameLog';
 
@@ -11,8 +12,9 @@ export function LogBar() {
         className="flex items-center justify-between gap-2 cursor-pointer select-none"
         onClick={() => setOpen((o) => !o)}
       >
-        <div className="text-xs font-bold" style={{ color: 'var(--muted)' }}>
-          📜 日誌
+        <div className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--muted)' }}>
+          <Icon name="log" size={14} />
+          <span>日誌</span>
         </div>
         <button
           type="button"

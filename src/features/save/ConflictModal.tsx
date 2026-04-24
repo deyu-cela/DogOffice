@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from '@/components/Icon';
 import { useGameStore } from '@/store/gameStore';
 import { useSaveStore } from '@/store/saveStore';
 
@@ -31,8 +32,9 @@ export function ConflictModal() {
         className="max-w-md w-full rounded-3xl p-6"
         style={{ background: '#fffaf0', border: '2px solid rgba(90,70,54,0.12)' }}
       >
-        <div className="text-2xl font-extrabold mb-2" style={{ color: '#5b3c2b' }}>
-          🐕 存檔衝突
+        <div className="text-2xl font-extrabold mb-2 flex items-center gap-2" style={{ color: '#5b3c2b' }}>
+          <Icon name="alert" size={20} style={{ color: '#c86f4b' }} />
+          <span>存檔衝突</span>
         </div>
         <p className="text-sm mb-4" style={{ color: '#7a685a' }}>
           雲端的存檔與本地不同步，可能是在其他分頁或裝置玩過。請選擇要保留哪一份：
@@ -42,8 +44,9 @@ export function ConflictModal() {
             className="rounded-2xl p-3"
             style={{ background: 'white', border: '2px solid rgba(90,70,54,0.15)' }}
           >
-            <div className="text-xs font-bold mb-1.5" style={{ color: '#7a685a' }}>
-              🟡 本地
+            <div className="text-xs font-bold mb-1.5 flex items-center gap-1.5" style={{ color: '#7a685a' }}>
+              <Icon name="device" size={13} />
+              <span>本地</span>
             </div>
             <div className="text-sm">第 {localDay} 天</div>
             <div className="text-sm">${localMoney}</div>
@@ -53,8 +56,9 @@ export function ConflictModal() {
             className="rounded-2xl p-3"
             style={{ background: 'white', border: '2px solid rgba(90,70,54,0.15)' }}
           >
-            <div className="text-xs font-bold mb-1.5" style={{ color: '#7a685a' }}>
-              ☁️ 雲端
+            <div className="text-xs font-bold mb-1.5 flex items-center gap-1.5" style={{ color: '#7a685a' }}>
+              <Icon name="cloud" size={13} />
+              <span>雲端</span>
             </div>
             <div className="text-sm">第 {serverData.day} 天</div>
             <div className="text-sm">${serverData.money}</div>
