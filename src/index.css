@@ -128,9 +128,9 @@ button:disabled {
 .waiting-dog-idle {
   position: relative;
   display: block;
-  width: 72px;
-  height: 60px;
-  margin-top: 3px;
+  width: 48px;
+  height: 40px;
+  margin-top: 2px;
   transform-origin: 50% 88%;
   animation: waiting-dog-idle 1.15s steps(2, end) infinite;
   will-change: transform;
@@ -141,8 +141,8 @@ button:disabled {
   position: absolute;
   left: 19%;
   right: 14%;
-  bottom: 5px;
-  height: 7px;
+  bottom: 3px;
+  height: 5px;
   border-radius: 999px;
   background: rgba(78, 48, 36, 0.22);
   animation: waiting-dog-shadow 1.15s steps(2, end) infinite;
@@ -165,7 +165,7 @@ button:disabled {
     transform: translate3d(0, 0, 0) rotate(0deg);
   }
   50% {
-    transform: translate3d(1px, -3px, 0) rotate(-1.5deg);
+    transform: translate3d(1px, -2px, 0) rotate(-1.25deg);
   }
 }
 
