@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { Icon } from '@/components/Icon';
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { companyHint, textLevel } from '@/lib/utils';
@@ -58,7 +59,7 @@ export function StatPanel() {
   const nextOffice = OFFICE_LEVELS[officeLevel + 1];
   const officeTip = nextOffice
     ? `員工上限 ${cap} 位\n下一級：${nextOffice.name}（上限 ${nextOffice.maxStaff}）\n擴建成本 $${nextOffice.upgradeCost}`
-    : `員工上限 ${cap} 位\n已達最大規模 🏆`;
+    : `員工上限 ${cap} 位\n已達最大規模`;
 
   const moneyTip = `目前資金：$${money}\n每日自動結算\n買裝備前先累積一點最穩`;
   const staffTip = `員工 ${staffLen} / ${cap}\n點人資辦公室面試招募\n點員工宿舍管理`;
@@ -68,17 +69,19 @@ export function StatPanel() {
   return (
     <div className="flex flex-col gap-2.5 mt-3">
       <div className="grid grid-cols-2 gap-2.5">
-        <StatCell label="💰 資金" value={`$${money}`} tooltip={moneyTip} />
-        <StatCell label="👥 員工" value={`${staffLen} / ${cap}`} tooltip={staffTip} />
+        <StatCell label="資金" icon="coin" value={`$${money}`} tooltip={moneyTip} />
+        <StatCell label="員工" icon="users" value={`${staffLen} / ${cap}`} tooltip={staffTip} />
         <StatCell
-          label="❤️ 士氣"
+          label="士氣"
+          icon="heart"
           value={`${morale} · ${moraleLabel}`}
           meterValue={morale}
           meterColor="linear-gradient(90deg, #a8d8a8, #66bb6a)"
           tooltip={moraleTip}
         />
         <StatCell
-          label="📈 營運"
+          label="營運"
+          icon="pulse"
           value={`${health} · ${healthLabel}`}
           meterValue={health}
           meterColor="linear-gradient(90deg, #ffb3b3, #ef8f52)"
@@ -87,14 +90,14 @@ export function StatPanel() {
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <MiniStat label="⚡ 產能" value={`+${productivityBoost}`} color="#3a7a3f" tooltip={productivityTip} />
-        <MiniStat label="🛡️ 穩定" value={`+${stabilityBoost}`} color="#2b7abd" tooltip={stabilityTip} />
-        <MiniStat label="🎓 培訓" value={`+${trainingBoost}`} color="#7b3a9f" tooltip={trainingTip} />
+        <MiniStat label="產能" icon="bolt" value={`+${productivityBoost}`} color="#3a7a3f" tooltip={productivityTip} />
+        <MiniStat label="穩定" icon="shield" value={`+${stabilityBoost}`} color="#2b7abd" tooltip={stabilityTip} />
+        <MiniStat label="培訓" icon="cap" value={`+${trainingBoost}`} color="#7b3a9f" tooltip={trainingTip} />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <MiniStat label="🏢 辦公室" value={office.name} color="#8b6a45" tooltip={officeTip} />
-        <MiniStat label="🎨 裝飾 Lv" value={`${decor}`} color="#d07a1f" tooltip={decorTip} />
+        <MiniStat label="辦公室" icon="building" value={office.name} color="#8b6a45" tooltip={officeTip} />
+        <MiniStat label="裝飾 Lv" icon="palette" value={`${decor}`} color="#d07a1f" tooltip={decorTip} />
       </div>
 
       {activeChemistry.length > 0 && (
@@ -102,8 +105,9 @@ export function StatPanel() {
           className="p-2.5 rounded-xl text-xs"
           style={{ background: '#fff0f3', border: '1.5px solid #e0c280' }}
         >
-          <div className="font-bold mb-1" style={{ color: '#8a6a2a' }}>
-            ✨ 化學反應 ({activeChemistry.length})
+          <div className="font-bold mb-1 flex items-center gap-1.5" style={{ color: '#8a6a2a' }}>
+            <Icon name="sparkles" size={14} />
+            <span>化學反應 ({activeChemistry.length})</span>
           </div>
           <div className="flex flex-col gap-0.5">
             {activeChemistry.map((c) => (
@@ -115,7 +119,10 @@ export function StatPanel() {
                   fontWeight: 500,
                 }}
               >
-                {c.combo.type === 'positive' ? '✅' : '⚠️'} {c.combo.msg}
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name={c.combo.type === 'positive' ? 'sparkles' : 'alert'} size={13} />
+                  <span>{stripLeadingEmoji(c.combo.msg)}</span>
+                </span>
               </div>
             ))}
           </div>
@@ -160,12 +167,14 @@ function Tooltip({ text }: { text: string }) {
 
 function StatCell({
   label,
+  icon,
   value,
   meterValue,
   meterColor,
   tooltip,
 }: {
-  label: string;
+  label: ReactNode;
+  icon?: 'coin' | 'heart' | 'pulse' | 'users';
   value: string;
   meterValue?: number;
   meterColor?: string;
@@ -179,8 +188,9 @@ function StatCell({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div className="text-xs" style={{ color: 'var(--muted)' }}>
-        {label}
+      <div className="text-xs flex items-center gap-1.5" style={{ color: 'var(--muted)' }}>
+        {icon ? <Icon name={icon} size={13} /> : null}
+        <span>{label}</span>
       </div>
       <div className="text-xl font-extrabold mt-1">{value}</div>
       {typeof meterValue === 'number' && (
@@ -201,11 +211,13 @@ function StatCell({
 
 function MiniStat({
   label,
+  icon,
   value,
   color,
   tooltip,
 }: {
-  label: string;
+  label: ReactNode;
+  icon?: 'bolt' | 'building' | 'cap' | 'palette' | 'shield';
   value: string;
   color: string;
   tooltip?: string;
@@ -219,10 +231,11 @@ function MiniStat({
       onMouseLeave={() => setHover(false)}
     >
       <div
-        className="text-[10px] whitespace-nowrap overflow-hidden text-ellipsis"
+        className="text-[10px] whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-1"
         style={{ color: 'var(--muted)' }}
       >
-        {label}
+        {icon ? <Icon name={icon} size={11} /> : null}
+        <span>{label}</span>
       </div>
       <div
         className="text-sm font-extrabold mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis"
@@ -235,3 +248,6 @@ function MiniStat({
   );
 }
 
+function stripLeadingEmoji(text: string): string {
+  return text.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '').trimStart();
+}

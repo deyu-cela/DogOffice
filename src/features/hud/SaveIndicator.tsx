@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '@/components/Icon';
 import { useSaveStore } from '@/store/saveStore';
 
 function formatRelative(ts: number): string {
@@ -22,19 +23,19 @@ export function SaveIndicator() {
     return () => clearInterval(id);
   }, []);
 
-  let icon = '💾';
+  let iconName: 'alert' | 'save' | 'spinner' = 'save';
   let tooltip = '尚未存檔 · 點一下立即存檔';
   let disabled = false;
 
   if (status === 'saving') {
-    icon = '⏳';
+    iconName = 'spinner';
     tooltip = '存檔中…';
     disabled = true;
   } else if (status === 'conflict') {
-    icon = '⚠️';
+    iconName = 'alert';
     tooltip = '存檔有衝突，請到衝突視窗處理';
   } else if (status === 'error') {
-    icon = '⚠️';
+    iconName = 'alert';
     tooltip = `存檔失敗${error ? `：${error}` : ''} · 點一下重試`;
   } else if (lastSavedAt) {
     tooltip = `${formatRelative(lastSavedAt)} · 點一下立即存檔`;
@@ -60,7 +61,11 @@ export function SaveIndicator() {
         cursor: disabled ? 'wait' : 'pointer',
       }}
     >
-      {icon}
+      <Icon
+        name={iconName}
+        size={15}
+        style={{ color: status === 'error' || status === 'conflict' ? '#a4583b' : '#8a6a2a' }}
+      />
     </button>
   );
 }

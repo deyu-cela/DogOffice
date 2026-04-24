@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from '@/components/Icon';
 import { useAuthStore } from '@/store/authStore';
 import { useGameStore } from '@/store/gameStore';
 
@@ -23,8 +24,9 @@ export function UserBadge() {
 
   return (
     <div className="flex items-center gap-1.5 text-xs">
-      <span style={{ color: '#7a685a' }} title={user.account}>
-        🐶 {user.account}
+      <span className="flex items-center gap-1.5" style={{ color: '#7a685a' }} title={user.account}>
+        <Icon name="dog" size={14} style={{ color: '#c86f4b' }} />
+        <span>{user.account}</span>
       </span>
       <button
         type="button"

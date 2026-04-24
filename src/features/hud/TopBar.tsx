@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { Badge } from '@/components/Panel';
+import { Icon } from '@/components/Icon';
 import { SaveIndicator } from './SaveIndicator';
 import { UserBadge } from './UserBadge';
 import { RestartButton } from './RestartButton';
@@ -28,7 +29,10 @@ export function TopBar() {
       }}
     >
       <div className="flex items-center gap-3 min-w-0 flex-wrap flex-1">
-        <h1 className="text-lg md:text-xl font-extrabold whitespace-nowrap">🐶 狗狗公司</h1>
+        <h1 className="text-lg md:text-xl font-extrabold whitespace-nowrap flex items-center gap-2">
+          <Icon name="dog" size={22} style={{ color: '#c86f4b' }} />
+          <span>狗狗公司</span>
+        </h1>
         <Badge>第 {day} 天</Badge>
         {/* 資金目標進度條 */}
         <button
@@ -44,8 +48,13 @@ export function TopBar() {
           }}
           title="點擊查看排行榜"
         >
-          <span className="text-xs font-bold whitespace-nowrap" style={{ color: '#7a685a' }}>
-            {victoryAt !== null ? '🏆' : '🎯'} 目標
+          <span className="text-xs font-bold whitespace-nowrap flex items-center gap-1.5" style={{ color: '#7a685a' }}>
+            <Icon
+              name={victoryAt !== null ? 'trophy' : 'target'}
+              size={14}
+              style={{ color: victoryAt !== null ? '#b9892b' : '#78955c' }}
+            />
+            <span>目標</span>
           </span>
           <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#eadfce' }}>
             <div
@@ -76,7 +85,8 @@ export function TopBar() {
           }}
           title="查看排行榜"
         >
-          🏆 <span className="hidden sm:inline">排行榜</span>
+          <Icon name="trophy" size={15} />
+          <span className="hidden sm:inline">排行榜</span>
         </button>
         {authedUser && (
           <>
