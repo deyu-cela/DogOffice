@@ -1,6 +1,7 @@
 import type { Dog, Stats } from '@/types';
 import { CEO_CHANCE, CEO_DOG, DOG_ROLES, ROLE_IMAGE_MAP } from '@/constants/dogRoles';
 import { INTERVIEW_QUESTIONS } from '@/constants/questions';
+import { pickTraitChoices } from '@/constants/dogTraits';
 import { rand, clamp, nextDogId } from './utils';
 
 // Grade 修正：乘法（取代原本的加減）
@@ -58,7 +59,7 @@ export function generateCandidate(opts?: { role?: string }): Dog {
   const severance = Math.round(expectedSalary * 3);
   const patience = isCeoRoll ? 1 : 2 + Math.floor(Math.random() * 3);
 
-  return {
+  const dog: Dog = {
     id: nextDogId(),
     role: template.role,
     breed: template.breed,
@@ -86,7 +87,24 @@ export function generateCandidate(opts?: { role?: string }): Dog {
     assignedProjectId: null,
     daysAtCompany: 0,
     unhappyLeaveDays: 0,
+    onLeaveDay: null,
+    learnedTraits: [],
+    pendingTraitChoice: null,
   };
+
+  // 直接面試到 A / S 的狗：補對應數量的特性選擇（A=1 輪，S=2 輪）
+  // CEO 豁免（不走特性系統）
+  if (!dog.isCEO && (grade === 'A' || grade === 'S')) {
+    const choices = pickTraitChoices(dog, 3);
+    if (choices.length > 0) {
+      dog.pendingTraitChoice = {
+        choices,
+        roundsLeft: grade === 'S' ? 2 : 1,
+      };
+    }
+  }
+
+  return dog;
 }
 
 export function ensureQueueLength(queue: Dog[], n = 3): Dog[] {

@@ -14,7 +14,7 @@ export function VictoryModal() {
 
   if (ipoAchievedAt === null || ipoDismissed) return null;
 
-  const levelName = OFFICE_LEVELS[officeLevel]?.name ?? `Lv${officeLevel}`;
+  const levelName = OFFICE_LEVELS[officeLevel]?.name ?? `Lv${officeLevel + 1}`;
 
   return (
     <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

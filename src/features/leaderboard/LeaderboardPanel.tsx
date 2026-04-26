@@ -222,7 +222,7 @@ function EntryRow({
           )}
         </div>
         <div className="text-xs" style={{ color: 'var(--muted)' }}>
-          {OFFICE_LEVELS[entry.officeLevel]?.name ?? `Lv${entry.officeLevel}`}・{entry.staffCount} 隻狗・$
+          {OFFICE_LEVELS[entry.officeLevel]?.name ?? `Lv${entry.officeLevel + 1}`}・{entry.staffCount} 隻狗・$
           {entry.money.toLocaleString()}・✅ {entry.projectsCompleted ?? 0} 案
         </div>
       </div>

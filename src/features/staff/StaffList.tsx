@@ -1,5 +1,6 @@
 import { useGameStore } from '@/store/gameStore';
 import { RadarChart } from '@/components/RadarChart';
+import { DOG_TRAITS_MAP, type DogTraitId } from '@/constants/dogTraits';
 import type { Dog } from '@/types';
 
 const EXP_THRESHOLDS: Record<Dog['grade'], number> = {
@@ -16,6 +17,7 @@ export function StaffList() {
   const openAction = useGameStore((s) => s.openStaffAction);
   const playMini = useGameStore((s) => s.openPlayMiniGame);
   const openTraining = useGameStore((s) => s.openTraining);
+  const openTraitChoice = useGameStore((s) => s.openTraitChoiceModal);
 
   if (staff.length === 0) {
     return (
@@ -122,6 +124,49 @@ export function StaffList() {
               <MeterMini label="😴 疲勞" value={dog.fatigue} color="#f6c24b" inverted />
               <MeterMini label="🤝 忠誠" value={dog.loyalty} color="#c6deff" />
             </div>
+
+            {/* 已習得特性徽章 */}
+            {(dog.learnedTraits ?? []).length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {(dog.learnedTraits as DogTraitId[]).map((tid) => {
+                  const def = DOG_TRAITS_MAP[tid];
+                  if (!def) return null;
+                  return (
+                    <span
+                      key={tid}
+                      className="text-[10px] px-1.5 py-0.5 rounded-full"
+                      style={{
+                        background: 'linear-gradient(180deg, #fff5d9, #ffe9b3)',
+                        border: '1px solid #e0c98a',
+                        color: '#7a5a2a',
+                      }}
+                      title={def.desc}
+                    >
+                      {def.emoji} {def.name}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 升級待選特性按鈕 */}
+            {dog.pendingTraitChoice && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openTraitChoice(dog.id);
+                }}
+                className="w-full mt-2 py-1.5 rounded-full font-bold text-xs"
+                style={{
+                  background: 'linear-gradient(180deg, #fff5d9, #ffd36a)',
+                  border: '1.5px solid #c9a064',
+                  color: '#7a5a2a',
+                }}
+              >
+                ✨ 升級待選特性 →
+              </button>
+            )}
 
             {/* 經驗條 */}
             {dog.grade !== 'S' && !dog.isCEO && (

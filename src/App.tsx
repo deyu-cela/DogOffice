@@ -16,6 +16,7 @@ import { RightPanel } from '@/features/hud/RightPanel';
 import { LogBar } from '@/features/hud/LogBar';
 import { InfoButton } from '@/features/hud/InfoButton';
 import { StaffActionModal } from '@/features/staff/StaffActionModal';
+import { TraitChoiceModal } from '@/features/staff/TraitChoiceModal';
 import { VictoryModal } from '@/features/victory/VictoryModal';
 import { FrisbeeGame } from '@/features/minigames/FrisbeeGame';
 import { MemoryGame } from '@/features/minigames/MemoryGame';
@@ -129,6 +130,7 @@ export default function App() {
       {trainingSession && <TrainingQuiz />}
       {staffModal && <StaffActionModal />}
       <ProjectEventModal />
+      <TraitChoiceModal />
       <BankLoanModal />
       <VictoryModal />
       <ConflictModal />

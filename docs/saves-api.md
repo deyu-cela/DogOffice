@@ -2,7 +2,7 @@
 
 本文件描述 `dog-company` 後端**重寫**後的存檔端點。極簡版：一人一份 current save，不做歷代封存。
 
-> 規格版本：draft-7（2026-04-26，補 `loanTaken` / `loanRepayDaysLeft` + 修正 `tutorialStep` 範圍 0-7）
+> 規格版本：draft-8（2026-04-27，Dog 補 `learnedTraits` / `pendingTraitChoice` 升級特性欄位）
 > 基準 API base：`https://dog-company-production.up.railway.app/api/v1`
 
 > ⚠️ **v1 與 v2 不相容**。v1 存檔被棄用，伺服器收到 `version === 1` 的舊存檔可直接視為無效（前端 client 會在 `migrate()` 回 `null`，玩家從新狀態開始）。
@@ -89,8 +89,9 @@
 | `reputation` | int | 0-100 | **信譽**（v2 新欄位，取代舊 health）|
 | `tierBudget` | int | ≥0 | 案件稀有度預算（每天 morning 會由 client 重算）|
 | `companyBuffs` | object | — | 公司全域 buff（見下） |
-| `officeLevel` | int | 0-4 | 辦公室等級 |
-| `purchases` | object | — | 商品 id → 購買次數，如 `{ "snack": 3 }` |
+| `officeLevel` | int | 0-4 | 辦公室等級（容量 / IPO 條件用）|
+| `officeSkin` | int | 0-officeLevel | 辦公室視覺造型（玩家可在已解鎖等級之間切換）；舊存檔缺此欄位視為 `officeLevel` |
+| `purchases` | object | — | 商品 id → 購買次數（=等級，最高 5），如 `{ "snack": 3 }` |
 
 #### `companyBuffs` 子物件
 
@@ -171,7 +172,9 @@
   "experience": 18,
   "assignedProjectId": "p_8",
   "daysAtCompany": 14,
-  "unhappyLeaveDays": 0
+  "unhappyLeaveDays": 0,
+  "learnedTraits": ["overtime", "mentor"],
+  "pendingTraitChoice": null
 }
 ```
 
@@ -187,6 +190,18 @@
 | `assignedProjectId` | string \| null | — | 目前指派到的案 id |
 | `daysAtCompany` | int | ≥0 | 在公司天數（自然累積 loyalty）|
 | `unhappyLeaveDays` | int | ≥0 | 連續被拒請假次數（連 3 次自動離職）|
+| `onLeaveDay` | int \| null | — | 准假當天的 day 編號；該日該員工 0 貢獻；隔天 runProjectsDay 自動清空 |
+| `learnedTraits` | array of string | — | 已習得特性 id 列表（升級時 +1）；舊存檔缺此欄位視為 `[]` |
+| `pendingTraitChoice` | object \| null | — | 待選 3 個特性。結構：`{ "choices": [...], "roundsLeft": 1 }`。`roundsLeft > 1` 代表選完還會接下一輪（S 直接面試會給 2 輪） |
+
+**特性發放規則**（前端控制，後端只負責存）：
+- 升級 D→C / C→B：不發特性
+- 升級 B→A：1 輪選擇（roundsLeft=1）
+- 升級 A→S：1 輪選擇
+- 直接面試 A 級：1 輪選擇
+- 直接面試 S 級：2 輪選擇（roundsLeft=2，第一輪選完自動進第二輪）
+
+**`learnedTraits` 與 `pendingTraitChoice` 的 trait id 列舉**：`overtime` / `perfectionist` / `mentor` / `haggler` / `ironHeart` / `catalyst` / `enduring` / `social`。後端不需驗證 id 是否在列舉內（前端控制），但建議陣列長度 ≤ 8。
 
 #### Project 子物件結構
 
@@ -397,6 +412,7 @@ CREATE TABLE saves (
    - `staff.length <= OFFICE_LEVELS[officeLevel].maxStaff + 2`（給客端超載扣分一點彈性。v2 maxStaff 表為 `[3, 5, 7, 9, 12]`）
    - 每隻 `Dog.stats` 4 維各 ∈ [1, 10]
    - 每隻 `Dog.morale / fatigue / loyalty` ∈ [0, 100]
+   - 每隻 `Dog.learnedTraits.length` ≤ 8（特性表上限）
    - `clients` 內每筆 `Project.status` 為合法列舉
    - `clients.length` ≤ 30（offered 5 + active N + 最近結算 5，留餘裕）
 

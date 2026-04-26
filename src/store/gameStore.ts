@@ -14,6 +14,7 @@ import type { GameSaveData } from '@/types/save';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { TRAINING_QUESTIONS } from '@/constants/questions';
 import { SHOP_ITEMS } from '@/constants/shopItems';
+import { pickTraitChoices } from '@/constants/dogTraits';
 import { clamp, nextTreatId, rand } from '@/lib/utils';
 import { ensureQueueLength, generateCandidate } from '@/lib/candidateGen';
 import {
@@ -32,11 +33,18 @@ const initialQueue = [generateCandidate(), generateCandidate(), generateCandidat
 // === IPO 勝利條件 ===
 const IPO_REPUTATION = 80;
 const IPO_MONEY = 50000;
-const IPO_OFFICE_LEVEL = 3;
-const IPO_PROJECTS = 30;
+const IPO_OFFICE_LEVEL = 4;
+const IPO_PROJECTS = 80;
 
 // === 辦公室固定每日支出 ===
 const OFFICE_DAILY_EXPENSE = [5, 8, 14, 22, 35];
+
+// === 設施升級上限 + 成本公式 ===
+export const MAX_SHOP_LEVEL = 5;
+export function nextShopCost(baseCost: number, currentLevel: number): number {
+  // Lv1: 1×、Lv2: 1.5×、Lv3: 2×、Lv4: 2.5×、Lv5: 3×
+  return Math.round(baseCost * (1 + 0.5 * currentLevel));
+}
 
 type Actions = {
   startGame: () => void;
@@ -50,6 +58,7 @@ type Actions = {
 
   buyShopItem: (id: ShopItemEffectKey) => void;
   upgradeOffice: () => void;
+  setOfficeSkin: (skin: number) => void;
 
   openStaffAction: (index: number) => void;
   closeStaffAction: () => void;
@@ -102,6 +111,10 @@ type Actions = {
   dismissLoanModal: () => void;
 
   applyTrainingBoost: (dogId: string, stat: 'speed' | 'quality' | 'teamwork' | 'charisma') => void;
+
+  openTraitChoiceModal: (dogId: string) => void;
+  closeTraitChoiceModal: () => void;
+  chooseTrait: (dogId: string, traitId: string) => void;
 };
 
 export type GameStore = GameState & Actions;
@@ -130,6 +143,7 @@ const initialState: GameState = {
   tierBudget: 15, // 沒員工：reputation 30/2 = 15 + officeBonus 0 = 15
   companyBuffs: { ...emptyCompanyBuffs },
   officeLevel: 0,
+  officeSkin: 0,
   purchases: {},
   staff: [],
   staffActionModal: null,
@@ -163,6 +177,7 @@ const initialState: GameState = {
   ipoAchievedAt: null,
   ipoDismissed: false,
   projectEventModal: null,
+  traitChoiceModal: null,
   dailySummary: null,
   loanTaken: false,
   loanRepayDaysLeft: 0,
@@ -460,6 +475,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       assignedProjectId: null,
       daysAtCompany: 0,
       unhappyLeaveDays: 0,
+      onLeaveDay: null,
+      learnedTraits: s.current.learnedTraits ?? [],
+      pendingTraitChoice: s.current.pendingTraitChoice ?? null,
     };
     let next: GameState = {
       ...s,
@@ -497,11 +515,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const item = SHOP_ITEMS.find((i) => i.id === id);
     if (!item) return;
     const s = get();
-    if (s.money < item.cost) return;
+    const currentLevel = s.purchases[id] ?? 0;
+    if (currentLevel >= MAX_SHOP_LEVEL) return; // 已滿級
+    const cost = nextShopCost(item.cost, currentLevel);
+    if (s.money < cost) return;
     let next: GameState = {
       ...s,
-      money: s.money - item.cost,
-      purchases: { ...s.purchases, [id]: (s.purchases[id] ?? 0) + 1 },
+      money: s.money - cost,
+      purchases: { ...s.purchases, [id]: currentLevel + 1 },
     };
     const buffs = { ...next.companyBuffs };
     const applyToAllStaff = (fn: (d: Dog) => Dog) => {
@@ -587,7 +608,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (nextLevel >= OFFICE_LEVELS.length) return;
     const cost = OFFICE_LEVELS[nextLevel].upgradeCost;
     if (s.money < cost) return;
-    let next: GameState = { ...s, officeLevel: nextLevel, money: s.money - cost };
+    // 升級後自動切到新造型（玩家可在「換造型」面板切回舊的）
+    let next: GameState = {
+      ...s,
+      officeLevel: nextLevel,
+      officeSkin: nextLevel,
+      money: s.money - cost,
+    };
     next = pushLog(next, `辦公室升級為「${OFFICE_LEVELS[nextLevel].name}」！`);
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
@@ -766,6 +793,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     };
     next = pushLog(next, `🔄 花 $${cost} 重新整理收件匣（5 個新案）`);
     set(next as Partial<GameStore>);
+  },
+
+  setOfficeSkin: (skin) => {
+    const s = get();
+    if (skin < 0 || skin > s.officeLevel) return; // 只能選已解鎖的
+    if (skin >= OFFICE_LEVELS.length) return;
+    set({ officeSkin: skin });
   },
 
   resolveProjectEvent: (projectId, choice) => {
@@ -1063,6 +1097,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       tierBudget: data.tierBudget ?? 21,
       companyBuffs: data.companyBuffs ?? { ...emptyCompanyBuffs },
       officeLevel: data.officeLevel,
+      officeSkin: data.officeSkin ?? data.officeLevel,
       purchases: data.purchases,
       bankrupt: data.bankrupt,
       bankruptCountdown: data.bankruptCountdown ?? 0,
@@ -1088,6 +1123,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       candidateReaction: null,
       toast: null,
       projectEventModal: null,
+      traitChoiceModal: null,
       recruitmentClosed: data.recruitmentClosed ?? false,
       loanTaken: data.loanTaken ?? false,
       loanRepayDaysLeft: data.loanRepayDaysLeft ?? 0,
@@ -1137,6 +1173,55 @@ export const useGameStore = create<GameStore>((set, get) => ({
         vacancyTimer: 0,
       });
     }
+  },
+
+  openTraitChoiceModal: (dogId) => {
+    const s = get();
+    const dog = s.staff.find((d) => d.id === dogId);
+    if (!dog || !dog.pendingTraitChoice) return;
+    set({ traitChoiceModal: { dogId } });
+  },
+
+  closeTraitChoiceModal: () => set({ traitChoiceModal: null }),
+
+  chooseTrait: (dogId, traitId) => {
+    const s = get();
+    const dog = s.staff.find((d) => d.id === dogId);
+    if (!dog || !dog.pendingTraitChoice) {
+      set({ traitChoiceModal: null });
+      return;
+    }
+    if (!dog.pendingTraitChoice.choices.includes(traitId)) {
+      set({ traitChoiceModal: null });
+      return;
+    }
+    // 還有下一輪 → 重新抽 3 個（排除已習得 + 剛選的）；沒有則清 pendingTraitChoice
+    const roundsLeft = dog.pendingTraitChoice.roundsLeft ?? 1;
+    const newLearned = [...(dog.learnedTraits ?? []), traitId];
+    let nextChoice: { choices: string[]; roundsLeft?: number } | null = null;
+    if (roundsLeft > 1) {
+      const tempDog = { ...dog, learnedTraits: newLearned };
+      const newChoices = pickTraitChoices(tempDog, 3);
+      if (newChoices.length > 0) {
+        nextChoice = { choices: newChoices, roundsLeft: roundsLeft - 1 };
+      }
+    }
+    let next: GameState = {
+      ...s,
+      staff: s.staff.map((d) =>
+        d.id === dogId
+          ? {
+              ...d,
+              learnedTraits: newLearned,
+              pendingTraitChoice: nextChoice,
+            }
+          : d,
+      ),
+      // 還有下一輪保持 modal，否則關閉
+      traitChoiceModal: nextChoice ? { dogId } : null,
+    };
+    next = pushLog(next, `✨ ${dog.name} 習得新特性！`);
+    set(next as Partial<GameStore>);
   },
 
   applyTrainingBoost: (dogId, stat) => {

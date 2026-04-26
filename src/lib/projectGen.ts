@@ -68,7 +68,9 @@ export function computeTierBudget(state: Pick<GameState, 'staff' | 'reputation' 
   const officeBonus = OFFICE_TIER_BONUS[state.officeLevel] ?? 0;
   // CEO 在隊上 → 全公司 tierBudget × 1.5
   const hasCEO = state.staff.some((d) => d.isCEO);
-  const baseBudget = totalCharisma + state.reputation / 2 + officeBonus;
+  // 員工不足 4 人時，tierBudget 線性壓縮（早期接不了高 tier 案，先讓 tier 1 主場）
+  const staffFactor = state.staff.length >= 4 ? 1 : state.staff.length / 4;
+  const baseBudget = (totalCharisma + state.reputation / 2 + officeBonus) * staffFactor;
   return Math.round(hasCEO ? baseBudget * 1.5 : baseBudget);
 }
 

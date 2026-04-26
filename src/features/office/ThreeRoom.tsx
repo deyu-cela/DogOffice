@@ -210,6 +210,36 @@ function DemandPulse({ rate = 15 }: { rate?: number }) {
  * - Orthographic iso 視角
  * - L 形房間：地板 + 左後牆 + 右後牆 + 天花橫樑 + 地板格線
  */
+// 依 container 寬高動態套 camera zoom（行動裝置避免被裁）
+function ResponsiveCameraZoom({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
+  const camera = useThree((s) => s.camera);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      // 房間 17 units、iso 視角實際對角約 22 寬 × 18 高，留一點 margin
+      const fitW = w / 22;
+      const fitH = h / 18;
+      const next = Math.min(38, Math.max(14, Math.min(fitW, fitH)));
+      // 任一型 camera 都有 zoom（perspective 也支援）
+      const cam = camera as unknown as { zoom: number; updateProjectionMatrix: () => void };
+      if (Math.abs(cam.zoom - next) > 0.5) {
+        cam.zoom = next;
+        cam.updateProjectionMatrix();
+        invalidate();
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [camera, invalidate, containerRef]);
+  return null;
+}
+
 export function ThreeRoom() {
   const [remountKey, setRemountKey] = useState(0);
   const [gpuPaused, setGpuPaused] = useState(false);
@@ -217,8 +247,9 @@ export function ThreeRoom() {
   const failureCount = useRef(0);
   const lastFailureAt = useRef(0);
   const loggedLost = useRef(false);
-  const officeLevel = useGameStore((s) => s.officeLevel);
-  const level = OFFICE_LEVELS[officeLevel];
+  const containerRef = useRef<HTMLDivElement>(null);
+  const officeSkin = useGameStore((s) => s.officeSkin);
+  const level = OFFICE_LEVELS[officeSkin];
   const wallLeft = level?.wall ?? '#ffe8b8';
   const wallRight = level?.wallRight ?? level?.wall ?? '#fff2d4';
   const floorCol = level?.floor ?? '#fadec0';
@@ -289,6 +320,7 @@ export function ThreeRoom() {
 
   return (
     <div
+      ref={containerRef}
       className="absolute inset-0"
       style={{
         background: 'linear-gradient(180deg, #fbf0dc, #fde0cf)',
@@ -383,6 +415,7 @@ export function ThreeRoom() {
         <CeilingBars />
 
         {/* Phase 4-8：互動建築 + 家具 + walker + 粒子 + HUD */}
+        <ResponsiveCameraZoom containerRef={containerRef} />
         <Suspense fallback={null}>
           {BUILDING_LAYOUT.map((b) => (
             <Building3D key={b.kind} kind={b.kind} gx={b.gx} gy={b.gy} w={b.w} h={b.h} />
@@ -472,8 +505,8 @@ function WallPolicy3D() {
 }
 
 function Windows3D() {
-  const officeLevel = useGameStore((s) => s.officeLevel);
-  const level = OFFICE_LEVELS[officeLevel];
+  const officeSkin = useGameStore((s) => s.officeSkin);
+  const level = OFFICE_LEVELS[officeSkin];
   const windows = level?.windows ?? 0;
   const theme = (level?.theme as WindowTheme | undefined) ?? 'kawaii';
   if (windows <= 0) return null;
@@ -1311,10 +1344,10 @@ function FurnitureSprite({
 function ZoneFurniture3D() {
   const staff = useGameStore((s) => s.staff);
   void staff;
-  const officeLevel = useGameStore((s) => s.officeLevel);
+  const officeSkin = useGameStore((s) => s.officeSkin);
   const decor = useGameStore((s) => s.companyBuffs.decor);
   const purchases = useGameStore((s) => s.purchases);
-  const level = OFFICE_LEVELS[officeLevel];
+  const level = OFFICE_LEVELS[officeSkin];
 
   const cap = (id: ShopItemEffectKey) => Math.min(purchases[id] ?? 0, 4);
   const items: React.ReactNode[] = [];
