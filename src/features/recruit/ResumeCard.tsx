@@ -1,5 +1,81 @@
+import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
+import { DOG_ROLES } from '@/constants/dogRoles';
+import { RadarChart } from '@/components/RadarChart';
+
+const TARGETED_COST = 40;
+
+function TargetedRecruitButton() {
+  const money = useGameStore((s) => s.money);
+  const closed = useGameStore((s) => s.recruitmentClosed);
+  const officeLevel = useGameStore((s) => s.officeLevel);
+  const staff = useGameStore((s) => s.staff);
+  const request = useGameStore((s) => s.requestTargetedCandidate);
+  const [open, setOpen] = useState(false);
+  const atCapacity = staff.length >= OFFICE_LEVELS[officeLevel].maxStaff;
+  const canAfford = money >= TARGETED_COST;
+  const disabled = closed || atCapacity || !canAfford;
+
+  return (
+    <div className="mb-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        disabled={disabled}
+        className="w-full py-2 rounded-full text-xs font-bold"
+        style={{
+          background: disabled
+            ? '#eee'
+            : 'linear-gradient(180deg, #ffe5a0, #f6c24b)',
+          color: disabled ? '#999' : '#5a3a10',
+          border: '1.5px solid rgba(90,70,54,0.15)',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+        }}
+        title={
+          atCapacity ? '辦公室已滿'
+            : !canAfford ? `需要 $${TARGETED_COST}`
+              : '指定職業招聘（保證下一張履歷為指定職業）'
+        }
+      >
+        🎯 指定職業招聘 ${TARGETED_COST}
+      </button>
+      {open && !disabled && (
+        <div
+          className="mt-2 p-2.5 rounded-2xl"
+          style={{
+            background: 'linear-gradient(180deg, #fffefc, #fff5e7)',
+            border: '1.5px solid rgba(90,70,54,0.15)',
+          }}
+        >
+          <div className="text-[10px] mb-1.5 font-bold" style={{ color: 'var(--muted)' }}>
+            選擇職業 → 花 ${TARGETED_COST} 強制換成該職業候選人
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            {DOG_ROLES.map((r) => (
+              <button
+                key={r.role}
+                type="button"
+                onClick={() => {
+                  request(r.role);
+                  setOpen(false);
+                }}
+                className="text-[11px] px-2 py-1.5 rounded-lg flex items-center gap-1"
+                style={{
+                  background: 'rgba(255,255,255,0.85)',
+                  border: '1px solid rgba(90,70,54,0.12)',
+                }}
+              >
+                <span>{r.emoji}</span>
+                <span className="font-bold">{r.role}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function RecruitmentToggle() {
   const closed = useGameStore((s) => s.recruitmentClosed);
@@ -39,6 +115,7 @@ export function ResumeCard() {
     return (
       <div className="mt-3">
         <RecruitmentToggle />
+      <TargetedRecruitButton />
         <div
           className="p-5 rounded-2xl text-center"
           style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}
@@ -61,6 +138,7 @@ export function ResumeCard() {
       return (
         <div className="mt-3">
           <RecruitmentToggle />
+      <TargetedRecruitButton />
           <div
             className="p-5 rounded-2xl text-center"
             style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}
@@ -83,6 +161,7 @@ export function ResumeCard() {
     return (
       <div className="mt-3">
         <RecruitmentToggle />
+      <TargetedRecruitButton />
         <div className="p-4 rounded-2xl text-center" style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}>
           等候下一位候選狗狗...
         </div>
@@ -93,6 +172,7 @@ export function ResumeCard() {
   return (
     <div className="mt-3">
       <RecruitmentToggle />
+      <TargetedRecruitButton />
     <div
       className="p-4 rounded-2xl"
       style={{
@@ -152,6 +232,17 @@ export function ResumeCard() {
         💬 {current.motto}
       </div>
 
+      {/* 4 維能力雷達圖 + 數值 */}
+      <div className="mt-2 p-2.5 rounded-xl flex items-center gap-3" style={{ background: 'rgba(255,255,255,.7)', border: '1px solid rgba(90,70,54,0.1)' }}>
+        <RadarChart stats={current.stats} size={130} />
+        <div className="grid grid-cols-2 gap-1 text-xs flex-1">
+          <StatPair label="⚡ 速度" value={current.stats.speed} />
+          <StatPair label="✨ 專業" value={current.stats.quality} />
+          <StatPair label="🤝 協作" value={current.stats.teamwork} />
+          <StatPair label="📣 魅力" value={current.stats.charisma} />
+        </div>
+      </div>
+
       <ul className="mt-2 pl-4 text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
         <li>💼 {current.passive}</li>
         <li>⭐ {current.flavor}</li>
@@ -185,6 +276,15 @@ export function ResumeCard() {
         </div>
       )}
     </div>
+    </div>
+  );
+}
+
+function StatPair({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      <span style={{ color: 'var(--muted)' }}>{label}</span>
+      <span className="font-bold">{value}</span>
     </div>
   );
 }

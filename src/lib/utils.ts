@@ -10,19 +10,21 @@ export function textLevel(v: number, labels: [string, string, string]): string {
   return v >= 75 ? labels[0] : v >= 45 ? labels[1] : labels[2];
 }
 
-export function companyStage(health: number, morale: number, staffLen: number, decor: number): string {
-  const score = health + morale + staffLen * 4 + decor * 5;
-  if (score >= 180) return '蓬勃成長';
-  if (score >= 120) return '穩定營運';
+export function companyStage(reputation: number, avgMorale: number, staffLen: number, projectsCompleted: number): string {
+  // 接案制版本：依信譽 + 員工平均士氣 + 員工數 + 完成案數
+  const score = reputation + avgMorale + staffLen * 4 + projectsCompleted * 2;
+  if (score >= 200) return '蓬勃成長';
+  if (score >= 130) return '穩定營運';
   if (score >= 80) return '勉強撐住';
   return '快撐不住';
 }
 
-export function companyHint(money: number, health: number, morale: number): string {
-  if (money < 60) return '資金偏低，先穩住現金流再擴編。';
-  if (health < 40) return '營運有點亂，先補穩定度比盲目賺錢重要。';
-  if (morale < 40) return '大家看起來累了，陪玩或補零食比較有感。';
-  return '目前公司節奏還可以，找對人比亂堆數值更重要。';
+export function companyHint(money: number, reputation: number, avgMorale: number, hasActive: boolean): string {
+  if (money < 100) return '資金偏低，先接幾個 tier1 小案穩住現金流。';
+  if (reputation < 25) return '信譽偏低，連 tier3 案都看不到。先穩穩做 tier2 累積口碑。';
+  if (avgMorale < 40) return '員工士氣低落，買零食或開派對給點關懷。';
+  if (!hasActive) return '沒有活案就只有支出。打開接案處，挑個案接吧！';
+  return '目前公司節奏還可以，記得輪換員工避免疲勞。';
 }
 
 let walkerIdCounter = 0;
@@ -30,3 +32,10 @@ export const nextWalkerId = () => ++walkerIdCounter;
 
 let treatIdCounter = 0;
 export const nextTreatId = () => ++treatIdCounter;
+
+let dogIdCounter = 0;
+export const nextDogId = () => `dog_${++dogIdCounter}_${Date.now().toString(36)}`;
+
+let projectIdCounter = 0;
+export const nextProjectId = () => `prj_${++projectIdCounter}_${Date.now().toString(36)}`;
+

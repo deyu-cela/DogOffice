@@ -2,6 +2,25 @@ import { useGameStore } from '@/store/gameStore';
 import { SHOP_ITEMS } from '@/constants/shopItems';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 
+const OFFICE_TIER_BONUS = [0, 5, 12, 22, 35];
+const OFFICE_TIER_CAP = [3, 3, 4, 4, 5];
+
+function upgradeBenefits(curLv: number): string[] {
+  const next = curLv + 1;
+  const benefits: string[] = [];
+  const curMax = OFFICE_LEVELS[curLv].maxStaff;
+  const nextMax = OFFICE_LEVELS[next].maxStaff;
+  if (nextMax > curMax) benefits.push(`👥 員工上限 +${nextMax - curMax}（→${nextMax}）`);
+  const curBonus = OFFICE_TIER_BONUS[curLv] ?? 0;
+  const nextBonus = OFFICE_TIER_BONUS[next] ?? 0;
+  if (nextBonus > curBonus) benefits.push(`✨ 稀有度 +${nextBonus - curBonus}`);
+  const curCap = OFFICE_TIER_CAP[curLv] ?? 3;
+  const nextCap = OFFICE_TIER_CAP[next] ?? 3;
+  if (nextCap > curCap) benefits.push(`⏫ 解鎖 tier${nextCap} 案件`);
+  if (next === 3) benefits.push('🏆 達成 IPO 條件之一');
+  return benefits;
+}
+
 export function ShopPanel() {
   const money = useGameStore((s) => s.money);
   const officeLevel = useGameStore((s) => s.officeLevel);
@@ -11,6 +30,7 @@ export function ShopPanel() {
 
   const nextLv = OFFICE_LEVELS[officeLevel + 1];
   const atMax = !nextLv;
+  const benefits = atMax ? [] : upgradeBenefits(officeLevel);
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -27,10 +47,14 @@ export function ShopPanel() {
           style={{ background: 'linear-gradient(135deg,#fff0f3,#fbd5db)', border: '2px solid #f4a8b8' }}
         >
           <div className="flex justify-between items-start gap-2">
-            <div>
+            <div className="flex-1">
               <div className="font-bold">🏗️ 擴建 → {nextLv.name}</div>
-              <div className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-                最大員工數 {nextLv.maxStaff} 隻
+              <div className="flex flex-col gap-0.5 mt-1.5">
+                {benefits.map((b, i) => (
+                  <div key={i} className="text-[11px]" style={{ color: '#7a3a4a' }}>
+                    {b}
+                  </div>
+                ))}
               </div>
             </div>
             <button

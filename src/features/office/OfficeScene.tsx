@@ -11,18 +11,25 @@ import { ROOM_GRID } from './iso';
 export function OfficeScene() {
   const officeLevel = useGameStore((s) => s.officeLevel);
   const staff = useGameStore((s) => s.staff);
-  const decor = useGameStore((s) => s.decor);
   const money = useGameStore((s) => s.money);
-  const morale = useGameStore((s) => s.morale);
-  const health = useGameStore((s) => s.health);
+  const reputation = useGameStore((s) => s.reputation);
+  const projectsCompleted = useGameStore((s) => s.projectsCompleted);
+  const clients = useGameStore((s) => s.clients);
+  const companyBuffs = useGameStore((s) => s.companyBuffs);
   const setBounds = useWalkerStore((s) => s.setBounds);
   const syncWalkers = useWalkerStore((s) => s.syncWithStaff);
   const purchases = useGameStore((s) => s.purchases);
   const roomRef = useRef<HTMLDivElement>(null);
 
+  const avgMorale = staff.length > 0
+    ? staff.reduce((n, d) => n + d.morale, 0) / staff.length
+    : 70;
+  const hasActive = clients.some((c) => c.status === 'active');
+  const decor = companyBuffs.decor;
+
   const level = OFFICE_LEVELS[officeLevel];
-  const stage = companyStage(health, morale, staff.length, decor);
-  const hint = companyHint(money, health, morale);
+  const stage = companyStage(reputation, avgMorale, staff.length, projectsCompleted);
+  const hint = companyHint(money, reputation, avgMorale, hasActive);
 
   useEffect(() => {
     const el = roomRef.current;

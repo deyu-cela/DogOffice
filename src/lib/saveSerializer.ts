@@ -1,28 +1,42 @@
-import type { GameState } from '@/types';
+import type { CompanyBuffs, GameState } from '@/types';
 import type { GameSaveData } from '@/types/save';
 import { SAVE_VERSION } from '@/types/save';
 
 const LOG_TAIL_LIMIT = 10;
 
+const defaultCompanyBuffs: CompanyBuffs = {
+  speedBoost: 0,
+  qualityBoost: 0,
+  teamworkBoost: 0,
+  charismaBoost: 0,
+  decor: 1,
+};
+
 export function serialize(state: GameState): GameSaveData {
   return {
     day: state.day,
     money: state.money,
-    morale: state.morale,
-    health: state.health,
-    decor: state.decor,
-    productivityBoost: state.productivityBoost,
-    stabilityBoost: state.stabilityBoost,
-    trainingBoost: state.trainingBoost,
+    reputation: state.reputation,
+    tierBudget: state.tierBudget,
+    companyBuffs: state.companyBuffs,
     officeLevel: state.officeLevel,
     purchases: state.purchases,
+    clients: state.clients,
+    projectsCompleted: state.projectsCompleted,
+    projectsFailed: state.projectsFailed,
+    lastRerollDay: state.lastRerollDay,
     vacancy: state.vacancy,
     vacancyTimer: state.vacancyTimer,
     bankrupt: state.bankrupt,
+    bankruptCountdown: state.bankruptCountdown,
     tutorialStep: Math.max(0, Math.min(state.tutorialStep, 7)),
+    recruitmentClosed: state.recruitmentClosed,
     staff: state.staff,
-    activeChemistry: state.activeChemistry,
     log: state.log.slice(-LOG_TAIL_LIMIT),
+    ipoAchievedAt: state.ipoAchievedAt,
+    ipoDismissed: state.ipoDismissed,
+    loanTaken: state.loanTaken,
+    loanRepayDaysLeft: state.loanRepayDaysLeft,
   };
 }
 
@@ -38,27 +52,36 @@ export function deserialize(raw: unknown): GameSaveData | null {
 
   return {
     day: asNum(d.day, 1),
-    money: asNum(d.money, 0),
-    morale: asNum(d.morale, 50),
-    health: asNum(d.health, 50),
-    decor: asNum(d.decor, 0),
-    productivityBoost: asNum(d.productivityBoost, 0),
-    stabilityBoost: asNum(d.stabilityBoost, 0),
-    trainingBoost: asNum(d.trainingBoost, 0),
+    money: asNum(d.money, 800),
+    reputation: asNum(d.reputation, 30),
+    tierBudget: asNum(d.tierBudget, 21),
+    companyBuffs: d.companyBuffs ?? { ...defaultCompanyBuffs },
     officeLevel: asNum(d.officeLevel, 0),
     purchases: d.purchases && typeof d.purchases === 'object' ? d.purchases : {},
+    clients: Array.isArray(d.clients) ? d.clients : [],
+    projectsCompleted: asNum(d.projectsCompleted, 0),
+    projectsFailed: asNum(d.projectsFailed, 0),
+    lastRerollDay: asNum(d.lastRerollDay, 0),
     vacancy: d.vacancy === true,
     vacancyTimer: asNum(d.vacancyTimer, 0),
     bankrupt: d.bankrupt === true,
+    bankruptCountdown: asNum(d.bankruptCountdown, 0),
     tutorialStep: Math.max(0, Math.min(asNum(d.tutorialStep, 7), 7)),
+    recruitmentClosed: d.recruitmentClosed === true,
     staff: d.staff as GameSaveData['staff'],
-    activeChemistry: Array.isArray(d.activeChemistry) ? d.activeChemistry : [],
     log: Array.isArray(d.log) ? d.log.slice(-LOG_TAIL_LIMIT) : [],
+    ipoAchievedAt: typeof d.ipoAchievedAt === 'number' ? d.ipoAchievedAt : null,
+    ipoDismissed: d.ipoDismissed === true,
+    loanTaken: d.loanTaken === true,
+    loanRepayDaysLeft: asNum(d.loanRepayDaysLeft, 0),
   };
 }
 
 export function migrate(version: number, raw: unknown): GameSaveData | null {
   if (typeof version !== 'number' || version > SAVE_VERSION) return null;
-  // 目前只有 v1，未來擴充時於此分派到對應 upgrade 路徑
+  // v1 → v2：接案制版本不相容舊存檔，視為無效
+  // 玩家會看到「沒存檔」並從新初始狀態開始
+  if (version === 1) return null;
+  // v2 直接 deserialize
   return deserialize(raw);
 }

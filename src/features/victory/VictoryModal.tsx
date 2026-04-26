@@ -2,16 +2,17 @@ import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 
 export function VictoryModal() {
-  const victoryAt = useGameStore((s) => s.victoryAt);
-  const victoryDismissed = useGameStore((s) => s.victoryDismissed);
+  const ipoAchievedAt = useGameStore((s) => s.ipoAchievedAt);
+  const ipoDismissed = useGameStore((s) => s.ipoDismissed);
   const money = useGameStore((s) => s.money);
-  const moneyGoal = useGameStore((s) => s.moneyGoal);
+  const reputation = useGameStore((s) => s.reputation);
   const officeLevel = useGameStore((s) => s.officeLevel);
+  const projectsCompleted = useGameStore((s) => s.projectsCompleted);
   const staff = useGameStore((s) => s.staff);
-  const dismissVictory = useGameStore((s) => s.dismissVictory);
+  const dismissIpo = useGameStore((s) => s.dismissIpo);
   const restart = useGameStore((s) => s.restart);
 
-  if (victoryAt === null || victoryDismissed) return null;
+  if (ipoAchievedAt === null || ipoDismissed) return null;
 
   const levelName = OFFICE_LEVELS[officeLevel]?.name ?? `Lv${officeLevel}`;
 
@@ -25,12 +26,12 @@ export function VictoryModal() {
           boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
         }}
       >
-        <div className="text-5xl mb-3">🏆</div>
+        <div className="text-6xl mb-3">🔔🐕💼</div>
         <div className="text-2xl font-extrabold mb-2" style={{ color: '#b47020' }}>
-          達成資金目標！
+          公司 IPO 上市了！
         </div>
         <div className="text-sm mb-5" style={{ color: '#7a685a' }}>
-          恭喜你帶領狗狗公司衝到 ${moneyGoal.toLocaleString()}
+          狗狗們敲響了上市鐘，全公司沸騰！
         </div>
 
         <div
@@ -38,33 +39,37 @@ export function VictoryModal() {
           style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(90,70,54,0.1)' }}
         >
           <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>
-              達標用時
-            </div>
+            <div className="text-xs" style={{ color: 'var(--muted)' }}>達成天數</div>
             <div className="text-2xl font-extrabold" style={{ color: '#3d2f25' }}>
-              {victoryAt} <span className="text-sm font-normal">天</span>
+              {ipoAchievedAt} <span className="text-sm font-normal">天</span>
             </div>
           </div>
           <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>
-              最終資金
-            </div>
+            <div className="text-xs" style={{ color: 'var(--muted)' }}>最終資金</div>
             <div className="text-2xl font-extrabold" style={{ color: '#3a8a3a' }}>
               ${money.toLocaleString()}
             </div>
           </div>
           <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>
-              辦公室
+            <div className="text-xs" style={{ color: 'var(--muted)' }}>最終信譽</div>
+            <div className="text-base font-bold" style={{ color: '#3d2f25' }}>
+              {Math.round(reputation)} / 100
             </div>
+          </div>
+          <div>
+            <div className="text-xs" style={{ color: 'var(--muted)' }}>完成案件</div>
+            <div className="text-base font-bold" style={{ color: '#3d2f25' }}>
+              {projectsCompleted} 件
+            </div>
+          </div>
+          <div>
+            <div className="text-xs" style={{ color: 'var(--muted)' }}>辦公室</div>
             <div className="text-base font-bold" style={{ color: '#3d2f25' }}>
               {levelName}
             </div>
           </div>
           <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>
-              員工數
-            </div>
+            <div className="text-xs" style={{ color: 'var(--muted)' }}>員工數</div>
             <div className="text-base font-bold" style={{ color: '#3d2f25' }}>
               {staff.length} 隻狗
             </div>
@@ -74,7 +79,7 @@ export function VictoryModal() {
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={dismissVictory}
+            onClick={dismissIpo}
             className="py-2.5 rounded-full font-extrabold text-sm"
             style={{ background: 'linear-gradient(180deg, #b6efab, #8ee28f)', color: '#1e5a29' }}
           >
