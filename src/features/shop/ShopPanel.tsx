@@ -1,4 +1,4 @@
-import { useGameStore } from '@/store/gameStore';
+import { useGameStore, MAX_SHOP_LEVEL, nextShopCost } from '@/store/gameStore';
 import { SHOP_ITEMS } from '@/constants/shopItems';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 
@@ -69,40 +69,62 @@ export function ShopPanel() {
         </div>
       )}
       {SHOP_ITEMS.map((item) => {
-        const canAfford = money >= item.cost;
-        const count = purchases[item.id] ?? 0;
+        const level = purchases[item.id] ?? 0;
+        const isMax = level >= MAX_SHOP_LEVEL;
+        const cost = nextShopCost(item.cost, level);
+        const canAfford = !isMax && money >= cost;
+        const buttonLabel = isMax ? '已滿級' : `$${cost}`;
         return (
           <div
             key={item.id}
             className="p-3 rounded-2xl"
             style={{
-              background: canAfford ? 'rgba(255,255,255,0.9)' : 'rgba(240,234,222,0.6)',
-              border: '1px solid rgba(90,70,54,0.12)',
+              background: isMax
+                ? 'rgba(232,245,233,0.9)'
+                : canAfford
+                  ? 'rgba(255,255,255,0.9)'
+                  : 'rgba(240,234,222,0.6)',
+              border: isMax ? '1.5px solid #66bb6a' : '1px solid rgba(90,70,54,0.12)',
             }}
           >
             <div className="flex justify-between items-start gap-2">
-              <div className="font-bold flex items-center gap-1.5">
+              <div className="font-bold flex items-center gap-1.5 flex-wrap">
                 <span>{item.name}</span>
-                {count > 0 && (
+                {level > 0 && (
                   <span
                     className="text-[11px] px-1.5 py-0.5 rounded-full font-normal"
-                    style={{ background: '#fff0f3', color: '#8a6a2a', border: '1px solid rgba(90,70,54,0.08)' }}
+                    style={{
+                      background: isMax ? '#dff0d8' : '#fff0f3',
+                      color: isMax ? '#2f7a3f' : '#8a6a2a',
+                      border: '1px solid rgba(90,70,54,0.08)',
+                    }}
                   >
-                    已買 ×{count}
+                    Lv {level}{isMax ? ' (滿)' : ` / ${MAX_SHOP_LEVEL}`}
                   </span>
                 )}
               </div>
               <button
-                disabled={!canAfford}
+                disabled={isMax || !canAfford}
                 onClick={() => buy(item.id)}
-                className="text-sm px-3"
-                style={{ background: canAfford ? 'linear-gradient(180deg, #b6efab, #8ee28f)' : '#eee' }}
+                className="text-sm px-3 whitespace-nowrap"
+                style={{
+                  background: isMax
+                    ? '#dff0d8'
+                    : canAfford
+                      ? 'linear-gradient(180deg, #b6efab, #8ee28f)'
+                      : '#eee',
+                  color: isMax ? '#2f7a3f' : undefined,
+                }}
+                title={
+                  isMax
+                    ? '此設施已滿級'
+                    : level === 0
+                      ? `首次購置 $${cost}`
+                      : `升級至 Lv ${level + 1}（成本 $${cost}）`
+                }
               >
-                ${item.cost}
+                {buttonLabel}
               </button>
-            </div>
-            <div className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-              {item.desc}
             </div>
             <div className="flex gap-1.5 flex-wrap mt-2">
               {item.statTags.map((tag, i) => (

@@ -4,6 +4,7 @@ import type { ChemistryCombo, Dog, ProjectCategory, ClientTier } from '@/types';
 import { OFFER_TTL_DAYS } from '@/lib/projectGen';
 import { estimateDailyContrib } from '@/lib/projectEngine';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
+import type { DogTraitId } from '@/constants/dogTraits';
 
 function findChemistries(dogs: Dog[], category: ProjectCategory): ChemistryCombo[] {
   if (dogs.length < 2) return [];
@@ -14,20 +15,31 @@ function findChemistries(dogs: Dog[], category: ProjectCategory): ChemistryCombo
   });
 }
 
-// 員工對該案的「個體分數」：對口/魅力/品質/疲勞綜合
+const ROLE_CATEGORY: Record<string, ProjectCategory[]> = {
+  工程師: ['tech'], QA: ['tech'],
+  美術: ['design'], 企劃: ['design', 'marketing'],
+  業務: ['marketing', 'service'], 行銷: ['marketing'],
+  客服: ['service'],
+  PM: ['tech', 'design', 'marketing', 'service'],
+  CEO: ['tech', 'design', 'marketing', 'service'],
+};
+
+// 該類別的「真專家」（單一對口）
+function isSpecialistFor(role: string, category: ProjectCategory): boolean {
+  const cats = ROLE_CATEGORY[role];
+  return !!cats && cats.length === 1 && cats[0] === category;
+}
+
+// 員工對該案的「個體分數」：對口/魅力/品質/疲勞/士氣綜合
 function dogScoreFor(dog: Dog, category: ProjectCategory): number {
   const matched = (dog as Dog & { role: string }).role;
-  const ROLE_CATEGORY: Record<string, ProjectCategory[]> = {
-    工程師: ['tech'], QA: ['tech'],
-    美術: ['design'], 企劃: ['design', 'marketing'],
-    業務: ['marketing', 'service'], 行銷: ['marketing'],
-    客服: ['service'],
-    PM: ['tech', 'design', 'marketing', 'service'],
-    CEO: ['tech', 'design', 'marketing', 'service'],
-  };
   const cats = ROLE_CATEGORY[matched] ?? [];
-  const matchBonus = cats.includes(category) ? 10 : 0;
+  // 對口加分：真專家（1 對口）+15、半專家（2 對口）+12、通才 PM/CEO（4 對口）+10
+  const specialistBonus = cats.length === 1 ? 5 : cats.length === 2 ? 2 : 0;
+  const matchBonus = cats.includes(category) ? 10 + specialistBonus : 0;
   const fatiguePenalty = dog.fatigue / 10;
+  // 士氣修正：< 30 扣分（0.7× 乘數）、≥ 80 加分（1.15× 乘數）
+  const moraleAdj = dog.morale < 30 ? -3 : dog.morale >= 80 ? 3 : 0;
   // 主屬性權重：依 category 決定
   let mainWeight = 0;
   switch (category) {
@@ -36,7 +48,48 @@ function dogScoreFor(dog: Dog, category: ProjectCategory): number {
     case 'marketing': mainWeight = dog.stats.charisma * 1.5 + dog.stats.speed * 1.1; break;
     case 'service': mainWeight = dog.stats.teamwork * 1.4 + dog.stats.quality * 1.1; break;
   }
-  return mainWeight + matchBonus - fatiguePenalty;
+  return mainWeight + matchBonus - fatiguePenalty + moraleAdj;
+}
+
+// 特性分：依案件類別、隊伍狀態給特性加分（部分特性「隊伍級」需要看已挑員工）
+function traitScoreFor(dog: Dog, category: ProjectCategory, alreadyPicked: Dog[]): number {
+  const traits = (dog.learnedTraits ?? []) as DogTraitId[];
+  if (traits.length === 0) return 0;
+  let score = 0;
+  for (const t of traits) {
+    switch (t) {
+      case 'overtime':
+        score += 3; // speed +15%（代價疲勞但短期划算）
+        break;
+      case 'perfectionist':
+        // 品質為主的案受益最大
+        score += category === 'tech' || category === 'design' || category === 'service' ? 5 : 1;
+        break;
+      case 'mentor':
+        // 隊伍級：同案隊員 exp +50%，要有別人才有用
+        score += alreadyPicked.length > 0 ? 4 : 0;
+        break;
+      case 'haggler':
+        score += 6; // reward +8%
+        break;
+      case 'ironHeart':
+        // 防禦型：士氣低的狗自帶下限值
+        score += dog.morale < 50 ? 3 : 1;
+        break;
+      case 'catalyst':
+        // 隊伍級：化學倍率 +20%，得有隊友才有發揮空間
+        score += alreadyPicked.length > 0 ? 5 : 1;
+        break;
+      case 'enduring':
+        // 疲勞已高時更有價值
+        score += dog.fatigue > 50 ? 5 : 2;
+        break;
+      case 'social':
+        score += category === 'marketing' ? 6 : 3;
+        break;
+    }
+  }
+  return score;
 }
 
 // 化學加成貢獻：正組合 +6 / 組合，負組合 -6
@@ -51,28 +104,64 @@ function chemistryBonus(testRoles: Set<string>, category: ProjectCategory): numb
   return bonus;
 }
 
-// 自動指派：貪心挑分數最高的，最多 3 隻，避免負分
-function pickAutoAssign(candidates: Dog[], category: ProjectCategory, alreadyPicked: Dog[]): Dog[] {
+// 自動指派：貪心挑分數最高的，最多 3 隻；當加人不能再縮短預估天數時停止（避免浪費人力）
+function pickAutoAssign(
+  candidates: Dog[],
+  category: ProjectCategory,
+  alreadyPicked: Dog[],
+  remainingWork: number,
+  buffs: { speedBoost: number; qualityBoost: number; teamworkBoost: number; charismaBoost: number },
+): Dog[] {
   const result: Dog[] = [...alreadyPicked];
   const pool = candidates.slice();
   const MAX = 3;
+
+  const daysFor = (dogs: Dog[]): number => {
+    if (dogs.length === 0) return Infinity;
+    const c = estimateDailyContrib(category, dogs, buffs);
+    if (c <= 0) return Infinity;
+    return Math.ceil(remainingWork / c);
+  };
+
+  let prevDays = daysFor(result);
+
   while (result.length < MAX && pool.length > 0) {
+    // 第一隻：若有「專家」就限定從專家池挑（行銷案優先選行銷）
+    let searchIndices: number[] = pool.map((_, i) => i);
+    if (result.length === 0) {
+      const specialistIdx = pool
+        .map((d, i) => (isSpecialistFor(d.role, category) ? i : -1))
+        .filter((i) => i >= 0);
+      if (specialistIdx.length > 0) searchIndices = specialistIdx;
+    }
+
     let bestIdx = -1;
     let bestScore = -Infinity;
-    for (let i = 0; i < pool.length; i++) {
+    for (const i of searchIndices) {
       const d = pool[i];
       const baseScore = dogScoreFor(d, category);
+      const traitScore = traitScoreFor(d, category, result);
       const newRoles = new Set([...result.map((r) => r.role), d.role]);
       const oldRoles = new Set(result.map((r) => r.role));
       const chemDelta = chemistryBonus(newRoles, category) - chemistryBonus(oldRoles, category);
-      const total = baseScore + chemDelta;
+      const total = baseScore + traitScore + chemDelta;
       if (total > bestScore) {
         bestScore = total;
         bestIdx = i;
       }
     }
-    // 如果新加一隻會讓總分變負（高疲勞 + 負化學），不加了
     if (bestIdx === -1 || (result.length >= 1 && bestScore < 0)) break;
+
+    // 已有 1 隻以上時：若新人加進去無法縮短預估天數 → 停（多派也沒用）
+    if (result.length >= 1) {
+      const newDays = daysFor([...result, pool[bestIdx]]);
+      if (newDays >= prevDays) break;
+      prevDays = newDays;
+    } else {
+      // 第一隻必加，當基準
+      prevDays = daysFor([pool[bestIdx]]);
+    }
+
     result.push(pool[bestIdx]);
     pool.splice(bestIdx, 1);
   }
@@ -139,22 +228,27 @@ export function ProjectDetailModal({
     }
   }, [project, onClose]);
 
-  if (!project) return null;
-  const isOffered = project.status === 'offered';
-
-  const availableDogs = staff.filter((d) => !d.assignedProjectId || (!isOffered && d.assignedProjectId === projectId));
-  const pickedDogs = isOffered
-    ? staff.filter((d) => pickedIds.includes(d.id))
-    : staff.filter((d) => project.assignedStaffIds.includes(d.id));
+  // ⚠️ 所有 hook 必須在 early-return 之前呼叫，避免 React 發出 "fewer hooks" 錯誤
+  const isOffered = project?.status === 'offered';
+  const availableDogs = !project
+    ? []
+    : staff.filter((d) => !d.assignedProjectId || (!isOffered && d.assignedProjectId === projectId));
+  const pickedDogs = !project
+    ? []
+    : isOffered
+      ? staff.filter((d) => pickedIds.includes(d.id))
+      : staff.filter((d) => project.assignedStaffIds.includes(d.id));
 
   const dailyContrib = useMemo(
-    () => estimateDailyContrib(project.category, pickedDogs, companyBuffs),
-    [project.category, pickedDogs, companyBuffs],
+    () => (project ? estimateDailyContrib(project.category, pickedDogs, companyBuffs) : 0),
+    [project, pickedDogs, companyBuffs],
   );
   const chemistries = useMemo(
-    () => findChemistries(pickedDogs, project.category),
-    [pickedDogs, project.category],
+    () => (project ? findChemistries(pickedDogs, project.category) : []),
+    [pickedDogs, project],
   );
+
+  if (!project) return null;
   const remainingWork = isOffered
     ? project.workRequired
     : Math.max(0, project.workRequired - project.workDone);
@@ -254,9 +348,11 @@ export function ProjectDetailModal({
                 <div className="text-base font-extrabold">{project.expectedQuality}</div>
               </div>
               <div className="text-center">
-                <div style={{ color: 'var(--muted)' }}>{isOffered ? '期限' : '剩餘'}</div>
+                <div style={{ color: 'var(--muted)' }}>{isOffered ? '期限' : '進度'}</div>
                 <div className="text-base font-extrabold">
-                  {isOffered ? `${project.defaultDeadlineDays} 天` : `${activeDaysLeft} 天`}
+                  {isOffered
+                    ? `${project.defaultDeadlineDays} 天`
+                    : `${day - (project.acceptedDay ?? day)} / ${project.defaultDeadlineDays}`}
                 </div>
               </div>
               <div className="text-center">
@@ -314,7 +410,13 @@ export function ProjectDetailModal({
                   type="button"
                   onClick={() => {
                     const alreadyPicked = isOffered ? pickedDogs : pickedDogs;
-                    const picked = pickAutoAssign(availableDogs, project.category, isOffered ? [] : alreadyPicked);
+                    const picked = pickAutoAssign(
+                      availableDogs,
+                      project.category,
+                      isOffered ? [] : alreadyPicked,
+                      remainingWork,
+                      companyBuffs,
+                    );
                     if (isOffered) {
                       setPickedIds(picked.map((d) => d.id));
                     } else {
@@ -331,7 +433,7 @@ export function ProjectDetailModal({
                     color: '#5a3a10',
                     border: '1px solid rgba(90,70,54,0.15)',
                   }}
-                  title="依對口 / 化學 / 低疲勞自動挑最佳人選（最多 3 隻）"
+                  title="依對口 / 化學 / 特性 / 士氣 / 低疲勞挑最佳；天數縮不下去就不再加人"
                 >
                   ⚡ 自動指派
                 </button>

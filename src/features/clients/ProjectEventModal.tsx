@@ -67,8 +67,8 @@ const EVENT_INFO: Record<ProjectEventKind, EventInfo> = {
     title: '員工想請假',
     desc: '員工冒泡：「老闆我有點累...」',
     optionA: {
-      label: '✅ 准假 1 天',
-      outcome: '當天該員不貢獻、fatigue -30、loyalty +5、其他隊員 loyalty +1',
+      label: '✅ 准假回血',
+      outcome: '當天該員 0 貢獻、fatigue -50、loyalty +5、士氣 +5、其他隊員 loyalty +1',
     },
     optionB: {
       label: '❌ 不准請假',

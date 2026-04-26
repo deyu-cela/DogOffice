@@ -177,6 +177,11 @@ function StickyNote({
     : project.deadlineDay - day;                  // active: 距離 deadline 天數
   const overdue = !isOffered && daysLeft < 0;
   const urgent = !overdue && daysLeft <= 1;
+  // active 案件：已進行天數 / 期限 / 容忍
+  const acceptedDay = project.acceptedDay ?? day;
+  const progressDays = day - acceptedDay;
+  const totalDays = project.defaultDeadlineDays;
+  const graceDays = project.graceDays;
 
   const assignedDogs = staff.filter((d) => project.assignedStaffIds.includes(d.id));
   const hasPending = !!project.pendingEvent;
@@ -246,7 +251,9 @@ function StickyNote({
         >
           {isOffered
             ? `📅 過期剩 ${Math.max(0, daysLeft)} 天`
-            : overdue ? `超期 ${-daysLeft} 天` : `剩 ${daysLeft} 天`}
+            : overdue
+              ? `📅 ${progressDays}/${totalDays} 超${-daysLeft}`
+              : `📅 ${progressDays}/${totalDays} (+${graceDays})`}
         </span>
       </div>
 

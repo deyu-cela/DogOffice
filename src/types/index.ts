@@ -52,6 +52,11 @@ export type Dog = {
   assignedProjectId: string | null; // 目前指派到的案子 id
   daysAtCompany: number;         // 在公司多少天（loyalty 自然累積）
   unhappyLeaveDays: number;      // 連續被拒請假的次數（連 3 直接離職）
+  onLeaveDay: number | null;     // 准假當天的 day 編號（該日 0 貢獻；隔天自動清空）
+
+  // 升級習得特性
+  learnedTraits: string[];                       // DogTraitId 列表，升級時 +1
+  pendingTraitChoice: { choices: string[]; roundsLeft?: number } | null; // 升級後待玩家選的 3 選項；roundsLeft > 1 代表選完還會接下一輪（S 直接面試會一次給 2 輪）
 };
 
 export type PipTask = {
@@ -272,6 +277,11 @@ export type ProjectEventModal = {
   projectId: string;
 } | null;
 
+// === 升級特性選擇 modal ===
+export type TraitChoiceModal = {
+  dogId: string;
+} | null;
+
 export type DailySummary = {
   day: number;
   income: number;            // 案件酬勞總和
@@ -293,6 +303,7 @@ export type GameState = {
   tierBudget: number;            // 案件稀有度預算，每天 morning 重算
   companyBuffs: CompanyBuffs;
   officeLevel: number;
+  officeSkin: number;            // 辦公室造型（視覺用，0..officeLevel 自由切換；不影響容量/解鎖）
   purchases: Partial<Record<ShopItemEffectKey, number>>;
   staff: Dog[];
   staffActionModal: StaffActionModal | null;
@@ -331,6 +342,9 @@ export type GameState = {
 
   // 事件 modal
   projectEventModal: ProjectEventModal;
+
+  // 升級特性選擇 modal
+  traitChoiceModal: TraitChoiceModal;
 
   // 每日結算摘要（toast 用，3 秒自動消失）
   dailySummary: DailySummary | null;

@@ -16,6 +16,7 @@ export type GameSaveData = {
   tierBudget: number;
   companyBuffs: CompanyBuffs;
   officeLevel: number;
+  officeSkin: number;
   purchases: Partial<Record<ShopItemEffectKey, number>>;
 
   // 接案制

@@ -9,8 +9,20 @@ import type {
   ProjectEventKind,
 } from '@/types';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
+import { pickTraitChoices } from '@/constants/dogTraits';
 import { isRoleMatched } from './projectGen';
 import { clamp } from './utils';
+import {
+  getDogSpeedMul,
+  getDogQualityMul,
+  getDogCharismaMul,
+  getDogFatigueAccumMul,
+  getDogMoraleFloor,
+  getDogDailyMoraleDelta,
+  getProjectChemBoost,
+  getProjectRewardMul,
+  getProjectExpMulForDog,
+} from './dogTraitsEngine';
 
 // === 類別主/次 stat 加成（plan §2.2）===
 type CategoryMul = {
@@ -102,6 +114,7 @@ function teamSynergy(assignedDogs: Dog[], pmTeamBoost: boolean): number {
 // === 每日推進案件進度 ===
 type DayProgress = {
   staffById: Map<string, Dog>;
+  currentDay: number;
 };
 
 function buildDogIdMap(staff: Dog[]): Map<string, Dog> {
@@ -116,9 +129,15 @@ function applyDailyFatigue(staff: Dog[]): Dog[] {
     const wasAssigned = !!d.assignedProjectId;
     let nextFatigue = d.fatigue;
     if (wasAssigned) {
-      // S 級 ×0.7、A 級 ×0.85，其他正常累積
-      const mul = d.grade === 'S' ? 0.7 : d.grade === 'A' ? 0.85 : 1.0;
-      nextFatigue = clamp(d.fatigue + 10 * mul, 0, 100);
+      if (d.fatigue >= 100) {
+        // 過勞中：強制當日休息回血，避免卡死無限循環
+        nextFatigue = clamp(d.fatigue - 15, 0, 100);
+      } else {
+        // S 級 ×0.7、A 級 ×0.85，其他正常累積；再乘特性疲勞係數
+        const gradeMul = d.grade === 'S' ? 0.7 : d.grade === 'A' ? 0.85 : 1.0;
+        const traitMul = getDogFatigueAccumMul(d);
+        nextFatigue = clamp(d.fatigue + 10 * gradeMul * traitMul, 0, 100);
+      }
     } else {
       nextFatigue = clamp(d.fatigue - 15, 0, 100);
     }
@@ -126,7 +145,7 @@ function applyDailyFatigue(staff: Dog[]): Dog[] {
   });
 }
 
-// === 每日 loyalty 自然累積 ===
+// === 每日 loyalty 自然累積 + 特性 morale delta ===
 function applyDailyLoyalty(staff: Dog[]): Dog[] {
   return staff.map((d) => {
     let next = d.loyalty;
@@ -135,7 +154,13 @@ function applyDailyLoyalty(staff: Dog[]): Dog[] {
     // 個人士氣 > 80 → +0.5；< 30 → -1
     if (d.morale >= 80) next += 0.5;
     if (d.morale < 30) next -= 1;
-    return { ...d, loyalty: clamp(next, 0, 100), daysAtCompany: d.daysAtCompany + 1 };
+    const moraleAdj = getDogDailyMoraleDelta(d);
+    return {
+      ...d,
+      loyalty: clamp(next, 0, 100),
+      daysAtCompany: d.daysAtCompany + 1,
+      morale: clamp(d.morale + moraleAdj, 0, 100),
+    };
   });
 }
 
@@ -148,9 +173,10 @@ function pushProjectProgress(
   if (project.status !== 'active') {
     return { project, chemTriggered: [], chemMoraleDelta: 0, assignedDogs: [] };
   }
+  // 篩出今天還在工作（沒請假）的隊員
   const assignedDogs = project.assignedStaffIds
     .map((id) => ctx.staffById.get(id))
-    .filter((d): d is Dog => !!d);
+    .filter((d): d is Dog => !!d && d.onLeaveDay !== ctx.currentDay);
   if (assignedDogs.length === 0) {
     return { project, chemTriggered: [], chemMoraleDelta: 0, assignedDogs: [] };
   }
@@ -158,6 +184,10 @@ function pushProjectProgress(
   const chem = computeChemistry(assignedDogs, project.category);
   const pmTeamBoost = assignedDogs.some((d) => d.role === 'PM' || d.role === 'CEO');
   const synergy = teamSynergy(assignedDogs, pmTeamBoost);
+  // 化學催化：隊上有 catalyst → chem speed/quality 倍率再 ×1.2
+  const chemBoost = getProjectChemBoost(assignedDogs);
+  const effChemSpeed = 1 + (chem.speedMul - 1) * chemBoost;
+  const effChemQuality = 1 + (chem.qualityMul - 1) * chemBoost;
 
   let workAdded = 0;
   let qualityAdded = 0;
@@ -166,19 +196,32 @@ function pushProjectProgress(
     const speed = dog.stats.speed + buffs.speedBoost;
     const quality = dog.stats.quality + buffs.qualityBoost;
 
-    // contrib = speed × catMul × roleMatch × synergy × chemSpeedMul × moraleMul × fatigueMul
+    // contrib = speed × catMul × roleMatch × synergy × chemSpeedMul × moraleMul × fatigueMul × traitSpeedMul
     const roleMatch = isRoleMatched(dog, project.category) ? 1.15 : 1.0;
+    const traitSpeed = getDogSpeedMul(dog);
+    const traitQuality = getDogQualityMul(dog);
+    // 行銷類案件：charisma 影響 → 特性 charisma 加成乘上 catMul.charismaMul（用近似：在 charismaMul 上做修正）
+    // 簡單做法：把 social 的 charisma 加成轉成行銷案的 quality 微加成 + speed 微加成
+    const traitCharisma = getDogCharismaMul(dog);
+    // 行銷案吃 charisma；其他案 charisma 影響很小，這裡用：speed 與 quality 都乘 charisma 平方根的偏移
+    const charismaApply =
+      project.category === 'marketing'
+        ? traitCharisma // 行銷案完整套用
+        : 1 + (traitCharisma - 1) * 0.3; // 其他案 30% 折扣
+
     const contrib =
       speed *
       catMul.speedMul *
       roleMatch *
       synergy *
-      chem.speedMul *
+      effChemSpeed *
       moraleMul(dog) *
-      fatigueMul(dog);
+      fatigueMul(dog) *
+      traitSpeed *
+      charismaApply;
 
     workAdded += contrib;
-    qualityAdded += quality * catMul.qualityMul * chem.qualityMul * contrib;
+    qualityAdded += quality * catMul.qualityMul * effChemQuality * traitQuality * contrib;
   }
 
   return {
@@ -222,9 +265,11 @@ function settleProject(
   const overDays = Math.max(0, currentDay - project.deadlineDay);
   const lateMul = overDays === 0 ? 1.0 : overDays <= project.graceDays ? 0.7 : 1.0;
 
+  // 議價達人特性：reward 再 ×1.08
+  const traitReward = getProjectRewardMul(assignedDogs);
   const finalReward = Math.max(
     0,
-    Math.round(project.reward * payoutMul * project.rewardMul * project.qualityMul * bargain * lateMul),
+    Math.round(project.reward * payoutMul * project.rewardMul * project.qualityMul * bargain * lateMul * traitReward),
   );
   const repDelta =
     qualityRatio >= 1
@@ -274,13 +319,23 @@ function checkUpgrade(dog: Dog): { dog: Dog; upgraded: boolean; newGrade: Dog['g
   const salaryMap: Record<Dog['grade'], number> = { D: 0.7, C: 0.85, B: 1.0, A: 1.25, S: 1.6 };
   const salaryRatio = salaryMap[newGrade] / salaryMap[dog.grade];
   const newSalary = Math.round(dog.expectedSalary * salaryRatio);
+  const upgradedDog: Dog = {
+    ...dog,
+    grade: newGrade,
+    stats: newStats,
+    expectedSalary: newSalary,
+    severance: newSalary * 3,
+  };
+  // 只有升到 A 或 S 才 roll 特性（D→C / C→B 不給）
+  const givesTrait = newGrade === 'A' || newGrade === 'S';
+  const choices = givesTrait ? pickTraitChoices(upgradedDog, 3) : [];
   return {
     dog: {
-      ...dog,
-      grade: newGrade,
-      stats: newStats,
-      expectedSalary: newSalary,
-      severance: newSalary * 3,
+      ...upgradedDog,
+      pendingTraitChoice:
+        choices.length > 0
+          ? { choices, roundsLeft: 1 }
+          : upgradedDog.pendingTraitChoice ?? null,
     },
     upgraded: true,
     newGrade,
@@ -296,6 +351,16 @@ const MID_EVENT_KINDS: ProjectEventKind[] = [
   'dogLeaveAsk',
   'poaching',
 ];
+
+// 玩家逾期未選擇時，自動套用的 default 選項
+const EVENT_DEFAULT_CHOICE: Record<ProjectEventKind, 'A' | 'B'> = {
+  changeRequest: 'B', // 拒絕變更（reward -10%、信譽 -2）
+  earlyDeliver:  'B', // 維持原期限（信譽 -0.5）
+  upsell:        'B', // 維持原 tier（無變化）
+  bugBurst:      'B', // 認賠（quality ×0.85、信譽 -1）
+  dogLeaveAsk:   'A', // 准假（友善 default，避免員工被連續拒絕離職）
+  poaching:      'B', // 不加薪（讓員工自己決定）
+};
 
 function rollMidEvent(
   project: Project,
@@ -354,29 +419,41 @@ function rollMidEvent(
 }
 
 // === 估算：給一組員工，每天可推進多少 work（給 inbox 預覽用）===
-// 不含士氣 / 疲勞 / 化學反應動態因素，給玩家一個粗估數字
+// 公式與 pushProjectProgress 對齊（含士氣/疲勞/特性/化學催化），給玩家準確預估
 export function estimateDailyContrib(
   category: ProjectCategory,
   dogs: Dog[],
   buffs: { speedBoost: number; qualityBoost: number; teamworkBoost: number; charismaBoost: number },
 ): number {
   if (dogs.length === 0) return 0;
-  void buffs; // 簡化：buffs 已包含在 dog.stats 顯示中
   const catMul = categoryMulFor(category);
   const chem = computeChemistry(dogs, category);
   const pmTeamBoost = dogs.some((d) => d.role === 'PM' || d.role === 'CEO');
   const synergy = teamSynergy(dogs, pmTeamBoost);
+  // 化學催化：隊上有 catalyst → chem speed 倍率再強化
+  const chemBoost = getProjectChemBoost(dogs);
+  const effChemSpeed = 1 + (chem.speedMul - 1) * chemBoost;
 
   let total = 0;
   for (const dog of dogs) {
     const speed = dog.stats.speed + buffs.speedBoost;
     const roleMatch = isRoleMatched(dog, category) ? 1.15 : 1.0;
+    const traitSpeed = getDogSpeedMul(dog);
+    const traitCharisma = getDogCharismaMul(dog);
+    const charismaApply =
+      category === 'marketing'
+        ? traitCharisma
+        : 1 + (traitCharisma - 1) * 0.3;
     const contrib =
       speed *
       catMul.speedMul *
       roleMatch *
       synergy *
-      chem.speedMul;
+      effChemSpeed *
+      moraleMul(dog) *
+      fatigueMul(dog) *
+      traitSpeed *
+      charismaApply;
     total += contrib;
   }
   return total;
@@ -415,9 +492,38 @@ export function runProjectsDay(state: GameState): DayResult {
   // 1. 每日 fatigue / loyalty 處理
   s.staff = applyDailyFatigue(s.staff);
   s.staff = applyDailyLoyalty(s.staff);
+  // 清理「過期的」休假旗標（昨天放假的，今天就回崗）
+  s.staff = s.staff.map((d) =>
+    d.onLeaveDay != null && d.onLeaveDay < s.day ? { ...d, onLeaveDay: null } : d,
+  );
+
+  // 1.5 自動處理逾期未選的中途事件：
+  //   觸發條件 = 已掛 ≥ 3 天 OR 今天就會結案（workDone + 今日預估貢獻 ≥ workRequired）
+  //   套用各 kind 對應的 default 選項
+  const ctxForEstimate: DayProgress = { staffById: buildDogIdMap(s.staff), currentDay: s.day };
+  for (const project of s.clients) {
+    if (project.status !== 'active' || !project.pendingEvent) continue;
+    const event = project.pendingEvent;
+    const daysHeld = s.day - event.triggeredDay;
+    const assignedDogs = project.assignedStaffIds
+      .map((id) => ctxForEstimate.staffById.get(id))
+      .filter((d): d is Dog => !!d && d.onLeaveDay !== ctxForEstimate.currentDay);
+    const estContrib = estimateDailyContrib(project.category, assignedDogs, s.companyBuffs);
+    const willCompleteToday = project.workDone + estContrib >= project.workRequired;
+    if (daysHeld < 3 && !willCompleteToday) continue;
+    // 自動套 default
+    const defaultChoice = EVENT_DEFAULT_CHOICE[event.kind];
+    const reason = willCompleteToday ? '案件即將結案' : '逾期 3 天未處理';
+    const autoLog = `⚠️ ${project.title}（${project.clientName}）${reason}，自動套「${defaultChoice}」選項`;
+    newLogs.push({ day: s.day, msg: autoLog });
+    const result = resolveProjectEvent(s, project.id, defaultChoice);
+    s = result.state;
+    for (const log of result.newLogs) newLogs.push(log);
+    if (!toast && result.toast) toast = result.toast;
+  }
 
   // 2. 推進每個 active 案的進度
-  const ctx: DayProgress = { staffById: buildDogIdMap(s.staff) };
+  const ctx: DayProgress = { staffById: buildDogIdMap(s.staff), currentDay: s.day };
   const updatedClients: Project[] = [];
   const moraleDeltaByDogId = new Map<string, number>();
 
@@ -459,18 +565,19 @@ export function runProjectsDay(state: GameState): DayResult {
       summary.income += settled.finalReward;
       summary.reputationDelta += s.reputation - repBefore;
       // 給隊員經驗、士氣 +3、loyalty +2、解除指派 → 用 immutable update（避免 mutate 不觸發 re-render）
+      // 老師特性：同案中其他人有 mentor → exp ×1.5
       const assignedIds = new Set(assignedDogs.map((d) => d.id));
-      s.staff = s.staff.map((d) =>
-        assignedIds.has(d.id)
-          ? {
-              ...d,
-              experience: d.experience + settled.experienceGain,
-              morale: clamp(d.morale + 3, 0, 100),
-              loyalty: clamp(d.loyalty + 2, 0, 100),
-              assignedProjectId: null,
-            }
-          : d,
-      );
+      s.staff = s.staff.map((d) => {
+        if (!assignedIds.has(d.id)) return d;
+        const expMul = getProjectExpMulForDog(d, assignedDogs);
+        return {
+          ...d,
+          experience: d.experience + Math.round(settled.experienceGain * expMul),
+          morale: clamp(d.morale + 3, 0, 100),
+          loyalty: clamp(d.loyalty + 2, 0, 100),
+          assignedProjectId: null,
+        };
+      });
       newLogs.push({
         day: s.day,
         msg: `🎉 完成「${project.title}」(${project.clientName})：拿 $${settled.finalReward}、信譽 ${settled.reputationDelta >= 0 ? '+' : ''}${settled.reputationDelta}`,
@@ -525,7 +632,7 @@ export function runProjectsDay(state: GameState): DayResult {
   summary.failedCount = projectsFailedAdd;
 
   // 5. 中途事件 roll（只對仍 active 的案）
-  const ctx2: DayProgress = { staffById: buildDogIdMap(s.staff) };
+  const ctx2: DayProgress = { staffById: buildDogIdMap(s.staff), currentDay: s.day };
   s.clients = s.clients.map((project) => {
     if (project.status !== 'active') return project;
     const assignedDogs = project.assignedStaffIds
@@ -561,12 +668,19 @@ export function runProjectsDay(state: GameState): DayResult {
     return result.dog;
   });
   for (const u of upgrades) {
-    newLogs.push({ day: s.day, msg: `🎓 ${u.name} 從 ${u.from} 級升到 ${u.to} 級！` });
+    newLogs.push({ day: s.day, msg: `🎓 ${u.name} 從 ${u.from} 級升到 ${u.to} 級！可挑選新特性！` });
     s.staff = s.staff.map((d) =>
       d.name === u.name ? { ...d, morale: clamp(d.morale + 5, 0, 100), loyalty: clamp(d.loyalty + 5, 0, 100) } : d,
     );
     summary.levelUps.push({ name: u.name, to: u.to });
   }
+
+  // 8. 套用「鋼鐵心」士氣下限
+  s.staff = s.staff.map((d) => {
+    const floor = getDogMoraleFloor(d);
+    if (d.morale < floor) return { ...d, morale: floor };
+    return d;
+  });
 
   return { state: s, newLogs, toast, summary };
 }
@@ -705,10 +819,11 @@ export function resolveProjectEvent(
       if (choice === 'A') {
         updateOneStaff(targetId, (d) => ({
           ...d,
-          fatigue: clamp(d.fatigue - 30, 0, 100),
+          fatigue: clamp(d.fatigue - 50, 0, 100),
           loyalty: clamp(d.loyalty + 5, 0, 100),
           morale: clamp(d.morale + 5, 0, 100),
           unhappyLeaveDays: 0,
+          onLeaveDay: s.day, // 當天 0 貢獻
         }));
         // 其他隊員 loyalty +1
         s.staff = s.staff.map((d) =>
@@ -817,6 +932,13 @@ export function resolveProjectEvent(
       break;
     }
   }
+
+  // 「鋼鐵心」士氣下限掃描
+  s.staff = s.staff.map((d) => {
+    const floor = getDogMoraleFloor(d);
+    if (d.morale < floor) return { ...d, morale: floor };
+    return d;
+  });
 
   return { state: s, newLogs, toast };
 }

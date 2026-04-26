@@ -9,8 +9,8 @@ import { LeaderboardPanel } from '@/features/leaderboard/LeaderboardPanel';
 
 const IPO_REPUTATION = 80;
 const IPO_MONEY = 50000;
-const IPO_OFFICE_LEVEL = 3;
-const IPO_PROJECTS = 30;
+const IPO_OFFICE_LEVEL = 4;
+const IPO_PROJECTS = 80;
 
 export function TopBar() {
   const day = useGameStore((s) => s.day);
@@ -60,7 +60,7 @@ export function TopBar() {
             <div className="flex-1 grid grid-cols-4 gap-1.5">
               <ProgressMini label="信譽" current={Math.round(reputation)} target={IPO_REPUTATION} progress={repProgress} color="#66bb6a" />
               <ProgressMini label="資金" current={`$${money}`} target={`$${IPO_MONEY / 1000}k`} progress={moneyProgress} color="#f6c24b" />
-              <ProgressMini label="Lv" current={officeLevel} target={IPO_OFFICE_LEVEL} progress={officeProgress} color="#a36a3a" />
+              <ProgressMini label="Lv" current={officeLevel + 1} target={IPO_OFFICE_LEVEL + 1} progress={officeProgress} color="#a36a3a" />
               <ProgressMini label="案數" current={projectsCompleted} target={IPO_PROJECTS} progress={projectProgress} color="#7b3a9f" />
             </div>
           </button>

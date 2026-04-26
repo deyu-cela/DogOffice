@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { Panel, Badge } from '@/components/Panel';
 import { companyStage } from '@/lib/utils';
 import { DayTimer } from './DayTimer';
 import { StatPanel } from './StatPanel';
 import { ExtraStats } from './ExtraStats';
+import { ChemistryGuideModal } from './ChemistryGuideModal';
 
 export function RightPanel() {
   const staff = useGameStore((s) => s.staff);
@@ -13,6 +15,7 @@ export function RightPanel() {
     ? staff.reduce((n, d) => n + d.morale, 0) / staff.length
     : 70;
   const stage = companyStage(reputation, avgMorale, staff.length, projectsCompleted);
+  const [chemOpen, setChemOpen] = useState(false);
 
   return (
     <Panel className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto">
@@ -23,9 +26,28 @@ export function RightPanel() {
       <DayTimer />
       <StatPanel />
       <ExtraStats />
+      <div>
+        <button
+          type="button"
+          onClick={() => setChemOpen(true)}
+          className="text-[9px] px-1.5 rounded-full font-bold"
+          style={{
+            background: 'linear-gradient(180deg, #f0e0ff, #d4b8f0)',
+            color: '#5a3a8a',
+            border: '1px solid #b89adb',
+            lineHeight: 1.1,
+            paddingTop: 1,
+            paddingBottom: 1,
+          }}
+          title="化學反應一覽"
+        >
+          🧪 化學反應
+        </button>
+      </div>
       <p className="text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
         💡 點 OfficeScene 的建築物開啟接案處 / 商店 / 員工 / 面試。
       </p>
+      {chemOpen && <ChemistryGuideModal onClose={() => setChemOpen(false)} />}
     </Panel>
   );
 }

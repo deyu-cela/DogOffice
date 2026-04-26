@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useWalkerStore } from '@/store/walkerStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { Badge } from '@/components/Panel';
 import { companyHint, companyStage } from '@/lib/utils';
 import { ThreeRoom } from './ThreeRoom';
+import { OfficeSkinModal } from './OfficeSkinModal';
 import { computeGridObstacles } from './layout';
 import { ROOM_GRID } from './iso';
 
@@ -20,6 +21,7 @@ export function OfficeScene() {
   const syncWalkers = useWalkerStore((s) => s.syncWithStaff);
   const purchases = useGameStore((s) => s.purchases);
   const roomRef = useRef<HTMLDivElement>(null);
+  const [skinModalOpen, setSkinModalOpen] = useState(false);
 
   const avgMorale = staff.length > 0
     ? staff.reduce((n, d) => n + d.morale, 0) / staff.length
@@ -83,8 +85,24 @@ export function OfficeScene() {
             員工 {staff.length} / {level.maxStaff}・裝飾 Lv {decor}
           </div>
         </div>
-        <Badge>{stage}</Badge>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setSkinModalOpen(true)}
+            className="text-[11px] px-2 py-1 rounded-full font-bold"
+            style={{
+              background: 'linear-gradient(180deg, #f0e0ff, #d4b8f0)',
+              color: '#5a3a8a',
+              border: '1px solid #b89adb',
+            }}
+            title="切換辦公室造型"
+          >
+            🎨 換造型
+          </button>
+          <Badge>{stage}</Badge>
+        </div>
       </div>
+      {skinModalOpen && <OfficeSkinModal onClose={() => setSkinModalOpen(false)} />}
 
       <div
         ref={roomRef}
