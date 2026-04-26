@@ -4,12 +4,15 @@ import { ROLE_IMAGE_MAP } from '@/constants/dogRoles';
 
 export function WalkingDogs() {
   const walkers = useWalkerStore((s) => s.walkers);
-  const morale = useGameStore((s) => s.morale);
-  const health = useGameStore((s) => s.health);
+  const staff = useGameStore((s) => s.staff);
+  const reputation = useGameStore((s) => s.reputation);
 
-  const low = morale < 40 || health < 35;
-  const busy = morale >= 60 && health >= 55;
-  const statusEmoji = low ? '💤' : busy ? '✨' : health < 45 ? '😵' : '';
+  const avgMorale = staff.length > 0
+    ? staff.reduce((n, d) => n + d.morale, 0) / staff.length
+    : 70;
+  const low = avgMorale < 40 || reputation < 25;
+  const busy = avgMorale >= 60 && reputation >= 50;
+  const statusEmoji = low ? '💤' : busy ? '✨' : reputation < 35 ? '😵' : '';
 
   return (
     <div className="absolute inset-0 pointer-events-none">

@@ -3,124 +3,117 @@ import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { companyHint, textLevel } from '@/lib/utils';
 
+const OFFICE_DAILY_EXPENSE = [5, 8, 14, 22, 35];
+
 export function StatPanel() {
   const money = useGameStore((s) => s.money);
-  const morale = useGameStore((s) => s.morale);
-  const health = useGameStore((s) => s.health);
-  const decor = useGameStore((s) => s.decor);
-  const productivityBoost = useGameStore((s) => s.productivityBoost);
-  const stabilityBoost = useGameStore((s) => s.stabilityBoost);
-  const trainingBoost = useGameStore((s) => s.trainingBoost);
+  const reputation = useGameStore((s) => s.reputation);
+  const tierBudget = useGameStore((s) => s.tierBudget);
   const staff = useGameStore((s) => s.staff);
   const officeLevel = useGameStore((s) => s.officeLevel);
-  const activeChemistry = useGameStore((s) => s.activeChemistry);
+  const companyBuffs = useGameStore((s) => s.companyBuffs);
   const purchases = useGameStore((s) => s.purchases);
+  const projectsCompleted = useGameStore((s) => s.projectsCompleted);
+  const projectsFailed = useGameStore((s) => s.projectsFailed);
+  const clients = useGameStore((s) => s.clients);
 
   const office = OFFICE_LEVELS[officeLevel];
   const cap = office.maxStaff;
   const staffLen = staff.length;
-  const moraleLabel = textLevel(morale, ['爆棚', '尚可', '低落']);
-  const healthLabel = textLevel(health, ['穩健', '普通', '危險']);
-  const hint = companyHint(money, health, morale);
+  const avgMorale = staffLen > 0
+    ? Math.round(staff.reduce((n, d) => n + d.morale, 0) / staffLen)
+    : 70;
+  const moraleLabel = textLevel(avgMorale, ['爆棚', '尚可', '低落']);
+  const repLabel = textLevel(reputation, ['口碑爆表', '一般', '危險']);
+  const hasActive = clients.some((c) => c.status === 'active');
+  const hint = companyHint(money, reputation, avgMorale, hasActive);
 
-  const p = purchases;
-  const count = (k: keyof typeof p) => p[k] ?? 0;
+  // 稀有度拆解：總魅力 + 信譽/2 + 辦公室加成 + artwall ×8（CEO 在隊上 ×1.5）
+  const totalCharisma = staff.reduce((n, d) => n + d.stats.charisma, 0);
+  const repBonus = Math.round(reputation / 2);
+  const officeTierBonus = [0, 5, 12, 22, 35][officeLevel] ?? 0;
+  const artwallBonus = (purchases.artwall ?? 0) * 8;
+  const hasCEO = staff.some((d) => d.isCEO);
+  const baseSum = totalCharisma + repBonus + officeTierBonus + artwallBonus;
 
-  // 來源明細（未買過顯示引導文字）
-  const productivityLines: string[] = [];
-  if (count('desk')) productivityLines.push(`升級辦公桌 ×${count('desk')} (+${count('desk')})`);
-  if (count('coffee')) productivityLines.push(`咖啡機 ×${count('coffee')} (+${count('coffee')})`);
-  if (count('artwall')) productivityLines.push(`展示牆 ×${count('artwall')} (+${count('artwall')})`);
-  const productivityTip = productivityLines.length
-    ? `加成來源\n${productivityLines.join('\n')}`
-    : '商店買「升級辦公桌」「咖啡機」「展示牆」可增加產能';
+  const dailySalary = staff.reduce((n, d) => n + d.expectedSalary, 0);
+  const dailyExpense = dailySalary + (OFFICE_DAILY_EXPENSE[officeLevel] ?? 0);
 
-  const stabilityLines: string[] = [];
-  if (count('policy')) stabilityLines.push(`流程優化手冊 ×${count('policy')} (+${count('policy')})`);
-  if (count('gym')) stabilityLines.push(`狗狗健身區 ×${count('gym')} (+${count('gym') * 2})`);
-  const stabilityTip = stabilityLines.length
-    ? `加成來源\n${stabilityLines.join('\n')}`
-    : '商店買「流程優化手冊」「狗狗健身區」可增加穩定';
-
-  const trainingTip = trainingBoost > 0
-    ? `目前累積 +${trainingBoost}\n答對培訓問答可累積\n（點員工宿舍 → 啟動培訓）`
-    : '點員工宿舍觸發「培訓問答」\n答對題目累積培訓加成';
-
-  const decorLines: string[] = [];
-  if (count('toy')) decorLines.push(`玩具區 ×${count('toy')} (+${count('toy')})`);
-  if (count('lamp')) decorLines.push(`暖光吊燈 ×${count('lamp')} (+${count('lamp')})`);
-  if (count('sofa')) decorLines.push(`懶骨頭 ×${count('sofa')} (+${count('sofa') * 2})`);
-  if (count('artwall')) decorLines.push(`展示牆 ×${count('artwall')} (+${count('artwall') * 2})`);
-  const decorTip = decorLines.length
-    ? `裝飾來源\n${decorLines.join('\n')}`
-    : '商店買「玩具」「吊燈」「懶骨頭」「展示牆」可增加裝飾';
+  const moneyTip = `目前資金：$${money}\n每日固定支出：$${dailyExpense}\n（員工底薪 $${dailySalary} + 辦公室 $${OFFICE_DAILY_EXPENSE[officeLevel] ?? 0}）`;
+  const repTip = `信譽：${Math.round(reputation)} / 100\n完成案件 +X、失敗案件 -X\n影響 inbox 案件稀有度與 tier 上門機率\nIPO 條件之一：信譽 ≥ 80`;
+  const moraleTip = `員工平均士氣：${avgMorale}\n影響案件進度乘數（< 30 → 0.7x、> 80 → 1.15x）\n買零食 / 開派對 / 完成案 → 提升`;
+  const projectTip = `完成 ${projectsCompleted} 件 / 失敗 ${projectsFailed} 件\nIPO 條件之一：完成案件 ≥ 30`;
+  const charismaTip = `全公司總魅力：${totalCharisma}\n= Σ 每隻員工的 charisma\n直接影響稀有度（越高越能接到稀有案）\n可招業務、行銷等高魅力職業`;
 
   const nextOffice = OFFICE_LEVELS[officeLevel + 1];
   const officeTip = nextOffice
-    ? `員工上限 ${cap} 位\n下一級：${nextOffice.name}（上限 ${nextOffice.maxStaff}）\n擴建成本 $${nextOffice.upgradeCost}`
+    ? `員工上限 ${cap} 位\n下一級：${nextOffice.name}（上限 ${nextOffice.maxStaff}）\n擴建成本 $${nextOffice.upgradeCost}\nIPO 條件之一：辦公室 ≥ Lv3`
     : `員工上限 ${cap} 位\n已達最大規模 🏆`;
 
-  const moneyTip = `目前資金：$${money}\n每日自動結算\n買裝備前先累積一點最穩`;
   const staffTip = `員工 ${staffLen} / ${cap}\n點人資辦公室面試招募\n點員工宿舍管理`;
-  const moraleTip = `目前士氣：${morale}\n買零食/玩具/吊燈 + 陪玩可提升\n低於 40 工作效率會下降`;
-  const healthTip = `目前營運：${health}\n員工產能與穩定影響\n低於 15 + 士氣低會破產`;
 
   return (
     <div className="flex flex-col gap-2.5 mt-3">
       <div className="grid grid-cols-2 gap-2.5">
         <StatCell label="💰 資金" value={`$${money}`} tooltip={moneyTip} />
-        <StatCell label="👥 員工" value={`${staffLen} / ${cap}`} tooltip={staffTip} />
         <StatCell
-          label="❤️ 士氣"
-          value={`${morale} · ${moraleLabel}`}
-          meterValue={morale}
+          label="📈 信譽"
+          value={`${Math.round(reputation)} · ${repLabel}`}
+          meterValue={reputation}
+          meterColor="linear-gradient(90deg, #c8e6c9, #66bb6a)"
+          tooltip={repTip}
+        />
+        <StatCell
+          label="❤️ 員工平均士氣"
+          value={`${avgMorale} · ${moraleLabel}`}
+          meterValue={avgMorale}
           meterColor="linear-gradient(90deg, #a8d8a8, #66bb6a)"
           tooltip={moraleTip}
         />
         <StatCell
-          label="📈 營運"
-          value={`${health} · ${healthLabel}`}
-          meterValue={health}
-          meterColor="linear-gradient(90deg, #ffb3b3, #ef8f52)"
-          tooltip={healthTip}
+          label="🏆 完成案件"
+          value={`${projectsCompleted} 件`}
+          meterValue={Math.min(100, (projectsCompleted / 30) * 100)}
+          meterColor="linear-gradient(90deg, #ffd36a, #c9a064)"
+          tooltip={projectTip}
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <MiniStat label="⚡ 產能" value={`+${productivityBoost}`} color="#3a7a3f" tooltip={productivityTip} />
-        <MiniStat label="🛡️ 穩定" value={`+${stabilityBoost}`} color="#2b7abd" tooltip={stabilityTip} />
-        <MiniStat label="🎓 培訓" value={`+${trainingBoost}`} color="#7b3a9f" tooltip={trainingTip} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <MiniStat label="🏢 辦公室" value={office.name} color="#8b6a45" tooltip={officeTip} />
-        <MiniStat label="🎨 裝飾 Lv" value={`${decor}`} color="#d07a1f" tooltip={decorTip} />
-      </div>
-
-      {activeChemistry.length > 0 && (
-        <div
-          className="p-2.5 rounded-xl text-xs"
-          style={{ background: '#fff0f3', border: '1.5px solid #e0c280' }}
-        >
-          <div className="font-bold mb-1" style={{ color: '#8a6a2a' }}>
-            ✨ 化學反應 ({activeChemistry.length})
-          </div>
-          <div className="flex flex-col gap-0.5">
-            {activeChemistry.map((c) => (
-              <div
-                key={c.key}
-                className="leading-tight"
-                style={{
-                  color: c.combo.type === 'positive' ? '#3a7a3f' : '#a03d3d',
-                  fontWeight: 500,
-                }}
-              >
-                {c.combo.type === 'positive' ? '✅' : '⚠️'} {c.combo.msg}
-              </div>
-            ))}
-          </div>
+      {/* 稀有度詳細區（顯示在 mini buff 數值上方）*/}
+      <div
+        className="p-2.5 rounded-xl"
+        style={{
+          background: 'linear-gradient(180deg, #fff8e8, #ffefcc)',
+          border: '1.5px solid rgba(208,122,31,0.3)',
+        }}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[11px] font-bold" style={{ color: '#a36a3a' }}>
+            ✨ 案件稀有度
+          </span>
+          <span className="text-base font-extrabold" style={{ color: '#d07a1f' }}>
+            {tierBudget}
+          </span>
         </div>
-      )}
+        <div className="text-[10px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+          📣 總魅力 <b>{totalCharisma}</b>
+          {' + '}
+          📈 信譽/2 <b>{repBonus}</b>
+          {' + '}
+          🏢 辦公室 <b>+{officeTierBonus}</b>
+          {artwallBonus > 0 && <> {' + '} 🖼️ 展示牆 <b>+{artwallBonus}</b></>}
+          {hasCEO && <> {' '} <span style={{ color: '#c0392b' }}>× CEO 1.5</span></>}
+          {' = '}
+          <b style={{ color: '#d07a1f' }}>{tierBudget}</b>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2">
+        <MiniStat label="⚡ 速度" value={`+${companyBuffs.speedBoost}`} color="#3a7a3f" tooltip="商店買 desk/coffee/gym 提升" />
+        <MiniStat label="✨ 專業" value={`+${companyBuffs.qualityBoost}`} color="#2b7abd" tooltip="商店買 policy 提升" />
+        <MiniStat label="🤝 協作" value={`+${companyBuffs.teamworkBoost}`} color="#7b3a9f" tooltip="商店買 sofa/gym 提升" />
+        <MiniStat label="📣 魅力" value={`${totalCharisma}`} color="#d07a1f" tooltip={charismaTip} />
+      </div>
 
       <div
         className="p-2.5 rounded-xl text-xs"
@@ -132,6 +125,8 @@ export function StatPanel() {
       >
         {hint}
       </div>
+      {/* 邏輯佔位避免 baseSum 未使用警告（公式對外用詳細區呈現） */}
+      <span style={{ display: 'none' }}>{baseSum}</span>
     </div>
   );
 }
@@ -234,4 +229,3 @@ function MiniStat({
     </div>
   );
 }
-

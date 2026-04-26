@@ -5,6 +5,7 @@ import { useSaveStore } from '@/store/saveStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { Toast } from '@/components/Toast';
+import { DailySummary } from '@/components/DailySummary';
 import { SplashScreen } from '@/features/splash/SplashScreen';
 import { Tutorial } from '@/features/tutorial/Tutorial';
 import { ConflictModal } from '@/features/save/ConflictModal';
@@ -19,6 +20,9 @@ import { VictoryModal } from '@/features/victory/VictoryModal';
 import { FrisbeeGame } from '@/features/minigames/FrisbeeGame';
 import { MemoryGame } from '@/features/minigames/MemoryGame';
 import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
+import { ProjectEventModal } from '@/features/clients/ProjectEventModal';
+import { ProjectsBar } from '@/features/clients/ProjectsBar';
+import { BankLoanModal } from '@/features/loan/BankLoanModal';
 
 export default function App() {
   useGameLoop();
@@ -99,7 +103,8 @@ export default function App() {
           <TopBar />
         </div>
 
-        <div className="pane-main">
+        <div className="pane-main flex flex-col gap-3">
+          <ProjectsBar />
           <OfficeScene />
         </div>
 
@@ -115,6 +120,7 @@ export default function App() {
       <InfoButton />
 
       <Toast />
+      <DailySummary />
       {showSplash && <SplashScreen />}
       <Tutorial />
       <BuildingDrawer />
@@ -122,6 +128,8 @@ export default function App() {
       {miniGame?.type === 'memory' && <MemoryGame />}
       {trainingSession && <TrainingQuiz />}
       {staffModal && <StaffActionModal />}
+      <ProjectEventModal />
+      <BankLoanModal />
       <VictoryModal />
       <ConflictModal />
 

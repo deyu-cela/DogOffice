@@ -3,7 +3,6 @@ import type { LeaderboardEntry } from '@/types';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import {
   fetchLeaderboard,
-  fetchMyLeaderboard,
   isIgnorableApiError,
   type MyBestResult,
 } from '@/lib/leaderboardApi';
@@ -23,19 +22,19 @@ function loadLocal(): LeaderboardEntry[] {
   }
 }
 
-function clearLocal(): void {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.removeItem(LB_KEY);
+function bestLocal(entries: LeaderboardEntry[]): LeaderboardEntry | null {
+  if (entries.length === 0) return null;
+  return [...entries].sort((a, b) =>
+    a.days - b.days
+    || b.money - a.money
+    || (b.projectsCompleted ?? 0) - (a.projectsCompleted ?? 0),
+  )[0];
 }
-
-type Tab = 'global' | 'mine';
 
 export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
   const authedUser = useAuthStore((s) => s.user);
-  const [tab, setTab] = useState<Tab>('global');
   const [global, setGlobal] = useState<LeaderboardEntry[]>([]);
   const [myBest, setMyBest] = useState<MyBestResult | null>(null);
-  const [mine, setMine] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,61 +43,39 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
     setLoading(true);
     setError(null);
 
-    if (tab === 'global') {
-      fetchLeaderboard(50000, 10, !!authedUser)
-        .then((res) => {
-          if (cancelled) return;
-          setGlobal(res.entries);
-          setMyBest(res.myBest);
-        })
-        .catch((err) => {
-          if (cancelled) return;
-          if (isIgnorableApiError(err)) {
-            setError('連不上伺服器，先顯示本機紀錄');
-            setGlobal(loadLocal());
+    fetchLeaderboard(50000, 10, !!authedUser)
+      .then((res) => {
+        if (cancelled) return;
+        setGlobal(res.entries);
+        setMyBest(res.myBest);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (isIgnorableApiError(err)) {
+          // 連不上 → 全部 fallback 到本機紀錄
+          const local = loadLocal();
+          setError('連不上伺服器，先顯示本機紀錄');
+          setGlobal(local);
+          const best = bestLocal(local);
+          if (best) {
+            setMyBest({ rank: 1, entry: best }); // 本機沒辦法算全球 rank，先填 1
           } else {
-            setError('排行榜載入失敗');
-            setGlobal([]);
+            setMyBest(null);
           }
+        } else {
+          setError('排行榜載入失敗');
+          setGlobal([]);
           setMyBest(null);
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-    } else {
-      // 我的紀錄 tab：已登入 → 打後端；未登入 → localStorage
-      if (authedUser) {
-        fetchMyLeaderboard(50000, 20)
-          .then((entries) => {
-            if (!cancelled) setMine(entries);
-          })
-          .catch((err) => {
-            if (cancelled) return;
-            if (isIgnorableApiError(err)) {
-              setError('連不上伺服器，先顯示本機紀錄');
-              setMine(loadLocal());
-            } else {
-              setError('我的紀錄載入失敗');
-              setMine(loadLocal());
-            }
-          })
-          .finally(() => {
-            if (!cancelled) setLoading(false);
-          });
-      } else {
-        setMine(loadLocal());
-        setLoading(false);
-      }
-    }
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [tab, authedUser]);
-
-  const showList = tab === 'global'
-    ? global
-    : [...mine].sort((a, b) => a.days - b.days || b.money - a.money);
+  }, [authedUser]);
 
   return (
     <div
@@ -114,7 +91,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
           <div>
             <h2 className="text-lg font-extrabold">🏆 排行榜</h2>
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              最快達標 $50,000
+              最快 IPO 上市
             </p>
           </div>
           <button
@@ -127,30 +104,21 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-1.5 mb-3">
-          <button
-            type="button"
-            onClick={() => setTab('global')}
-            className="py-1.5 rounded-full text-xs font-bold"
+        {/* 我的最佳（頂部突顯）*/}
+        {myBest && (
+          <div
+            className="mb-3 p-2.5 rounded-xl"
             style={{
-              background: tab === 'global' ? 'linear-gradient(180deg, #ffc7d1, #eb93a3)' : '#eeeae4',
-              color: tab === 'global' ? 'white' : '#5b3c2b',
+              background: 'linear-gradient(90deg, #fff0f3, #fbd5db)',
+              border: '1.5px solid #e0c280',
             }}
           >
-            🌍 全球榜
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('mine')}
-            className="py-1.5 rounded-full text-xs font-bold"
-            style={{
-              background: tab === 'mine' ? 'linear-gradient(180deg, #ffc7d1, #eb93a3)' : '#eeeae4',
-              color: tab === 'mine' ? 'white' : '#5b3c2b',
-            }}
-          >
-            📋 我的紀錄
-          </button>
-        </div>
+            <div className="text-[11px] font-bold mb-1" style={{ color: '#8a6a2a' }}>
+              🌟 你的最佳成績（全球排名 #{myBest.rank}）
+            </div>
+            <EntryRow rank={myBest.rank} entry={myBest.entry} highlight compact showNickname={false} />
+          </div>
+        )}
 
         {loading && (
           <div className="text-center py-2 text-xs" style={{ color: 'var(--muted)' }}>
@@ -166,72 +134,42 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
+        <div className="text-[11px] font-bold mb-1.5" style={{ color: 'var(--muted)' }}>
+          🌍 全球前 10
+        </div>
         <div className="flex-1 overflow-y-auto">
-          {showList.length === 0 ? (
+          {global.length === 0 ? (
             <div className="text-center py-10 text-sm" style={{ color: 'var(--muted)' }}>
-              {tab === 'global' ? '全球榜還沒有紀錄，成為第一人吧！' : '還沒有紀錄，去衝一波吧！'}
+              全球榜還沒有紀錄，成為第一人吧！
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
-              {showList.map((entry, i) => (
+              {global.map((entry, i) => (
                 <EntryRow
                   key={`${entry.date}-${i}`}
                   rank={i + 1}
                   entry={entry}
                   highlight={
-                    tab === 'global' &&
                     !!authedUser &&
                     !!myBest &&
                     entry.date === myBest.entry.date &&
                     entry.days === myBest.entry.days
                   }
-                  showNickname={tab === 'global'}
+                  showNickname
                 />
               ))}
             </div>
           )}
         </div>
 
-        {/* 全球榜下方：顯示自己的最佳排位（若不在 top10 內） */}
-        {tab === 'global' && myBest && myBest.rank > 10 && (
-          <div
-            className="mt-3 p-2.5 rounded-xl"
-            style={{
-              background: 'linear-gradient(90deg, #dcecff, #c6deff)',
-              border: '1.5px solid #7ca8cc',
-            }}
-          >
-            <div className="text-[11px] font-bold mb-1" style={{ color: '#2b5a8a' }}>
-              你的最佳成績
-            </div>
-            <EntryRow rank={myBest.rank} entry={myBest.entry} highlight compact />
-          </div>
-        )}
-
-        {/* 全球榜下方：尚未達標提示 */}
-        {tab === 'global' && !loading && authedUser && !myBest && (
+        {/* 未達標提示 */}
+        {!loading && authedUser && !myBest && global.length > 0 && (
           <div
             className="mt-3 text-center py-2 rounded-xl text-xs"
             style={{ background: 'rgba(255,255,255,0.7)', color: 'var(--muted)' }}
           >
             你還沒達標過，去衝一波進榜吧！
           </div>
-        )}
-
-        {tab === 'mine' && mine.length > 0 && !authedUser && (
-          <button
-            type="button"
-            onClick={() => {
-              if (confirm('確定清除本機所有紀錄？無法復原。')) {
-                clearLocal();
-                setMine([]);
-              }
-            }}
-            className="mt-3 text-xs py-1.5 rounded-full"
-            style={{ background: '#ffd4d4', color: '#a03d3d' }}
-          >
-            清除本機紀錄
-          </button>
         )}
       </div>
     </div>
@@ -285,7 +223,7 @@ function EntryRow({
         </div>
         <div className="text-xs" style={{ color: 'var(--muted)' }}>
           {OFFICE_LEVELS[entry.officeLevel]?.name ?? `Lv${entry.officeLevel}`}・{entry.staffCount} 隻狗・$
-          {entry.money.toLocaleString()}
+          {entry.money.toLocaleString()}・✅ {entry.projectsCompleted ?? 0} 案
         </div>
       </div>
       <div className="text-[10px] text-right whitespace-nowrap" style={{ color: 'var(--muted)' }}>

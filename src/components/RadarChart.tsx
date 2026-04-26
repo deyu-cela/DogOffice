@@ -20,21 +20,23 @@ export function RadarChart({ stats, size = 160 }: Props) {
     const cx = w / 2;
     const cy = h / 2;
     const r = Math.min(w, h) / 2 - 30;
-    const labels = ['產能', '士氣', '穩定', '收入', '成長'];
+    // 4 軸：速度 / 專業 / 協作 / 魅力（範圍 1-10）
+    const labels = ['速度', '專業', '協作', '魅力'];
     const values = [
-      clamp((stats.productivity + 3) / 8, 0, 1),
-      clamp((stats.morale + 3) / 8, 0, 1),
-      clamp((stats.stability + 3) / 8, 0, 1),
-      clamp((stats.revenue + 3) / 8, 0, 1),
-      clamp(((stats.productivity + stats.revenue) / 2 + 3) / 8, 0, 1),
+      clamp(stats.speed / 10, 0, 1),
+      clamp(stats.quality / 10, 0, 1),
+      clamp(stats.teamwork / 10, 0, 1),
+      clamp(stats.charisma / 10, 0, 1),
     ];
+    const N = 4;
     ctx.clearRect(0, 0, w, h);
 
+    // 繪製同心多邊形格線
     for (let level = 1; level <= 4; level++) {
       ctx.beginPath();
       const lr = (r * level) / 4;
-      for (let i = 0; i <= 5; i++) {
-        const angle = ((Math.PI * 2) / 5) * i - Math.PI / 2;
+      for (let i = 0; i <= N; i++) {
+        const angle = ((Math.PI * 2) / N) * i - Math.PI / 2;
         const x = cx + lr * Math.cos(angle);
         const y = cy + lr * Math.sin(angle);
         if (i === 0) ctx.moveTo(x, y);
@@ -46,10 +48,11 @@ export function RadarChart({ stats, size = 160 }: Props) {
       ctx.stroke();
     }
 
+    // 繪製數據區域
     ctx.beginPath();
-    for (let i = 0; i <= 5; i++) {
-      const idx = i % 5;
-      const angle = ((Math.PI * 2) / 5) * idx - Math.PI / 2;
+    for (let i = 0; i <= N; i++) {
+      const idx = i % N;
+      const angle = ((Math.PI * 2) / N) * idx - Math.PI / 2;
       const x = cx + r * values[idx] * Math.cos(angle);
       const y = cy + r * values[idx] * Math.sin(angle);
       if (i === 0) ctx.moveTo(x, y);
@@ -62,11 +65,12 @@ export function RadarChart({ stats, size = 160 }: Props) {
     ctx.lineWidth = 2.5;
     ctx.stroke();
 
+    // 標籤
     ctx.fillStyle = '#5b3c2b';
     ctx.font = 'bold 11px ui-rounded, sans-serif';
     ctx.textAlign = 'center';
-    for (let i = 0; i < 5; i++) {
-      const angle = ((Math.PI * 2) / 5) * i - Math.PI / 2;
+    for (let i = 0; i < N; i++) {
+      const angle = ((Math.PI * 2) / N) * i - Math.PI / 2;
       const x = cx + (r + 18) * Math.cos(angle);
       const y = cy + (r + 18) * Math.sin(angle);
       ctx.fillText(labels[i], x, y + 4);

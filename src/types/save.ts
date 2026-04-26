@@ -1,29 +1,44 @@
-import type { ChemistryEntry, Dog, LogEntry, ShopItemEffectKey } from './index';
+import type {
+  CompanyBuffs,
+  Dog,
+  LogEntry,
+  Project,
+  ShopItemEffectKey,
+} from './index';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
+// v2: 接案制版本（plan §6 對應）
 export type GameSaveData = {
   day: number;
   money: number;
-  morale: number;
-  health: number;
-  decor: number;
-
-  productivityBoost: number;
-  stabilityBoost: number;
-  trainingBoost: number;
-
+  reputation: number;
+  tierBudget: number;
+  companyBuffs: CompanyBuffs;
   officeLevel: number;
   purchases: Partial<Record<ShopItemEffectKey, number>>;
+
+  // 接案制
+  clients: Project[];
+  projectsCompleted: number;
+  projectsFailed: number;
+  lastRerollDay: number;
 
   vacancy: boolean;
   vacancyTimer: number;
   bankrupt: boolean;
+  bankruptCountdown: number;
   tutorialStep: number;
+  recruitmentClosed: boolean;
 
   staff: Dog[];
-  activeChemistry: ChemistryEntry[];
   log: LogEntry[];
+
+  ipoAchievedAt: number | null;
+  ipoDismissed: boolean;
+
+  loanTaken: boolean;
+  loanRepayDaysLeft: number;
 };
 
 export type SavePayload = {

@@ -181,6 +181,31 @@ function CameraKeepLookAt() {
 }
 
 /**
+ * frameloop="demand" 下，useFrame 不會自動觸發。
+ * 用一個 setTimeout pulse 每 1/RATE 秒呼叫 invalidate 一次 → R3F 重畫一幀 → 動畫前進。
+ * 把渲染從 60fps 降到 ~15fps，GPU 負擔降約 4 倍。
+ * page hidden 時完全停止（不畫、不耗電）。
+ */
+function DemandPulse({ rate = 15 }: { rate?: number }) {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    const interval = 1000 / rate;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tick = () => {
+      if (typeof document === 'undefined' || !document.hidden) {
+        invalidate();
+      }
+      timer = setTimeout(tick, interval);
+    };
+    tick();
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [invalidate, rate]);
+  return null;
+}
+
+/**
  * R3F iso 房間（Three.js Canvas）
  * - Orthographic iso 視角
  * - L 形房間：地板 + 左後牆 + 右後牆 + 天花橫樑 + 地板格線
@@ -275,7 +300,9 @@ export function ThreeRoom() {
         key={remountKey}
         orthographic
         flat
-        dpr={[1, 2]}
+        // demand：只在 invalidate() 被呼叫時才畫，搭配 DemandPulse 把渲染降到 ~15fps
+        frameloop="demand"
+        dpr={[1, 1.25]}
         performance={{ min: 0.5 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'default', preserveDrawingBuffer: false, stencil: false, depth: true }}
         camera={{ position: [20, 18, 20], zoom: 38, near: -30, far: 100 }}
@@ -301,6 +328,8 @@ export function ThreeRoom() {
         style={{ width: '100%', height: '100%', display: 'block' }}
       >
         <CameraKeepLookAt />
+        {/* DemandPulse 用於 useFrame 動畫（如櫻花），目前都關閉了不需要持續觸發 */}
+        {/* <DemandPulse rate={15} /> */}
 
         {/* 地板：kawaii 主題用 gpt_floor.png 貼圖，其他主題保留程式繪製 */}
         {level?.theme === 'kawaii' ? (
@@ -361,7 +390,8 @@ export function ThreeRoom() {
           {/* 家具 sprite 角度不符 iso，暫時隱藏，待重產 */}
           {/* <ZoneFurniture3D /> */}
           <Walkers3D />
-          <SakuraRain3D />
+          {/* 櫻花暫時關閉以減少 GPU 負擔 */}
+          {/* <SakuraRain3D /> */}
           <HrNotice3D />
           <PurchaseArea3D />
           <WallPolicy3D />
@@ -624,16 +654,18 @@ function Walkers3D() {
   const bounds = useWalkerStore((s) => s.bounds);
 
   if (!bounds || bounds.w === 0 || bounds.h <= bounds.floorTop) return null;
+  const now = performance.now();
 
   return (
     <>
       {walkers.map((w) => {
         const image = w.dogData.image || ROLE_IMAGE_MAP[w.dogData.role];
         if (!image) return null;
-        // px 座標 → iso grid
         const gx = (w.x / bounds.w) * ROOM_GRID;
         const gy =
           ((w.y - bounds.floorTop) / (bounds.h - bounds.floorTop)) * ROOM_GRID;
+        // 走動中（idleUntil 已過）才 bob，靜止中保持靜態 → 大幅減少 GPU
+        const walking = w.idleUntil <= now;
         return (
           <WalkerSprite
             key={w.id}
@@ -641,7 +673,7 @@ function Walkers3D() {
             gy={gy}
             src={image}
             facingRight={w.facingRight}
-            walking={w.idleTimer <= 0}
+            walking={walking}
           />
         );
       })}
@@ -1280,7 +1312,7 @@ function ZoneFurniture3D() {
   const staff = useGameStore((s) => s.staff);
   void staff;
   const officeLevel = useGameStore((s) => s.officeLevel);
-  const decor = useGameStore((s) => s.decor);
+  const decor = useGameStore((s) => s.companyBuffs.decor);
   const purchases = useGameStore((s) => s.purchases);
   const level = OFFICE_LEVELS[officeLevel];
 
@@ -1417,15 +1449,25 @@ function Building3D({
 }) {
   const openDrawer = useUiStore((s) => s.openDrawer);
   const hasCurrent = useGameStore((s) => !!s.current);
-  const morale = useGameStore((s) => s.morale);
+  const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
+  const clients = useGameStore((s) => s.clients);
   const [hover, setHover] = useState(false);
 
   const texture = usePixelTexture(SRC_MAP[kind]);
   const [x, , z] = gridToWorld(gx, gy);
 
+  // 員工平均士氣（取代全公司 morale）
+  const avgMorale = staff.length > 0
+    ? staff.reduce((n, d) => n + d.morale, 0) / staff.length
+    : 100;
+  const hasPendingEvent = clients.some((c) => c.pendingEvent != null);
+
+  void hasPendingEvent;
   const needNotif =
-    kind === 'hr' ? hasCurrent : kind === 'dorm' ? morale < 40 : money < 50;
+    kind === 'hr' ? hasCurrent
+      : kind === 'dorm' ? avgMorale < 40
+        : money < 50;
   const hoverScale = hover ? 1.08 : 1;
   const yOffset = hover ? 0.15 : 0;
 

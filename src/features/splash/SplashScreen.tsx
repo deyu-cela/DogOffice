@@ -7,7 +7,6 @@ import { LeaderboardPanel } from '@/features/leaderboard/LeaderboardPanel';
 
 export function SplashScreen() {
   const startGame = useGameStore((s) => s.startGame);
-  const moneyGoal = useGameStore((s) => s.moneyGoal);
   const authStatus = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
   const saveStatus = useSaveStore((s) => s.status);
@@ -85,8 +84,7 @@ export function SplashScreen() {
               className="mb-4 px-4 py-2 rounded-full text-xs"
               style={{ background: 'rgba(255,255,255,0.85)', color: '#5b3c2b', border: '1px solid rgba(90,70,54,0.15)' }}
             >
-              🎯 目標：$
-              <span className="font-extrabold">{moneyGoal.toLocaleString()}</span>
+              🎯 IPO 上市條件：信譽 80 + 資金 $50k + 辦公室 Lv3 + 完成 30 案
             </div>
           )}
 
