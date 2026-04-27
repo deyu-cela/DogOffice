@@ -1,20 +1,33 @@
-﻿import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
-import { DOG_ROLES, CEO_DOG } from '@/constants/dogRoles';
+import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import type { ChemistryCombo, ProjectCategory } from '@/types';
+import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 
-const ROLE_EMOJI = (() => {
-  const map: Record<string, string> = {};
-  for (const r of DOG_ROLES) map[r.role] = r.emoji;
-  map[CEO_DOG.role] = CEO_DOG.emoji;
-  return map;
-})();
+const ROLE_ICON: Record<string, SvgIconName> = {
+  工程師: 'tech',
+  QA: 'tech',
+  美術: 'design',
+  企劃: 'design',
+  業務: 'marketing',
+  行銷: 'marketing',
+  客服: 'service',
+  PM: 'teamwork',
+  CEO: 'trophy',
+};
 
 const CATEGORY_LABEL: Record<ProjectCategory | 'any', string> = {
   any: '全類別',
-  tech: ' 技術',
-  design: ' 設計',
-  marketing: ' 行銷',
-  service: ' 客服',
+  tech: '技術',
+  design: '設計',
+  marketing: '行銷',
+  service: '客服',
+};
+
+const CATEGORY_ICON: Record<ProjectCategory | 'any', SvgIconName> = {
+  any: 'briefcase',
+  tech: 'tech',
+  design: 'design',
+  marketing: 'marketing',
+  service: 'service',
 };
 
 function effectLines(combo: ChemistryCombo): string[] {
@@ -34,35 +47,43 @@ export function ChemistryGuideModal({ onClose }: { onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-[850] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(8,32,77,0.55)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        className="rounded-3xl max-w-md w-full overflow-y-auto"
+        className="rounded-2xl max-w-md w-full overflow-y-auto"
         style={{
           maxHeight: '85vh',
-          background: 'linear-gradient(180deg, #fffefc, #fff5e7)',
-          border: '2px solid rgba(90,70,54,0.18)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
+          border: '1px solid var(--line)',
+          boxShadow: '0 24px 70px rgba(30,90,180,0.28)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 pb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-2xl"></span>
-            <span className="font-extrabold text-base">化學反應一覽</span>
+            <SvgIcon name="teamwork" size={22} />
+            <span className="font-extrabold text-base" style={{ color: 'var(--text)' }}>化學反應一覽</span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-sm px-2.5 py-1 rounded-full"
-            style={{ background: '#eeeae4', color: '#5b3c2b' }}
+            className="rounded-full font-extrabold"
+            style={{
+              padding: '4px 10px',
+              fontSize: 12,
+              lineHeight: 1,
+              background: 'rgba(255,255,255,0.92)',
+              color: 'var(--muted)',
+              border: '1px solid var(--line)',
+              boxShadow: 'var(--shadow-soft)',
+            }}
           >
             ✕
           </button>
         </div>
 
-        <div className="px-4 pb-2 text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+        <div className="px-4 pb-2 text-[11px] leading-relaxed font-bold" style={{ color: 'var(--muted)' }}>
           兩位指定角色都派到同一案、且符合類別時自動觸發。負面組合會扣分，安排時注意。
         </div>
 
@@ -76,25 +97,26 @@ export function ChemistryGuideModal({ onClose }: { onClose: () => void }) {
                 className="p-3 rounded-2xl"
                 style={{
                   background: isPositive
-                    ? 'linear-gradient(180deg, #eef7f0, #e0eee3)'
-                    : 'linear-gradient(180deg, #fff0f0, #f8e0e0)',
-                  border: `1.5px solid ${isPositive ? '#b8d8c0' : '#e8c8c8'}`,
+                    ? 'linear-gradient(180deg, #f0fbf6, #e3f5ec)'
+                    : 'linear-gradient(180deg, #fff4f4, #ffe7e7)',
+                  border: `1px solid ${isPositive ? 'rgba(41,185,143,0.32)' : 'rgba(231,108,108,0.28)'}`,
+                  boxShadow: 'var(--shadow-soft)',
                 }}
               >
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                   {combo.roles.map((r, ri) => (
-                    <span key={ri} className="flex items-center gap-1">
-                      <span className="text-lg">{ROLE_EMOJI[r] ?? ''}</span>
-                      <span className="text-sm font-bold">{r}</span>
+                    <span key={ri} className="inline-flex items-center gap-1">
+                      <SvgIcon name={ROLE_ICON[r] ?? 'people'} size={16} />
+                      <span className="text-sm font-extrabold" style={{ color: 'var(--text)' }}>{r}</span>
                       {ri < combo.roles.length - 1 && (
-                        <span className="text-xs" style={{ color: 'var(--muted)' }}>+</span>
+                        <span className="text-xs font-bold" style={{ color: 'var(--muted)' }}>+</span>
                       )}
                     </span>
                   ))}
                   <span
-                    className="text-[10px] px-1.5 py-0.5 rounded-full ml-auto"
+                    className="text-[10px] px-2 py-0.5 rounded-full ml-auto font-extrabold"
                     style={{
-                      background: isPositive ? '#7fc88f' : '#d68a8a',
+                      background: isPositive ? 'var(--ok)' : 'var(--danger)',
                       color: 'white',
                     }}
                   >
@@ -104,19 +126,24 @@ export function ChemistryGuideModal({ onClose }: { onClose: () => void }) {
 
                 <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                   <span
-                    className="text-[10px] px-1.5 py-0.5 rounded-full"
-                    style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(90,70,54,0.15)' }}
+                    className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                    style={{
+                      background: 'rgba(255,255,255,0.88)',
+                      border: '1px solid var(--line)',
+                      color: 'var(--text)',
+                    }}
                   >
+                    <SvgIcon name={CATEGORY_ICON[cat]} size={11} />
                     {CATEGORY_LABEL[cat]}
                   </span>
                   {effectLines(combo).map((line, ei) => (
                     <span
                       key={ei}
-                      className="text-[10px] px-1.5 py-0.5 rounded-full"
+                      className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
                       style={{
-                        background: 'rgba(255,255,255,0.7)',
-                        border: '1px solid rgba(90,70,54,0.15)',
-                        color: isPositive ? '#2f7a3f' : '#c0392b',
+                        background: 'rgba(255,255,255,0.88)',
+                        border: '1px solid var(--line)',
+                        color: isPositive ? '#1d8d6a' : '#b3433f',
                       }}
                     >
                       {line}
@@ -124,7 +151,7 @@ export function ChemistryGuideModal({ onClose }: { onClose: () => void }) {
                   ))}
                 </div>
 
-                <div className="text-[11px] leading-relaxed" style={{ color: '#5b3c2b' }}>
+                <div className="text-[11px] leading-relaxed font-bold" style={{ color: 'var(--text)' }}>
                   {combo.msg}
                 </div>
               </div>

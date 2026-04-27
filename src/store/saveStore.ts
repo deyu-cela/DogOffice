@@ -112,11 +112,12 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
   loadCloud: () => {
     if (loadPromise) return loadPromise;
     const run = async () => {
-      set({ status: 'loading', error: null, conflict: null });
+      set({ ...initialState, status: 'loading' });
+      // 先清掉上一個帳號的資料，避免 API 失敗或無存檔時殘留
+      useGameStore.getState().resetToInitialGame();
       try {
         const meta = mockMode ? await mockGet() : await apiGetSave();
         if (!meta) {
-          useGameStore.getState().resetToInitialGame();
           set({ ...initialState, status: 'idle' });
           return;
         }
@@ -132,6 +133,11 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
           revision: meta.revision,
         });
       } catch (err) {
+        // 新註冊用戶（API 回 404）視同「沒有存檔」，不算錯誤
+        if (err instanceof ApiError && err.status === 404) {
+          set({ ...initialState, status: 'idle' });
+          return;
+        }
         set({
           status: 'error',
           error: err instanceof Error ? err.message : '讀取雲端存檔失敗',

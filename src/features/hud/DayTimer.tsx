@@ -26,11 +26,14 @@ export function DayTimer() {
           <button
             type="button"
             onClick={cycleSpeed}
-            className="grid h-12 w-12 place-items-center rounded-xl"
+            className="grid place-items-center rounded-lg"
             style={{
+              height: 29,
+              width: 29,
+              padding: 0,
               background: 'linear-gradient(180deg, #4f95ef, #246bd0)',
               border: '1px solid rgba(36,107,208,0.22)',
-              boxShadow: '0 8px 18px rgba(47,125,225,0.24)',
+              boxShadow: '0 6px 14px rgba(47,125,225,0.22)',
             }}
             title="切換倍速"
           >
@@ -38,26 +41,28 @@ export function DayTimer() {
               style={{
                 width: 0,
                 height: 0,
-                borderTop: '9px solid transparent',
-                borderBottom: '9px solid transparent',
-                borderLeft: '14px solid white',
-                marginLeft: 3,
+                borderTop: '5px solid transparent',
+                borderBottom: '5px solid transparent',
+                borderLeft: '8px solid white',
+                marginLeft: 2,
               }}
             />
           </button>
 
           <div
-            className="flex h-12 items-center gap-2 rounded-xl px-3"
+            className="flex items-center gap-1.5 rounded-lg"
             style={{
+              height: 29,
+              padding: '0 10px',
               background: 'linear-gradient(180deg, #ffffff, #f4f9ff)',
               border: '1px solid var(--line)',
               boxShadow: 'var(--shadow-soft)',
             }}
           >
-            <span className="text-sm font-extrabold" style={{ color: 'var(--text)' }}>
+            <span className="font-extrabold" style={{ color: 'var(--text)', fontSize: 13, lineHeight: 1 }}>
               {speedMultiplier}x
             </span>
-            <span className="text-xs font-bold" style={{ color: 'var(--muted)' }}>
+            <span className="font-bold" style={{ color: 'var(--muted)', fontSize: 11, lineHeight: 1 }}>
               倍速
             </span>
           </div>

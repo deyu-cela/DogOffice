@@ -414,8 +414,9 @@ export function ProjectDetailModal({
                   type="button"
                   onClick={() => {
                     const alreadyPicked = isOffered ? pickedDogs : pickedDogs;
+                    const eligible = availableDogs.filter((d) => d.fatigue < 100);
                     const picked = pickAutoAssign(
-                      availableDogs,
+                      eligible,
                       project.category,
                       isOffered ? [] : alreadyPicked,
                       remainingWork,
@@ -482,26 +483,45 @@ export function ProjectDetailModal({
                 const picked = isOffered
                   ? pickedIds.includes(d.id)
                   : project.assignedStaffIds.includes(d.id);
+                const overFatigue = d.fatigue >= 100;
+                const lockedOut = overFatigue && !picked;
                 return (
                   <button
                     key={d.id}
                     type="button"
+                    disabled={lockedOut}
                     onClick={() => {
+                      if (lockedOut) return;
                       if (isOffered) togglePick(d.id);
                       else if (picked) unassign(project.id, d.id);
                       else assign(project.id, d.id);
                     }}
+                    title={lockedOut ? '過勞中（疲勞 100），等回復後才能指派' : undefined}
                     className="text-[11px] px-2 py-1.5 rounded-lg flex items-center gap-1"
                     style={{
-                      background: picked ? '#eef6ff' : '#ffffff',
+                      background: lockedOut
+                        ? '#f5f5f5'
+                        : picked
+                          ? '#eef6ff'
+                          : '#ffffff',
                       border: picked ? '1px solid #7fb2ef' : '1px solid var(--line)',
-                      color: picked ? 'var(--blue)' : 'var(--text)',
+                      color: lockedOut ? 'var(--muted)' : picked ? 'var(--blue)' : 'var(--text)',
+                      opacity: lockedOut ? 0.55 : 1,
+                      cursor: lockedOut ? 'not-allowed' : 'pointer',
                     }}
                   >
                     <DogAvatar role={d.role} breed={d.breed} size={18} />
                     <span className="font-bold">{d.name}</span>
                     <span style={{ color: 'var(--muted)' }}>{d.role}</span>
-                    {picked && <span style={{ color: '#16926f', marginLeft: 'auto' }}>已選</span>}
+                    {lockedOut && (
+                      <span
+                        className="ml-auto px-1 rounded font-extrabold"
+                        style={{ background: 'var(--danger)', color: 'white', fontSize: 9 }}
+                      >
+                        過勞
+                      </span>
+                    )}
+                    {!lockedOut && picked && <span style={{ color: '#16926f', marginLeft: 'auto' }}>已選</span>}
                   </button>
                 );
               })}
