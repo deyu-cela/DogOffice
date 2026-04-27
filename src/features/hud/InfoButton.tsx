@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { RightPanel } from './RightPanel';
 
 export function InfoButton() {
@@ -30,7 +30,7 @@ export function InfoButton() {
         }}
         aria-label="公司資訊"
       >
-        📊
+        
       </button>
       {open && (
         <>

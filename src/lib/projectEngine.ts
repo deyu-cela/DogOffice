@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   ChemistryCombo,
   Dog,
   GameState,
@@ -514,7 +514,7 @@ export function runProjectsDay(state: GameState): DayResult {
     // 自動套 default
     const defaultChoice = EVENT_DEFAULT_CHOICE[event.kind];
     const reason = willCompleteToday ? '案件即將結案' : '逾期 3 天未處理';
-    const autoLog = `⚠️ ${project.title}（${project.clientName}）${reason}，自動套「${defaultChoice}」選項`;
+    const autoLog = ` ${project.title}（${project.clientName}）${reason}，自動套「${defaultChoice}」選項`;
     newLogs.push({ day: s.day, msg: autoLog });
     const result = resolveProjectEvent(s, project.id, defaultChoice);
     s = result.state;
@@ -580,11 +580,8 @@ export function runProjectsDay(state: GameState): DayResult {
       });
       newLogs.push({
         day: s.day,
-        msg: `🎉 完成「${project.title}」(${project.clientName})：拿 $${settled.finalReward}、信譽 ${settled.reputationDelta >= 0 ? '+' : ''}${settled.reputationDelta}`,
+        msg: ` 完成「${project.title}」(${project.clientName})：拿 $${settled.finalReward}、信譽 ${settled.reputationDelta >= 0 ? '+' : ''}${settled.reputationDelta}`,
       });
-      if (!toast) {
-        toast = { msg: `🎉 案件完成！+$${settled.finalReward}`, type: 'positive' };
-      }
     } else {
       settledClients.push(project);
     }
@@ -617,11 +614,8 @@ export function runProjectsDay(state: GameState): DayResult {
       );
       newLogs.push({
         day: s.day,
-        msg: `💔 失敗「${project.title}」(${project.clientName})：扣 $${project.penalty}、信譽 ${project.reputationDelta.fail}`,
+        msg: ` 失敗「${project.title}」(${project.clientName})：扣 $${project.penalty}、信譽 ${project.reputationDelta.fail}`,
       });
-      if (!toast) {
-        toast = { msg: `💔 案件失敗：-$${project.penalty}`, type: 'negative' };
-      }
     } else {
       finalClients.push(project);
     }
@@ -668,7 +662,7 @@ export function runProjectsDay(state: GameState): DayResult {
     return result.dog;
   });
   for (const u of upgrades) {
-    newLogs.push({ day: s.day, msg: `🎓 ${u.name} 從 ${u.from} 級升到 ${u.to} 級！可挑選新特性！` });
+    newLogs.push({ day: s.day, msg: ` ${u.name} 從 ${u.from} 級升到 ${u.to} 級！可挑選新特性！` });
     s.staff = s.staff.map((d) =>
       d.name === u.name ? { ...d, morale: clamp(d.morale + 5, 0, 100), loyalty: clamp(d.loyalty + 5, 0, 100) } : d,
     );
@@ -733,8 +727,7 @@ export function resolveProjectEvent(
           fatigue: clamp(d.fatigue + 5, 0, 100),
           morale: clamp(d.morale - 2, 0, 100),
         }));
-        newLogs.push({ day: s.day, msg: `📝 接受 ${project.clientName} 的變更需求（reward+25%、工作量+25%）` });
-        toast = { msg: '📝 接受客戶變更需求', type: 'positive' };
+        newLogs.push({ day: s.day, msg: ` 接受 ${project.clientName} 的變更需求（reward+25%、工作量+25%）` });
       } else {
         // 拒絕：reward ×0.9、信譽 -2、隊員士氣 +1、quality ×0.92
         updateProject({
@@ -743,8 +736,7 @@ export function resolveProjectEvent(
         });
         s.reputation = clamp(s.reputation - 2, 0, 100);
         updateAssignedStaff((d) => ({ ...d, morale: clamp(d.morale + 1, 0, 100) }));
-        newLogs.push({ day: s.day, msg: `📝 拒絕 ${project.clientName} 的變更需求（信譽 -2、reward -10%）` });
-        toast = { msg: '📝 拒絕客戶變更需求', type: 'negative' };
+        newLogs.push({ day: s.day, msg: ` 拒絕 ${project.clientName} 的變更需求（信譽 -2、reward -10%）` });
       }
       break;
     }
@@ -756,12 +748,11 @@ export function resolveProjectEvent(
           bonusEventChance: project.bonusEventChance - 0.075, // -50% of base 0.15
         });
         updateAssignedStaff((d) => ({ ...d, fatigue: clamp(d.fatigue + 8, 0, 100) }));
-        newLogs.push({ day: s.day, msg: `🏃 ${project.clientName} 提前交件（deadline -2、reward +15%）` });
-        toast = { msg: '🏃 答應提前交件', type: 'positive' };
+        newLogs.push({ day: s.day, msg: ` ${project.clientName} 提前交件（deadline -2、reward +15%）` });
       } else {
         s.reputation = clamp(s.reputation - 0.5, 0, 100);
         updateProject({});
-        newLogs.push({ day: s.day, msg: `🏃 維持 ${project.clientName} 原期限` });
+        newLogs.push({ day: s.day, msg: ` 維持 ${project.clientName} 原期限` });
       }
       break;
     }
@@ -785,11 +776,10 @@ export function resolveProjectEvent(
           expectedQuality: newStats.expectedQuality,
           reputationDelta: { success: newStats.repSuccess + 5, fail: newStats.repFail },
         });
-        newLogs.push({ day: s.day, msg: `🎁 ${project.clientName} 加碼成 tier${newTier}（reward $${newReward}、工作量 +50%）` });
-        toast = { msg: '🎁 案子升級了！', type: 'positive' };
+        newLogs.push({ day: s.day, msg: ` ${project.clientName} 加碼成 tier${newTier}（reward $${newReward}、工作量 +50%）` });
       } else {
         updateProject({});
-        newLogs.push({ day: s.day, msg: `🎁 維持 ${project.clientName} 原 tier${project.clientTier}` });
+        newLogs.push({ day: s.day, msg: ` 維持 ${project.clientName} 原 tier${project.clientTier}` });
       }
       break;
     }
@@ -801,12 +791,11 @@ export function resolveProjectEvent(
           loyalty: clamp(d.loyalty - 2, 0, 100),
         }));
         updateProject({});
-        newLogs.push({ day: s.day, msg: `🐛 全員加班修 ${project.clientName} 的 bug（fatigue +20）` });
-        toast = { msg: '🐛 加班修 bug', type: 'negative' };
+        newLogs.push({ day: s.day, msg: ` 全員加班修 ${project.clientName} 的 bug（fatigue +20）` });
       } else {
         updateProject({ qualityMul: project.qualityMul * 0.85 });
         s.reputation = clamp(s.reputation - 1, 0, 100);
-        newLogs.push({ day: s.day, msg: `🐛 認賠 ${project.clientName} 的 bug（quality ×0.85、信譽 -1）` });
+        newLogs.push({ day: s.day, msg: ` 認賠 ${project.clientName} 的 bug（quality ×0.85、信譽 -1）` });
       }
       break;
     }
@@ -832,8 +821,7 @@ export function resolveProjectEvent(
             : d,
         );
         const targetName = s.staff.find((d) => d.id === targetId)?.name ?? '員工';
-        newLogs.push({ day: s.day, msg: `😴 准 ${targetName} 請假，狀態恢復` });
-        toast = { msg: '😴 准請假', type: 'positive' };
+        newLogs.push({ day: s.day, msg: ` 准 ${targetName} 請假，狀態恢復` });
         updateProject({});
       } else {
         const target = s.staff.find((d) => d.id === targetId);
@@ -846,8 +834,7 @@ export function resolveProjectEvent(
           updateProject({
             assignedStaffIds: project.assignedStaffIds.filter((id) => id !== targetId),
           });
-          newLogs.push({ day: s.day, msg: `📨 ${targetName} 連續 3 次被拒請假，遞了離職信走人了！` });
-          toast = { msg: `📨 ${targetName} 離職`, type: 'negative' };
+          newLogs.push({ day: s.day, msg: ` ${targetName} 連續 3 次被拒請假，遞了離職信走人了！` });
         } else {
           updateOneStaff(targetId, (d) => ({
             ...d,
@@ -863,8 +850,7 @@ export function resolveProjectEvent(
               : d,
           );
           updateProject({ bonusEventChance: project.bonusEventChance + 0.05 });
-          newLogs.push({ day: s.day, msg: `😡 不准 ${targetName} 請假（loyalty -8、士氣 -8）` });
-          toast = { msg: '😡 不准請假', type: 'negative' };
+          newLogs.push({ day: s.day, msg: ` 不准 ${targetName} 請假（loyalty -8、士氣 -8）` });
         }
       }
       break;
@@ -890,8 +876,7 @@ export function resolveProjectEvent(
         // 隊員士氣 +2
         updateAssignedStaff((d) => ({ ...d, morale: clamp(d.morale + 2, 0, 100) }));
         updateProject({});
-        newLogs.push({ day: s.day, msg: `🤝 加薪 $${raiseAmount} 留下 ${targetName}` });
-        toast = { msg: `🤝 加薪留人 +$${raiseAmount}/天`, type: 'positive' };
+        newLogs.push({ day: s.day, msg: ` 加薪 $${raiseAmount} 留下 ${targetName}` });
       } else {
         const loyalty = target?.loyalty ?? 50;
         const jumpRate = loyalty < 30 ? 0.25 : loyalty < 50 ? 0.10 : loyalty < 80 ? 0.05 : 0;
@@ -912,8 +897,7 @@ export function resolveProjectEvent(
             }
             return c;
           });
-          newLogs.push({ day: s.day, msg: `💔 ${targetName} 跳槽到對手公司！活案連帶判 failed！` });
-          toast = { msg: `💔 ${targetName} 跳槽了`, type: 'negative' };
+          newLogs.push({ day: s.day, msg: ` ${targetName} 跳槽到對手公司！活案連帶判 failed！` });
         } else {
           updateOneStaff(targetId, (d) => ({
             ...d,
@@ -926,7 +910,7 @@ export function resolveProjectEvent(
               : d,
           );
           updateProject({});
-          newLogs.push({ day: s.day, msg: `🤝 ${targetName} 拒絕了挖角，但對老闆有點不滿（loyalty -10）` });
+          newLogs.push({ day: s.day, msg: ` ${targetName} 拒絕了挖角，但對老闆有點不滿（loyalty -10）` });
         }
       }
       break;

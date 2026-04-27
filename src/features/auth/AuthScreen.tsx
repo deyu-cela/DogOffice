@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { AuthForm } from './AuthForm';
+import { SvgIcon } from '@/components/SvgIcon';
 
 const FORCED_MSG: Record<string, string> = {
   refresh_rejected: '安全性登出：登入已失效，請重新登入。',
@@ -38,40 +39,32 @@ export function AuthScreen() {
   return (
     <div className="w-full max-w-sm mx-auto">
       <div
-        className="flex gap-2 mb-4 rounded-full p-1"
-        style={{ background: 'rgba(255,255,255,0.75)', border: '2px solid rgba(90,70,54,0.12)' }}
+        className="flex gap-1 mb-4 rounded-full p-1"
+        style={{
+          background: 'rgba(255,255,255,0.85)',
+          border: '1px solid var(--line)',
+          boxShadow: 'var(--shadow-soft)',
+        }}
       >
-        <button
-          type="button"
-          onClick={() => onTab('login')}
-          className="flex-1 text-sm font-bold py-2 rounded-full"
-          style={{
-            background: mode === 'login' ? 'linear-gradient(180deg, #ffc7d1, #eb93a3)' : 'transparent',
-            color: mode === 'login' ? 'white' : '#7a685a',
-          }}
-        >
-          登入
-        </button>
-        <button
-          type="button"
-          onClick={() => onTab('register')}
-          className="flex-1 text-sm font-bold py-2 rounded-full"
-          style={{
-            background: mode === 'register' ? 'linear-gradient(180deg, #ffc7d1, #eb93a3)' : 'transparent',
-            color: mode === 'register' ? 'white' : '#7a685a',
-          }}
-        >
-          註冊
-        </button>
+        <TabButton active={mode === 'login'} onClick={() => onTab('login')} label="登入" />
+        <TabButton active={mode === 'register'} onClick={() => onTab('register')} label="註冊" />
       </div>
 
       {forced && FORCED_MSG[forced] && (
         <div
           className="mb-3 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between gap-2"
-          style={{ background: '#fff4d6', color: '#8a6a2a' }}
+          style={{ background: '#fff7e6', color: '#a36a14', border: '1px solid rgba(246,166,58,0.32)' }}
         >
-          <span>{FORCED_MSG[forced]}</span>
-          <button type="button" onClick={clearForced} className="underline">
+          <span className="inline-flex items-center gap-1.5">
+            <SvgIcon name="warning" size={14} />
+            {FORCED_MSG[forced]}
+          </span>
+          <button
+            type="button"
+            onClick={clearForced}
+            className="text-xs font-extrabold underline"
+            style={{ background: 'transparent', border: 0, boxShadow: 'none', padding: 0 }}
+          >
             關閉
           </button>
         </div>
@@ -80,9 +73,10 @@ export function AuthScreen() {
       <div
         className="rounded-2xl p-5"
         style={{
-          background: 'rgba(255,255,255,0.88)',
-          border: '2px solid rgba(90,70,54,0.12)',
-          backdropFilter: 'blur(8px)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(244,249,255,0.92))',
+          border: '1px solid var(--line)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: 'var(--shadow)',
         }}
       >
         <AuthForm
@@ -92,11 +86,32 @@ export function AuthScreen() {
           onSubmit={mode === 'login' ? login : register}
         />
         {slowHint && (
-          <div className="mt-3 text-xs text-center" style={{ color: '#7a685a' }}>
-            ⏳ 伺服器喚醒中，首次開啟可能需要 15 秒…
+          <div className="mt-3 inline-flex w-full items-center justify-center gap-1.5 text-xs" style={{ color: 'var(--muted)' }}>
+            <SvgIcon name="restart" size={14} />
+            伺服器喚醒中，首次開啟可能需要 15 秒…
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function TabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex-1 text-sm font-extrabold py-2 rounded-full"
+      style={{
+        background: active
+          ? 'linear-gradient(180deg, #3e8cf0, #1c63c8)'
+          : 'transparent',
+        color: active ? 'white' : 'var(--muted)',
+        border: '0',
+        boxShadow: active ? '0 6px 16px rgba(47,125,225,0.28)' : 'none',
+      }}
+    >
+      {label}
+    </button>
   );
 }

@@ -5,6 +5,8 @@ import { OFFER_TTL_DAYS } from '@/lib/projectGen';
 import { estimateDailyContrib } from '@/lib/projectEngine';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import type { DogTraitId } from '@/constants/dogTraits';
+import { DogAvatar } from '@/components/DogAvatar';
+import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 
 function findChemistries(dogs: Dog[], category: ProjectCategory): ChemistryCombo[] {
   if (dogs.length < 2) return [];
@@ -168,11 +170,11 @@ function pickAutoAssign(
   return result;
 }
 
-const CATEGORY_ICON: Record<ProjectCategory, string> = {
-  tech: '💻',
-  design: '🎨',
-  marketing: '📣',
-  service: '💬',
+const CATEGORY_ICON: Record<ProjectCategory, SvgIconName> = {
+  tech: 'tech',
+  design: 'design',
+  marketing: 'marketing',
+  service: 'service',
 };
 
 const CATEGORY_NAME: Record<ProjectCategory, string> = {
@@ -228,7 +230,7 @@ export function ProjectDetailModal({
     }
   }, [project, onClose]);
 
-  // ⚠️ 所有 hook 必須在 early-return 之前呼叫，避免 React 發出 "fewer hooks" 錯誤
+  //  所有 hook 必須在 early-return 之前呼叫，避免 React 發出 "fewer hooks" 錯誤
   const isOffered = project?.status === 'offered';
   const availableDogs = !project
     ? []
@@ -289,16 +291,16 @@ export function ProjectDetailModal({
       `}</style>
       <div
         className="fixed inset-0 z-[820] flex items-center justify-center p-4"
-        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+        style={{ background: 'rgba(8,32,77,0.55)', backdropFilter: 'blur(4px)' }}
         onClick={onClose}
       >
         <div
-          className="rounded-3xl max-w-md w-full overflow-y-auto"
+          className="rounded-xl max-w-md w-full overflow-y-auto"
           style={{
             maxHeight: '90vh',
-            background: 'linear-gradient(180deg, #fffefc, #fff5e7)',
-            border: '2px solid rgba(90,70,54,0.18)',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
+            border: '1px solid var(--line)',
+            boxShadow: '0 24px 70px rgba(30,90,180,0.28)',
             animation: 'detailSlideIn 0.25s ease-out',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -308,7 +310,9 @@ export function ProjectDetailModal({
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-2xl">{CATEGORY_ICON[project.category]}</span>
+                  <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: '#eef6ff', border: '1px solid var(--line)' }}>
+                    <SvgIcon name={CATEGORY_ICON[project.category]} size={23} />
+                  </span>
                   <span className="font-extrabold text-base">{project.title}</span>
                   <span
                     className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
@@ -325,16 +329,16 @@ export function ProjectDetailModal({
                 type="button"
                 onClick={onClose}
                 className="text-sm px-2.5 py-1 rounded-full"
-                style={{ background: '#eeeae4', color: '#5b3c2b' }}
+                style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
               >
-                ✕
+                X
               </button>
             </div>
           </div>
 
           {/* 案件資訊 */}
           <div className="px-4">
-            <div className="grid grid-cols-3 gap-1.5 text-[11px] p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(90,70,54,0.1)' }}>
+            <div className="grid grid-cols-3 gap-1.5 text-[11px] p-2.5 rounded-lg" style={{ background: '#f7fbff', border: '1px solid var(--line)' }}>
               <div className="text-center">
                 <div style={{ color: 'var(--muted)' }}>酬勞</div>
                 <div className="text-base font-extrabold" style={{ color: '#3a7a3f' }}>${project.reward}</div>
@@ -369,11 +373,11 @@ export function ProjectDetailModal({
               <div
                 className="mt-2 text-[11px] text-center px-2 py-1.5 rounded-lg"
                 style={{
-                  background: offeredDaysLeft <= 3 ? '#fff0f0' : '#eef7f0',
+                  background: offeredDaysLeft <= 3 ? '#fff7f7' : '#eefaf7',
                   color: offeredDaysLeft <= 3 ? '#c0392b' : '#3a7a3f',
                 }}
               >
-                ⏳ 收件匣保留剩 {Math.max(0, offeredDaysLeft)} 天 · 過期自動消失
+                 收件匣保留剩 {Math.max(0, offeredDaysLeft)} 天 · 過期自動消失
               </div>
             )}
 
@@ -386,12 +390,12 @@ export function ProjectDetailModal({
                     {Math.round(project.workDone)} / {project.workRequired}
                   </span>
                 </div>
-                <div className="h-3 rounded-full overflow-hidden" style={{ background: '#eadfce' }}>
+                <div className="h-3 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
                   <div
                     className="h-full transition-all"
                     style={{
                       width: `${Math.min(100, (project.workDone / project.workRequired) * 100)}%`,
-                      background: 'linear-gradient(90deg, #a8d8a8, #66bb6a)',
+                      background: 'linear-gradient(90deg, #2f8df4, #20c7b3)',
                     }}
                   />
                 </div>
@@ -403,7 +407,7 @@ export function ProjectDetailModal({
           <div className="p-4 pt-3">
             <div className="flex items-center justify-between mb-1.5">
               <div className="text-[11px] font-bold" style={{ color: 'var(--muted)' }}>
-                {isOffered ? '👥 選擇要派的員工（可多選）' : '👥 已指派員工（點擊取消指派）'}
+                {isOffered ? '選擇要派的員工（可多選）' : '已指派員工（點擊取消指派）'}
               </div>
               {availableDogs.length > 0 && (
                 <button
@@ -429,13 +433,13 @@ export function ProjectDetailModal({
                   }}
                   className="text-[10px] px-2 py-0.5 rounded-full font-bold"
                   style={{
-                    background: 'linear-gradient(180deg, #ffe5a0, #f6c24b)',
-                    color: '#5a3a10',
-                    border: '1px solid rgba(90,70,54,0.15)',
+                    background: 'linear-gradient(180deg, #ffffff, #edf5ff)',
+                    color: 'var(--blue)',
+                    border: '1px solid var(--line)',
                   }}
                   title="依對口 / 化學 / 特性 / 士氣 / 低疲勞挑最佳；天數縮不下去就不再加人"
                 >
-                  ⚡ 自動指派
+                  自動指派
                 </button>
               )}
             </div>
@@ -453,13 +457,14 @@ export function ProjectDetailModal({
                       onClick={() => unassign(project.id, d.id)}
                       className="text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"
                       style={{
-                        background: '#dcecff',
-                        border: '1.5px solid #2b7abd',
+                        background: '#eef6ff',
+                        border: '1px solid var(--line)',
+                        color: 'var(--blue)',
                       }}
                     >
-                      <span>{d.emoji}</span>
+                      <DogAvatar role={d.role} breed={d.breed} size={18} />
                       <span>{d.name}</span>
-                      <span style={{ color: '#c0392b' }}>✕</span>
+                      <span style={{ color: '#d34a4a' }}>X</span>
                     </button>
                   ))
                 )}
@@ -488,14 +493,15 @@ export function ProjectDetailModal({
                     }}
                     className="text-[11px] px-2 py-1.5 rounded-lg flex items-center gap-1"
                     style={{
-                      background: picked ? '#dcecff' : 'rgba(255,255,255,0.85)',
-                      border: picked ? '1.5px solid #2b7abd' : '1px solid rgba(90,70,54,0.12)',
+                      background: picked ? '#eef6ff' : '#ffffff',
+                      border: picked ? '1px solid #7fb2ef' : '1px solid var(--line)',
+                      color: picked ? 'var(--blue)' : 'var(--text)',
                     }}
                   >
-                    <span>{d.emoji}</span>
+                    <DogAvatar role={d.role} breed={d.breed} size={18} />
                     <span className="font-bold">{d.name}</span>
                     <span style={{ color: 'var(--muted)' }}>{d.role}</span>
-                    {picked && <span style={{ color: '#3a7a3f', marginLeft: 'auto' }}>✓</span>}
+                    {picked && <span style={{ color: '#16926f', marginLeft: 'auto' }}>已選</span>}
                   </button>
                 );
               })}
@@ -519,10 +525,10 @@ export function ProjectDetailModal({
                 >
                   {estimatedDays !== null
                     ? onTime
-                      ? `預估 ${estimatedDays} 天 ✓`
+                      ? `預估 ${estimatedDays} 天`
                       : inGrace
-                        ? `預估 ${estimatedDays} 天 ⚠️ 超期 ${estimatedDays - project.defaultDeadlineDays} 天（reward ×0.7）`
-                        : `預估 ${estimatedDays} 天 ❌ 超容忍 → 失敗`
+                        ? `預估 ${estimatedDays} 天  超期 ${estimatedDays - project.defaultDeadlineDays} 天（reward ×0.7）`
+                        : `預估 ${estimatedDays} 天 超容忍，失敗`
                     : '無法估算'}
                 </span>
               </div>
@@ -553,23 +559,46 @@ export function ProjectDetailModal({
 
           {/* 行動按鈕 */}
           {isOffered ? (
-            <div className="p-4 pt-0 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleAccept}
-                className="py-2.5 rounded-full text-sm font-extrabold"
-                style={{ background: 'linear-gradient(180deg, #b6efab, #8ee28f)', color: '#1e5a29' }}
-              >
-                ✅ 接案 + 開始
-              </button>
-              <button
-                type="button"
-                onClick={handleReject}
-                className="py-2.5 rounded-full text-sm font-extrabold"
-                style={{ background: 'linear-gradient(180deg, #ffdba5, #ffbf73)', color: '#7a4520' }}
-              >
-                ❌ 拒絕
-              </button>
+            <div className="p-4 pt-0">
+              {pickedIds.length === 0 && (
+                <div
+                  className="text-[11px] mb-1.5 text-center"
+                  style={{ color: '#c07a20' }}
+                >
+                  ⚠️ 請至少指派 1 位員工才能接案
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleAccept}
+                  disabled={pickedIds.length === 0}
+                  className="py-2.5 rounded-full text-sm font-extrabold"
+                  style={{
+                    background:
+                      pickedIds.length === 0
+                        ? '#e0e0e0'
+                        : 'linear-gradient(180deg, #35c59c, #16a77f)',
+                    color: pickedIds.length === 0 ? '#999' : 'white',
+                    border:
+                      pickedIds.length === 0
+                        ? '1px solid #ccc'
+                        : '1px solid rgba(22,167,127,0.35)',
+                    cursor: pickedIds.length === 0 ? 'not-allowed' : 'pointer',
+                  }}
+                  title={pickedIds.length === 0 ? '請先選員工' : '接案並開始'}
+                >
+                  接案並開始
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReject}
+                  className="py-2.5 rounded-full text-sm font-extrabold"
+                  style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
+                >
+                  拒絕
+                </button>
+              </div>
             </div>
           ) : (
             <div className="p-4 pt-0">
@@ -577,7 +606,7 @@ export function ProjectDetailModal({
                 type="button"
                 onClick={onClose}
                 className="w-full py-2 rounded-full text-sm font-bold"
-                style={{ background: '#eeeae4', color: '#5b3c2b' }}
+                style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
               >
                 關閉
               </button>

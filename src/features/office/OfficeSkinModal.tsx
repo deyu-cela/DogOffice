@@ -1,4 +1,4 @@
-import { useGameStore } from '@/store/gameStore';
+﻿import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 
 export function OfficeSkinModal({ onClose }: { onClose: () => void }) {
@@ -24,7 +24,7 @@ export function OfficeSkinModal({ onClose }: { onClose: () => void }) {
       >
         <div className="p-4 pb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🎨</span>
+            <span className="text-2xl"></span>
             <span className="font-extrabold text-base">辦公室造型</span>
           </div>
           <button
@@ -121,7 +121,7 @@ export function OfficeSkinModal({ onClose }: { onClose: () => void }) {
                         className="text-[10px] px-1.5 py-0.5 rounded-full"
                         style={{ background: '#bbb', color: 'white' }}
                       >
-                        🔒 未解鎖
+                         未解鎖
                       </span>
                     )}
                   </div>

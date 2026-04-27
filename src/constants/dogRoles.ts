@@ -1,4 +1,4 @@
-import type { DogRole } from '@/types';
+﻿import type { DogRole } from '@/types';
 
 // 9 種職業（從 17 砍半）+ CEO 彩蛋
 // 每對口類別（tech/design/marketing/service）各 2 人 + 1 隊長 PM + CEO
@@ -7,7 +7,7 @@ export const DOG_ROLES: DogRole[] = [
   {
     role: '工程師',
     breed: '邊境牧羊犬',
-    emoji: '🐩',
+    emoji: '',
     names: ['衝衝', '可可', '阿碼', 'Byte'],
     traits: ['工作狂', '抗壓王'],
     flavor: '做事超快，但偶爾給同事壓力。',
@@ -19,7 +19,7 @@ export const DOG_ROLES: DogRole[] = [
   {
     role: 'QA',
     breed: '雪納瑞',
-    emoji: '🐾',
+    emoji: '',
     names: ['Bug', '查查', '嗅嗅', '抓抓'],
     traits: ['極度龜毛', '眼尖'],
     flavor: '能幫團隊抓到很多問題，但也常讓工程師崩潰。',
@@ -31,7 +31,7 @@ export const DOG_ROLES: DogRole[] = [
   {
     role: '美術',
     breed: '黃金獵犬',
-    emoji: '🐕',
+    emoji: '',
     names: ['泡芙', '彩筆', '米露', '雪白'],
     traits: ['審美很好', '有點挑'],
     flavor: '讓公司視覺質感大升級，作品更討喜。',
@@ -43,7 +43,7 @@ export const DOG_ROLES: DogRole[] = [
   {
     role: '企劃',
     breed: '柴犬',
-    emoji: '🐺',
+    emoji: '',
     names: ['暴風', '跳跳', '阿極', '二哈'],
     traits: ['點子很多', '容易暴走'],
     flavor: '高爆發型人才，好時很好，亂時很亂。',
@@ -55,7 +55,7 @@ export const DOG_ROLES: DogRole[] = [
   {
     role: '業務',
     breed: '米格魯',
-    emoji: '🐶',
+    emoji: '',
     names: ['短腿', '啵啵', '元氣', 'Rich'],
     traits: ['氣氛擔當', '超會推銷'],
     flavor: '帶來熱鬧與訂單，偶爾有點吵。',
@@ -67,7 +67,7 @@ export const DOG_ROLES: DogRole[] = [
   {
     role: '行銷',
     breed: '柴犬',
-    emoji: '🐕',
+    emoji: '',
     names: ['焦糖', '多多', '芋圓', '吸睛'],
     traits: ['很會包裝', '超有梗'],
     flavor: '總能把公司包裝得更可愛、更有話題。',
@@ -79,7 +79,7 @@ export const DOG_ROLES: DogRole[] = [
   {
     role: '客服',
     breed: '貴賓犬',
-    emoji: '🐕',
+    emoji: '',
     names: ['奶油', '小麥', '阿福', '甜甜'],
     traits: ['超有耐心', '超會安撫'],
     flavor: '讓客戶比較滿意，也比較能穩住團隊節奏。',
@@ -91,7 +91,7 @@ export const DOG_ROLES: DogRole[] = [
   {
     role: 'PM',
     breed: '米格魯',
-    emoji: '🐕',
+    emoji: '',
     names: ['排排', '規規', '敏捷', 'Sprint'],
     traits: ['協調高手', '愛開會'],
     flavor: '讓專案不會迷路，但會議可能太多。',
@@ -105,7 +105,7 @@ export const DOG_ROLES: DogRole[] = [
 export const CEO_DOG: DogRole = {
   role: 'CEO',
   breed: '松獅犬',
-  emoji: '👑',
+  emoji: '',
   names: ['社長', 'Boss', '大王', 'Elon'],
   traits: ['天生領袖', '自帶光環', '超級稀有'],
   flavor: '傳說中的狗界 CEO，所到之處士氣與收入雙雙暴漲。',

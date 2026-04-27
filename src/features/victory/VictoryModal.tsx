@@ -1,5 +1,6 @@
-import { useGameStore } from '@/store/gameStore';
+import { SvgIcon } from '@/components/SvgIcon';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
+import { useGameStore } from '@/store/gameStore';
 
 export function VictoryModal() {
   const ipoAchievedAt = useGameStore((s) => s.ipoAchievedAt);
@@ -17,84 +18,48 @@ export function VictoryModal() {
   const levelName = OFFICE_LEVELS[officeLevel]?.name ?? `Lv${officeLevel + 1}`;
 
   return (
-    <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[900] flex items-center justify-center bg-[#08204d]/50 backdrop-blur-sm p-4">
       <div
-        className="p-7 rounded-3xl max-w-md w-full text-center"
+        className="p-7 rounded-xl max-w-md w-full text-center"
         style={{
-          background: 'linear-gradient(180deg, #fffefc, #fff5e7)',
-          border: '2px solid #ffc7d1',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
+          border: '1px solid var(--line)',
+          boxShadow: '0 24px 70px rgba(30,90,180,0.28)',
         }}
       >
-        <div className="text-6xl mb-3">🔔🐕💼</div>
-        <div className="text-2xl font-extrabold mb-2" style={{ color: '#b47020' }}>
-          公司 IPO 上市了！
+        <div className="mx-auto mb-3 w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: '#eef6ff', border: '1px solid var(--line)' }}>
+          <SvgIcon name="trophy" size={38} />
         </div>
-        <div className="text-sm mb-5" style={{ color: '#7a685a' }}>
-          狗狗們敲響了上市鐘，全公司沸騰！
-        </div>
+        <div className="text-2xl font-extrabold mb-2" style={{ color: 'var(--blue)' }}>公司 IPO 上市了！</div>
+        <div className="text-sm mb-5" style={{ color: 'var(--muted)' }}>狗狗們敲響了上市鐘，全公司沸騰！</div>
 
-        <div
-          className="grid grid-cols-2 gap-3 mb-5 p-4 rounded-2xl"
-          style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(90,70,54,0.1)' }}
-        >
-          <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>達成天數</div>
-            <div className="text-2xl font-extrabold" style={{ color: '#3d2f25' }}>
-              {ipoAchievedAt} <span className="text-sm font-normal">天</span>
-            </div>
-          </div>
-          <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>最終資金</div>
-            <div className="text-2xl font-extrabold" style={{ color: '#3a8a3a' }}>
-              ${money.toLocaleString()}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>最終信譽</div>
-            <div className="text-base font-bold" style={{ color: '#3d2f25' }}>
-              {Math.round(reputation)} / 100
-            </div>
-          </div>
-          <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>完成案件</div>
-            <div className="text-base font-bold" style={{ color: '#3d2f25' }}>
-              {projectsCompleted} 件
-            </div>
-          </div>
-          <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>辦公室</div>
-            <div className="text-base font-bold" style={{ color: '#3d2f25' }}>
-              {levelName}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>員工數</div>
-            <div className="text-base font-bold" style={{ color: '#3d2f25' }}>
-              {staff.length} 隻狗
-            </div>
-          </div>
+        <div className="grid grid-cols-2 gap-3 mb-5 p-4 rounded-lg" style={{ background: '#f7fbff', border: '1px solid var(--line)' }}>
+          <VictoryStat label="達成天數" value={`${ipoAchievedAt} 天`} large />
+          <VictoryStat label="最終資金" value={`$${money.toLocaleString()}`} green large />
+          <VictoryStat label="最終信譽" value={`${Math.round(reputation)} / 100`} />
+          <VictoryStat label="完成案件" value={`${projectsCompleted} 件`} />
+          <VictoryStat label="辦公室" value={levelName} />
+          <VictoryStat label="員工數" value={`${staff.length} 位`} />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={dismissIpo}
-            className="py-2.5 rounded-full font-extrabold text-sm"
-            style={{ background: 'linear-gradient(180deg, #b6efab, #8ee28f)', color: '#1e5a29' }}
-          >
+          <button type="button" onClick={dismissIpo} className="py-2.5 rounded-lg font-extrabold text-sm" style={{ background: 'linear-gradient(180deg, #35c59c, #16a77f)', color: 'white' }}>
             繼續經營
           </button>
-          <button
-            type="button"
-            onClick={restart}
-            className="py-2.5 rounded-full font-extrabold text-sm"
-            style={{ background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)', color: 'white' }}
-          >
+          <button type="button" onClick={restart} className="py-2.5 rounded-lg font-extrabold text-sm" style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}>
             再開一局
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function VictoryStat({ label, value, large = false, green = false }: { label: string; value: string; large?: boolean; green?: boolean }) {
+  return (
+    <div>
+      <div className="text-xs" style={{ color: 'var(--muted)' }}>{label}</div>
+      <div className={large ? 'text-2xl font-extrabold' : 'text-base font-bold'} style={{ color: green ? '#16926f' : 'var(--text)' }}>{value}</div>
     </div>
   );
 }

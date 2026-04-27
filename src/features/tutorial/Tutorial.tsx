@@ -1,4 +1,4 @@
-import { useGameStore } from '@/store/gameStore';
+﻿import { useGameStore } from '@/store/gameStore';
 import { TUTORIAL_STEPS } from '@/constants/questions';
 
 export function Tutorial() {
@@ -79,7 +79,7 @@ export function Tutorial() {
             className="px-7"
             style={{ background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)', color: 'white' }}
           >
-            {isLast ? '開始經營！🚀' : '下一步 →'}
+            {isLast ? '開始經營！' : '下一步 →'}
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { Component, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
+﻿import { Component, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useTexture, Billboard, Html } from '@react-three/drei';
 import { CanvasTexture, DoubleSide, LinearFilter, LinearMipmapLinearFilter, NearestFilter, Object3D, type InstancedMesh as ThreeInstancedMesh, type Texture } from 'three';
@@ -152,7 +152,7 @@ class CanvasErrorBoundary extends Component<
           className="absolute inset-0 flex flex-col items-center justify-center text-center p-4"
           style={{ background: 'rgba(255,245,230,0.95)', color: '#7a685a' }}
         >
-          <div className="text-3xl mb-2">😵</div>
+          <div className="text-3xl mb-2"></div>
           <div className="text-sm font-bold mb-1">3D 畫面重載中...</div>
           <button
             type="button"
@@ -300,7 +300,7 @@ export function ThreeRoom() {
         className="absolute inset-0 flex flex-col items-center justify-center text-center p-4"
         style={{ background: 'linear-gradient(180deg, #fbf0dc, #fde0cf)', color: '#7a685a' }}
       >
-        <div className="text-4xl mb-2">💤</div>
+        <div className="text-4xl mb-2"></div>
         <div className="text-sm font-bold mb-1">3D 場景暫停</div>
         <div className="text-xs mb-3 leading-relaxed">
           GPU 忙碌中（可能正在跑 AI / 影片編輯）<br />
@@ -582,10 +582,10 @@ function SakuraRain3D() {
 
 function IsoZoneLabels3D() {
   const zones = [
-    { name: '🏋️ 健身', color: '#c0392b', gx: 1, gy: 1 },
-    { name: '🖥️ 辦公', color: '#a36a3a', gx: 4.5, gy: 4.5 },
-    { name: '🎾 玩具', color: '#2980b9', gx: 8, gy: 1 },
-    { name: '🌸 裝飾', color: '#8e44ad', gx: 1, gy: 8 },
+    { name: ' 健身', color: '#c0392b', gx: 1, gy: 1 },
+    { name: ' 辦公', color: '#a36a3a', gx: 4.5, gy: 4.5 },
+    { name: ' 玩具', color: '#2980b9', gx: 8, gy: 1 },
+    { name: ' 裝飾', color: '#8e44ad', gx: 1, gy: 8 },
   ];
   return (
     <>
@@ -1467,6 +1467,12 @@ const SRC_MAP: Record<BuildingKind, string> = {
   hr: JP_ASSETS.hrOffice,
 };
 
+const BUILDING_LABEL: Record<BuildingKind, string> = {
+  shop: '商店',
+  dorm: '員工',
+  hr: '招募',
+};
+
 function Building3D({
   kind,
   gx,
@@ -1543,6 +1549,22 @@ function Building3D({
           </mesh>
         </Billboard>
       )}
+      <Html position={[0, -0.05 + yOffset, 0]} center zIndexRange={[10, 0]}>
+        <div
+          onClick={() => openDrawer(kind)}
+          className="px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap select-none"
+          style={{
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            background: 'rgba(255,255,255,0.95)',
+            border: '1px solid #cfe1f7',
+            color: '#1c63c8',
+            boxShadow: '0 2px 6px rgba(46,104,180,0.18)',
+          }}
+        >
+          {BUILDING_LABEL[kind]}
+        </div>
+      </Html>
     </group>
   );
 }

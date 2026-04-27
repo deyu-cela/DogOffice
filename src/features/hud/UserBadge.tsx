@@ -21,25 +21,48 @@ export function UserBadge() {
     }
   }
 
+  const avatarSrc = `${import.meta.env.BASE_URL}assets/dog-profiles/ceo.png`;
+
   return (
-    <div className="flex items-center gap-1.5 text-xs">
-      <span style={{ color: '#7a685a' }} title={user.account}>
-        🐶 {user.account}
-      </span>
+    <>
+      <div
+        className="flex h-12 max-w-[170px] items-center gap-2 rounded-xl px-3"
+        style={{
+          background: 'linear-gradient(180deg, #ffffff, #f4f9ff)',
+          border: '1px solid rgba(121, 164, 224, 0.34)',
+          boxShadow: '0 4px 12px rgba(46,104,180,0.1), inset 0 1px 0 rgba(255,255,255,0.95)',
+        }}
+        title={user.account}
+      >
+        <img
+          src={avatarSrc}
+          alt=""
+          className="h-9 w-9 shrink-0 rounded-full object-cover"
+          style={{
+            border: '2px solid #dceafe',
+            boxShadow: '0 2px 8px rgba(46,104,180,0.16)',
+          }}
+        />
+        <span className="truncate text-sm font-extrabold" style={{ color: 'var(--text)' }}>
+          {user.account}
+        </span>
+      </div>
+
       <button
         type="button"
         onClick={onLogout}
         disabled={busy}
-        className="px-2.5 py-1 rounded-full text-xs font-bold"
+        className="h-12 rounded-xl px-4 text-sm font-extrabold"
         style={{
-          background: busy ? '#e5d5c3' : 'linear-gradient(180deg, #fff0f3, #fbd5db)',
-          color: '#7a685a',
-          border: '1px solid rgba(90,70,54,0.12)',
+          background: busy ? '#e9eef6' : 'linear-gradient(180deg, #ffffff, #f4f9ff)',
+          color: 'var(--text)',
+          border: '1px solid rgba(121, 164, 224, 0.34)',
+          boxShadow: '0 4px 12px rgba(46,104,180,0.1), inset 0 1px 0 rgba(255,255,255,0.95)',
           cursor: busy ? 'wait' : 'pointer',
         }}
       >
-        {busy ? '登出中…' : '登出'}
+        {busy ? '...' : '登出'}
       </button>
-    </div>
+    </>
   );
 }

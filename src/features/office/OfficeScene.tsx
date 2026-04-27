@@ -8,6 +8,7 @@ import { ThreeRoom } from './ThreeRoom';
 import { OfficeSkinModal } from './OfficeSkinModal';
 import { computeGridObstacles } from './layout';
 import { ROOM_GRID } from './iso';
+import { SvgIcon } from '@/components/SvgIcon';
 
 export function OfficeScene() {
   const officeLevel = useGameStore((s) => s.officeLevel);
@@ -42,7 +43,6 @@ export function OfficeScene() {
       const h = rect.height;
       const floorTop = h * 0.25;
       const floorH = h - floorTop;
-      // 從 grid 空間 obstacle 轉 px 空間（共用 layout.ts 的定義，確保 3D 場景與 walker 碰撞一致）
       const gridObs = computeGridObstacles(purchases);
       const obstacles = gridObs.map((g) => ({
         x: ((g.cx - g.w / 2) / ROOM_GRID) * w,
@@ -64,42 +64,52 @@ export function OfficeScene() {
 
   return (
     <div
-      className="relative overflow-hidden rounded-3xl flex flex-col min-h-[400px] md:min-h-[600px] xl:min-h-[700px]"
+      className="relative overflow-hidden rounded-2xl flex flex-col min-h-[400px] md:min-h-[600px] xl:min-h-[700px]"
       style={{
-        border: '2px solid rgba(214,145,150,0.3)',
-        background: 'var(--jp-washi)',
-        boxShadow:
-          'inset 0 1.5px 0 rgba(255,255,255,0.9), 0 4px 10px rgba(214,145,150,0.12), 0 18px 40px rgba(180,100,130,0.18)',
+        border: '1px solid var(--line)',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(244,249,255,0.9))',
+        boxShadow: 'var(--shadow), inset 0 1px 0 rgba(255,255,255,0.95)',
       }}
     >
       <div
         className="flex items-center justify-between px-4 py-3 gap-2"
         style={{
-          borderBottom: '2px dashed rgba(214,145,150,0.5)',
-          background: 'linear-gradient(180deg, var(--jp-washi-warm), var(--jp-washi))',
+          borderBottom: '1px solid var(--line)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.9), rgba(234,244,255,0.76))',
         }}
       >
         <div>
-          <div className="font-extrabold text-lg">🏮 {level.name}</div>
+          <div className="flex items-center gap-2 font-extrabold text-lg">
+            <SvgIcon name="office" size={24} />
+            <span>{level.name}</span>
+          </div>
           <div className="text-xs" style={{ color: 'var(--muted)' }}>
-            員工 {staff.length} / {level.maxStaff}・裝飾 Lv {decor}
+            員工 {staff.length} / {level.maxStaff} · 裝飾 Lv {decor}
           </div>
         </div>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setSkinModalOpen(true)}
-            className="text-[11px] px-2 py-1 rounded-full font-bold"
+            className="rounded-lg whitespace-nowrap font-extrabold inline-flex items-center gap-1"
             style={{
-              background: 'linear-gradient(180deg, #f0e0ff, #d4b8f0)',
-              color: '#5a3a8a',
-              border: '1px solid #b89adb',
+              padding: '6px 10px',
+              fontSize: '12px',
+              lineHeight: 1,
+              background: 'linear-gradient(180deg, #ffffff, #eaf4ff)',
+              color: 'var(--text)',
+              border: '1px solid var(--line)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(46,104,180,0.1)',
             }}
-            title="切換辦公室造型"
+            title="更換辦公室造型"
           >
-            🎨 換造型
+            <SvgIcon name="wand" size={14} />
+            換造型
           </button>
-          <Badge>{stage}</Badge>
+          <Badge className="inline-flex items-center gap-1" style={{ padding: '6px 10px', fontSize: '12px', lineHeight: 1 }}>
+            <SvgIcon name="growth" size={14} />
+            {stage}
+          </Badge>
         </div>
       </div>
       {skinModalOpen && <OfficeSkinModal onClose={() => setSkinModalOpen(false)} />}
@@ -108,18 +118,18 @@ export function OfficeScene() {
         ref={roomRef}
         className="relative flex-1 min-h-[520px] md:min-h-[780px]"
         style={{
-          background: 'linear-gradient(180deg, #fbf0dc 0%, #fde0cf 100%)',
+          background: 'linear-gradient(180deg, #f7fbff 0%, #eaf4ff 100%)',
         }}
       >
         <ThreeRoom />
 
         <div
-          className="absolute left-3 bottom-3 text-xs px-3 py-1.5 rounded-full z-10"
+          className="absolute left-3 bottom-3 z-10 max-w-[60%] rounded-full px-3 py-1.5 text-xs"
           style={{
-            background: 'rgba(255,255,255,0.9)',
-            border: '1px solid rgba(90,70,54,0.12)',
+            background: 'rgba(255,255,255,0.92)',
+            border: '1px solid var(--line)',
             color: 'var(--muted)',
-            maxWidth: '60%',
+            boxShadow: 'var(--shadow-soft)',
           }}
         >
           {hint}

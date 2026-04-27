@@ -1,6 +1,7 @@
-import { useGameStore, MAX_SHOP_LEVEL, nextShopCost } from '@/store/gameStore';
-import { SHOP_ITEMS } from '@/constants/shopItems';
+import { SvgIcon } from '@/components/SvgIcon';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
+import { SHOP_ITEMS } from '@/constants/shopItems';
+import { MAX_SHOP_LEVEL, nextShopCost, useGameStore } from '@/store/gameStore';
 
 const OFFICE_TIER_BONUS = [0, 5, 12, 22, 35];
 const OFFICE_TIER_CAP = [3, 3, 4, 4, 5];
@@ -10,14 +11,14 @@ function upgradeBenefits(curLv: number): string[] {
   const benefits: string[] = [];
   const curMax = OFFICE_LEVELS[curLv].maxStaff;
   const nextMax = OFFICE_LEVELS[next].maxStaff;
-  if (nextMax > curMax) benefits.push(`👥 員工上限 +${nextMax - curMax}（→${nextMax}）`);
+  if (nextMax > curMax) benefits.push(`員工上限 +${nextMax - curMax}（→${nextMax}）`);
   const curBonus = OFFICE_TIER_BONUS[curLv] ?? 0;
   const nextBonus = OFFICE_TIER_BONUS[next] ?? 0;
-  if (nextBonus > curBonus) benefits.push(`✨ 稀有度 +${nextBonus - curBonus}`);
+  if (nextBonus > curBonus) benefits.push(`稀有度 +${nextBonus - curBonus}`);
   const curCap = OFFICE_TIER_CAP[curLv] ?? 3;
   const nextCap = OFFICE_TIER_CAP[next] ?? 3;
-  if (nextCap > curCap) benefits.push(`⏫ 解鎖 tier${nextCap} 案件`);
-  if (next === 3) benefits.push('🏆 達成 IPO 條件之一');
+  if (nextCap > curCap) benefits.push(`解鎖 tier${nextCap} 案件`);
+  if (next === 3) benefits.push('達成 IPO 條件之一');
   return benefits;
 }
 
@@ -35,25 +36,23 @@ export function ShopPanel() {
   return (
     <div className="flex flex-col gap-2.5">
       {atMax ? (
-        <div
-          className="p-3 rounded-2xl text-center"
-          style={{ background: '#e8f5e9', border: '2px solid #66bb6a' }}
-        >
-          <strong>🎉 已達最大規模！</strong>
+        <div className="p-3 rounded-xl text-center" style={{ background: '#eefaf7', border: '1px solid rgba(51,194,154,0.28)' }}>
+          <strong>已達最大規模</strong>
         </div>
       ) : (
         <div
-          className="p-3 rounded-2xl"
-          style={{ background: 'linear-gradient(135deg,#fff0f3,#fbd5db)', border: '2px solid #f4a8b8' }}
+          className="p-3 rounded-xl"
+          style={{ background: 'linear-gradient(180deg, #ffffff, #eef6ff)', border: '1px solid #7fb2ef', boxShadow: 'var(--shadow-soft)' }}
         >
           <div className="flex justify-between items-start gap-2">
             <div className="flex-1">
-              <div className="font-bold">🏗️ 擴建 → {nextLv.name}</div>
+              <div className="font-bold flex items-center gap-1.5">
+                <SvgIcon name="office" size={19} />
+                <span>擴建 → {nextLv.name}</span>
+              </div>
               <div className="flex flex-col gap-0.5 mt-1.5">
                 {benefits.map((b, i) => (
-                  <div key={i} className="text-[11px]" style={{ color: '#7a3a4a' }}>
-                    {b}
-                  </div>
+                  <div key={i} className="text-[11px]" style={{ color: 'var(--muted)' }}>{b}</div>
                 ))}
               </div>
             </div>
@@ -61,7 +60,11 @@ export function ShopPanel() {
               disabled={money < nextLv.upgradeCost}
               onClick={upgrade}
               className="text-sm px-3"
-              style={{ background: money >= nextLv.upgradeCost ? 'linear-gradient(180deg, #b6efab, #8ee28f)' : '#eee' }}
+              style={{
+                background: money >= nextLv.upgradeCost ? 'linear-gradient(180deg, #2f8df4, #1c63c8)' : '#e9f1ff',
+                color: money >= nextLv.upgradeCost ? 'white' : '#8aa2c8',
+                border: '1px solid var(--line)',
+              }}
             >
               ${nextLv.upgradeCost}
             </button>
@@ -77,14 +80,10 @@ export function ShopPanel() {
         return (
           <div
             key={item.id}
-            className="p-3 rounded-2xl"
+            className="p-3 rounded-xl"
             style={{
-              background: isMax
-                ? 'rgba(232,245,233,0.9)'
-                : canAfford
-                  ? 'rgba(255,255,255,0.9)'
-                  : 'rgba(240,234,222,0.6)',
-              border: isMax ? '1.5px solid #66bb6a' : '1px solid rgba(90,70,54,0.12)',
+              background: isMax ? '#eefaf7' : canAfford ? '#ffffff' : '#f3f7ff',
+              border: isMax ? '1px solid rgba(51,194,154,0.28)' : '1px solid var(--line)',
             }}
           >
             <div className="flex justify-between items-start gap-2">
@@ -92,11 +91,11 @@ export function ShopPanel() {
                 <span>{item.name}</span>
                 {level > 0 && (
                   <span
-                    className="text-[11px] px-1.5 py-0.5 rounded-full font-normal"
+                    className="text-[11px] px-1.5 py-0.5 rounded-md font-normal"
                     style={{
-                      background: isMax ? '#dff0d8' : '#fff0f3',
-                      color: isMax ? '#2f7a3f' : '#8a6a2a',
-                      border: '1px solid rgba(90,70,54,0.08)',
+                      background: isMax ? '#dff8ef' : '#eef6ff',
+                      color: isMax ? '#16926f' : 'var(--blue)',
+                      border: '1px solid var(--line)',
                     }}
                   >
                     Lv {level}{isMax ? ' (滿)' : ` / ${MAX_SHOP_LEVEL}`}
@@ -109,11 +108,12 @@ export function ShopPanel() {
                 className="text-sm px-3 whitespace-nowrap"
                 style={{
                   background: isMax
-                    ? '#dff0d8'
+                    ? '#dff8ef'
                     : canAfford
-                      ? 'linear-gradient(180deg, #b6efab, #8ee28f)'
-                      : '#eee',
-                  color: isMax ? '#2f7a3f' : undefined,
+                      ? 'linear-gradient(180deg, #35c59c, #16a77f)'
+                      : '#e9f1ff',
+                  color: isMax ? '#16926f' : canAfford ? 'white' : '#8aa2c8',
+                  border: '1px solid var(--line)',
                 }}
                 title={
                   isMax
@@ -130,10 +130,10 @@ export function ShopPanel() {
               {item.statTags.map((tag, i) => (
                 <span
                   key={i}
-                  className="text-[11px] px-2 py-0.5 rounded-full"
+                  className="text-[11px] px-2 py-0.5 rounded-md"
                   style={{
-                    background: tag.type === 'up' ? '#e8f5e9' : '#ffebee',
-                    color: tag.type === 'up' ? '#388e3c' : '#c62828',
+                    background: tag.type === 'up' ? '#eefaf7' : '#fff7f7',
+                    color: tag.type === 'up' ? '#16926f' : '#d34a4a',
                   }}
                 >
                   {tag.label}

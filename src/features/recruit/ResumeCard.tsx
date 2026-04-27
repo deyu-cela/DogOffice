@@ -2,9 +2,19 @@ import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { DOG_ROLES } from '@/constants/dogRoles';
+import { DogAvatar } from '@/components/DogAvatar';
 import { RadarChart } from '@/components/RadarChart';
+import { SvgIcon } from '@/components/SvgIcon';
+import type { SvgIconName } from '@/components/SvgIcon';
 
 const TARGETED_COST = 40;
+
+const statIcons: Record<string, SvgIconName> = {
+  速度: 'speed',
+  專業: 'quality',
+  協作: 'teamwork',
+  魅力: 'heart',
+};
 
 function TargetedRecruitButton() {
   const money = useGameStore((s) => s.money);
@@ -23,13 +33,12 @@ function TargetedRecruitButton() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={disabled}
-        className="w-full py-2 rounded-full text-xs font-bold"
+        className="w-full h-10 rounded-lg text-xs font-extrabold inline-flex items-center justify-center gap-2 transition"
         style={{
-          background: disabled
-            ? '#eee'
-            : 'linear-gradient(180deg, #ffe5a0, #f6c24b)',
-          color: disabled ? '#999' : '#5a3a10',
-          border: '1.5px solid rgba(90,70,54,0.15)',
+          background: disabled ? '#e9f1ff' : 'linear-gradient(180deg, #ffffff, #edf5ff)',
+          color: disabled ? '#8aa2c8' : 'var(--blue)',
+          border: '1px solid var(--line)',
+          boxShadow: disabled ? 'none' : 'var(--shadow-soft)',
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
         title={
@@ -38,20 +47,22 @@ function TargetedRecruitButton() {
               : '指定職業招聘（保證下一張履歷為指定職業）'
         }
       >
-        🎯 指定職業招聘 ${TARGETED_COST}
+        <SvgIcon name="target" size={19} />
+        <span>指定職業招聘 ${TARGETED_COST}</span>
       </button>
       {open && !disabled && (
         <div
-          className="mt-2 p-2.5 rounded-2xl"
+          className="mt-2 p-2.5 rounded-xl"
           style={{
-            background: 'linear-gradient(180deg, #fffefc, #fff5e7)',
-            border: '1.5px solid rgba(90,70,54,0.15)',
+            background: 'rgba(255,255,255,0.92)',
+            border: '1px solid var(--line)',
+            boxShadow: 'var(--shadow-soft)',
           }}
         >
-          <div className="text-[10px] mb-1.5 font-bold" style={{ color: 'var(--muted)' }}>
-            選擇職業 → 花 ${TARGETED_COST} 強制換成該職業候選人
+          <div className="text-[10px] mb-2 font-bold" style={{ color: 'var(--muted)' }}>
+            選擇職業，下一張履歷會換成該職業候選人
           </div>
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-1.5">
             {DOG_ROLES.map((r) => (
               <button
                 key={r.role}
@@ -60,14 +71,15 @@ function TargetedRecruitButton() {
                   request(r.role);
                   setOpen(false);
                 }}
-                className="text-[11px] px-2 py-1.5 rounded-lg flex items-center gap-1"
+                className="text-[11px] px-2 py-1.5 rounded-lg flex items-center gap-1.5 font-bold"
                 style={{
-                  background: 'rgba(255,255,255,0.85)',
-                  border: '1px solid rgba(90,70,54,0.12)',
+                  background: 'linear-gradient(180deg, #ffffff, #f4f9ff)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--text)',
                 }}
               >
-                <span>{r.emoji}</span>
-                <span className="font-bold">{r.role}</span>
+                <SvgIcon name="appDog" size={18} />
+                <span>{r.role}</span>
               </button>
             ))}
           </div>
@@ -84,17 +96,47 @@ function RecruitmentToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="w-full py-2 rounded-full text-xs font-bold mb-2"
+      className="w-full h-10 rounded-lg text-xs font-extrabold mb-2 inline-flex items-center justify-center gap-2"
       style={{
-        background: closed
-          ? 'linear-gradient(180deg, #b6efab, #8ee28f)'
-          : 'linear-gradient(180deg, #ffd4d4, #ef8f8f)',
-        color: closed ? '#1e5a29' : '#a03d3d',
-        border: '1.5px solid rgba(90,70,54,0.15)',
+        background: closed ? 'linear-gradient(180deg, #eafff7, #d9f7ee)' : 'linear-gradient(180deg, #fff6f6, #ffe9e9)',
+        color: closed ? '#16926f' : '#d34a4a',
+        border: closed ? '1px solid rgba(51,194,154,0.3)' : '1px solid rgba(255,112,112,0.25)',
       }}
     >
-      {closed ? '🟢 重新開啟招募' : '🔴 暫停招募（不再來新候選人）'}
+      <SvgIcon name={closed ? 'briefcase' : 'warning'} size={18} />
+      <span>{closed ? '重新開啟招募' : '暫停招募'}</span>
     </button>
+  );
+}
+
+function EmptyRecruitState({
+  title,
+  desc,
+  icon = 'briefcase',
+}: {
+  title: string;
+  desc: string;
+  icon?: SvgIconName;
+}) {
+  return (
+    <div
+      className="p-5 rounded-xl text-center"
+      style={{
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(239,247,255,0.9))',
+        border: '1px solid var(--line)',
+        boxShadow: 'var(--shadow-soft)',
+      }}
+    >
+      <div className="mx-auto mb-2 w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: '#eef6ff' }}>
+        <SvgIcon name={icon} size={30} />
+      </div>
+      <div className="font-extrabold mb-1" style={{ color: 'var(--text)' }}>
+        {title}
+      </div>
+      <div className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+        {desc}
+      </div>
+    </div>
   );
 }
 
@@ -115,56 +157,30 @@ export function ResumeCard() {
     return (
       <div className="mt-3">
         <RecruitmentToggle />
-      <TargetedRecruitButton />
-        <div
-          className="p-5 rounded-2xl text-center"
-          style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}
-        >
-          <div className="text-5xl mb-2">🚫</div>
-          <div className="font-bold mb-1" style={{ color: 'var(--text)' }}>
-            招募已暫停
-          </div>
-          <div className="text-xs leading-relaxed">
-            不會再有新候選人來了。<br />
-            想繼續擴編時再按上方按鈕重開。
-          </div>
-        </div>
+        <TargetedRecruitButton />
+        <EmptyRecruitState
+          icon="warning"
+          title="招募已暫停"
+          desc="不會再有新候選人。想繼續擴編時，再按上方按鈕重開。"
+        />
       </div>
     );
   }
 
   if (!current) {
-    if (vacancy) {
-      return (
-        <div className="mt-3">
-          <RecruitmentToggle />
-      <TargetedRecruitButton />
-          <div
-            className="p-5 rounded-2xl text-center"
-            style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}
-          >
-            <div className="text-5xl mb-2" style={{ animation: 'bob 2s ease-in-out infinite' }}>
-              😴
-            </div>
-            <div className="font-bold mb-1" style={{ color: 'var(--text)' }}>
-              人才荒期
-            </div>
-            <div className="text-xs leading-relaxed">
-              目前沒有候選狗狗，趁這段時間培訓或買道具吧！
-              <br />
-              （還要等 {vacancyTimer} 天）
-            </div>
-          </div>
-        </div>
-      );
-    }
     return (
       <div className="mt-3">
         <RecruitmentToggle />
-      <TargetedRecruitButton />
-        <div className="p-4 rounded-2xl text-center" style={{ background: '#fffaf0', border: '2px dashed rgba(90,70,54,0.18)', color: 'var(--muted)' }}>
-          等候下一位候選狗狗...
-        </div>
+        <TargetedRecruitButton />
+        {vacancy ? (
+          <EmptyRecruitState
+            icon="people"
+            title="人才荒期"
+            desc={`目前沒有候選狗狗，趁這段時間培訓或買道具吧。還要等 ${vacancyTimer} 天。`}
+          />
+        ) : (
+          <EmptyRecruitState title="等候候選人" desc="下一位候選狗狗正在路上。" />
+        )}
       </div>
     );
   }
@@ -173,118 +189,128 @@ export function ResumeCard() {
     <div className="mt-3">
       <RecruitmentToggle />
       <TargetedRecruitButton />
-    <div
-      className="p-4 rounded-2xl"
-      style={{
-        background: 'linear-gradient(180deg, #fffefc, #fff5e7)',
-        border: '2px dashed rgba(90,70,54,0.18)',
-      }}
-    >
-      <div className="grid gap-3.5" style={{ gridTemplateColumns: '120px 1fr' }}>
-        <div
-          className="rounded-2xl overflow-hidden flex items-center justify-center"
-          style={{
-            width: 120,
-            height: 150,
-            background: 'linear-gradient(180deg, #fff7ef, #f4e0c8)',
-            border: '2px solid rgba(90,70,54,0.12)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.7)',
-          }}
-        >
-          {current.image ? (
-            <img src={current.image} alt={current.role} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-5xl">{current.emoji}</span>
-          )}
-        </div>
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-extrabold text-lg">{current.name}</span>
-            <span
-              className="px-2 py-0.5 rounded-full text-[11px] font-bold"
-              style={{ background: '#f4a8b8', color: 'white' }}
-            >
-              {current.grade}
-            </span>
-            {current.isCEO && <span className="text-sm">👑 CEO</span>}
+      <div
+        className="p-4 rounded-xl"
+        style={{
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,249,255,0.94))',
+          border: '1px solid var(--line)',
+          boxShadow: 'var(--shadow-soft)',
+        }}
+      >
+        <div className="grid gap-3.5" style={{ gridTemplateColumns: '118px 1fr' }}>
+          <div
+            className="rounded-xl overflow-hidden flex items-center justify-center"
+            style={{
+              width: 118,
+              height: 148,
+              background: 'linear-gradient(180deg, #f5fbff, #e7f1ff)',
+              border: '1px solid var(--line)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,.8)',
+            }}
+          >
+            <DogAvatar role={current.role} breed={current.breed} size={118} />
           </div>
-          <div className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-            {current.breed}・{current.role}
-          </div>
-          <div className="flex gap-1.5 flex-wrap mt-2">
-            {current.traits.map((t) => (
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-extrabold text-lg">{current.name}</span>
               <span
-                key={t}
-                className="text-[11px] px-2 py-1 rounded-full"
-                style={{ background: 'white', border: '1px solid rgba(90,70,54,0.12)' }}
+                className="px-2 py-0.5 rounded-md text-[11px] font-extrabold"
+                style={{ background: 'linear-gradient(180deg, #2f8df4, #1c63c8)', color: 'white' }}
               >
-                {t}
+                {current.grade}
               </span>
-            ))}
-          </div>
-          <div className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
-            💰 期望日薪 ${current.expectedSalary}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-2 p-2.5 rounded-xl text-xs leading-relaxed" style={{ background: 'rgba(255,255,255,.7)', border: '1px solid rgba(90,70,54,0.1)', color: 'var(--muted)' }}>
-        💬 {current.motto}
-      </div>
-
-      {/* 4 維能力雷達圖 + 數值 */}
-      <div className="mt-2 p-2.5 rounded-xl flex items-center gap-3" style={{ background: 'rgba(255,255,255,.7)', border: '1px solid rgba(90,70,54,0.1)' }}>
-        <RadarChart stats={current.stats} size={130} />
-        <div className="grid grid-cols-2 gap-1 text-xs flex-1">
-          <StatPair label="⚡ 速度" value={current.stats.speed} />
-          <StatPair label="✨ 專業" value={current.stats.quality} />
-          <StatPair label="🤝 協作" value={current.stats.teamwork} />
-          <StatPair label="📣 魅力" value={current.stats.charisma} />
-        </div>
-      </div>
-
-      <ul className="mt-2 pl-4 text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
-        <li>💼 {current.passive}</li>
-        <li>⭐ {current.flavor}</li>
-      </ul>
-
-      {current.interview && (
-        <div className="mt-2 p-2 rounded-xl text-xs" style={{ background: '#fff5e8', border: '1px solid rgba(255,179,71,0.3)' }}>
-          <div className="font-bold mb-1">面試 Q：{current.interview.q}</div>
-          <div style={{ color: 'var(--muted)' }}>
-            ✅ {current.interview.goodAnswer}
+              {current.isCEO && (
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold" style={{ background: '#eef6ff', color: 'var(--blue)', border: '1px solid var(--line)' }}>
+                  CEO
+                </span>
+              )}
+            </div>
+            <div className="text-xs mt-0.5 font-bold" style={{ color: 'var(--muted)' }}>
+              {current.breed}・{current.role}
+            </div>
+            <div className="flex gap-1.5 flex-wrap mt-2">
+              {current.traits.map((t) => (
+                <span
+                  key={t}
+                  className="text-[11px] px-2 py-1 rounded-md font-bold"
+                  style={{ background: '#f1f7ff', border: '1px solid var(--line)', color: 'var(--blue-2)' }}
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+            <div className="text-xs mt-2 font-bold flex items-center gap-1.5" style={{ color: 'var(--muted)' }}>
+              <SvgIcon name="money" size={17} />
+              <span>期望日薪 ${current.expectedSalary}</span>
+            </div>
           </div>
         </div>
-      )}
 
-      <div className="grid grid-cols-2 gap-2.5 mt-3.5">
-        <button
-          disabled={atCapacity}
-          onClick={hire}
-          style={{ background: 'linear-gradient(180deg, #b6efab, #8ee28f)' }}
-        >
-          錄用 ${current.expectedSalary * 2}
-        </button>
-        <button onClick={reject} style={{ background: 'linear-gradient(180deg, #ffdba5, #ffbf73)' }}>
-          婉拒
-        </button>
-      </div>
-
-      {atCapacity && (
-        <div className="text-center text-xs font-bold mt-2" style={{ color: '#ef5350' }}>
-          辦公室已滿，請先升級或資遣員工
+        <div className="mt-2 p-2.5 rounded-lg text-xs leading-relaxed" style={{ background: '#f7fbff', border: '1px solid var(--line)', color: 'var(--muted)' }}>
+          {current.motto}
         </div>
-      )}
-    </div>
+
+        <div className="mt-2 p-2.5 rounded-lg flex items-center gap-3" style={{ background: '#f7fbff', border: '1px solid var(--line)' }}>
+          <RadarChart stats={current.stats} size={130} />
+          <div className="grid grid-cols-2 gap-1.5 text-xs flex-1">
+            <StatPair label="速度" value={current.stats.speed} />
+            <StatPair label="專業" value={current.stats.quality} />
+            <StatPair label="協作" value={current.stats.teamwork} />
+            <StatPair label="魅力" value={current.stats.charisma} />
+          </div>
+        </div>
+
+        <div className="mt-2 grid gap-1.5 text-xs" style={{ color: 'var(--muted)' }}>
+          <div className="p-2 rounded-lg" style={{ background: '#ffffff', border: '1px solid var(--line)' }}>{current.passive}</div>
+          <div className="p-2 rounded-lg" style={{ background: '#ffffff', border: '1px solid var(--line)' }}>{current.flavor}</div>
+        </div>
+
+        {current.interview && (
+          <div className="mt-2 p-2.5 rounded-lg text-xs" style={{ background: '#eefaf7', border: '1px solid rgba(51,194,154,0.28)' }}>
+            <div className="font-extrabold mb-1" style={{ color: 'var(--text)' }}>面試 Q：{current.interview.q}</div>
+            <div style={{ color: 'var(--muted)' }}>{current.interview.goodAnswer}</div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-2.5 mt-3.5">
+          <button
+            disabled={atCapacity}
+            onClick={hire}
+            className="h-10 rounded-lg text-sm font-extrabold"
+            style={{
+              background: atCapacity ? '#e9f1ff' : 'linear-gradient(180deg, #35c59c, #16a77f)',
+              color: atCapacity ? '#8aa2c8' : 'white',
+              border: atCapacity ? '1px solid var(--line)' : '1px solid rgba(22,167,127,0.35)',
+              cursor: atCapacity ? 'not-allowed' : 'pointer',
+            }}
+          >
+            錄用 ${current.expectedSalary * 2}
+          </button>
+          <button
+            onClick={reject}
+            className="h-10 rounded-lg text-sm font-extrabold"
+            style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
+          >
+            婉拒
+          </button>
+        </div>
+
+        {atCapacity && (
+          <div className="text-center text-xs font-extrabold mt-2" style={{ color: '#e24c4c' }}>
+            辦公室已滿，請先升級或資遣員工
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 function StatPair({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5 rounded-md px-2 py-1" style={{ background: '#ffffff', border: '1px solid var(--line)' }}>
+      <SvgIcon name={statIcons[label]} size={16} />
       <span style={{ color: 'var(--muted)' }}>{label}</span>
-      <span className="font-bold">{value}</span>
+      <span className="font-extrabold ml-auto">{value}</span>
     </div>
   );
 }

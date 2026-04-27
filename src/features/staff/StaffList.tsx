@@ -1,7 +1,8 @@
-import { useGameStore } from '@/store/gameStore';
+﻿import { useGameStore } from '@/store/gameStore';
 import { RadarChart } from '@/components/RadarChart';
 import { DOG_TRAITS_MAP, type DogTraitId } from '@/constants/dogTraits';
 import type { Dog } from '@/types';
+import { DogAvatar } from '@/components/DogAvatar';
 
 const EXP_THRESHOLDS: Record<Dog['grade'], number> = {
   D: 8,
@@ -36,14 +37,14 @@ export function StaffList() {
           onClick={playMini}
           className="py-2 rounded-full font-bold"
           style={{
-            background: staff.length < 3 ? '#eee' : 'linear-gradient(180deg, #dcecff, #c6deff)',
+            background: staff.length < 3 ? '#e9f1ff' : 'linear-gradient(180deg, #ffffff, #edf5ff)',
             fontSize: 13,
             color: staff.length < 3 ? '#999' : '#2b5a8a',
             cursor: staff.length < 3 ? 'not-allowed' : 'pointer',
           }}
           title={staff.length < 3 ? '需要至少 3 位員工' : '陪玩，花 $10。Crunch Sprint 模式：分數 → active 案 +分數×2 工作量'}
         >
-          🎮 陪玩{staff.length < 3 ? `（需 ${3 - staff.length} 位員工）` : ''}
+          陪玩{staff.length < 3 ? `（需 ${3 - staff.length} 位員工）` : ''}
         </button>
         <button
           type="button"
@@ -51,14 +52,14 @@ export function StaffList() {
           onClick={openTraining}
           className="py-2 rounded-full font-bold"
           style={{
-            background: staff.length < 2 ? '#eee' : 'linear-gradient(180deg, #dcecff, #c6deff)',
+            background: staff.length < 2 ? '#e9f1ff' : 'linear-gradient(180deg, #ffffff, #edf5ff)',
             fontSize: 13,
             color: staff.length < 2 ? '#999' : '#2b5a8a',
             cursor: staff.length < 2 ? 'not-allowed' : 'pointer',
           }}
           title={staff.length < 2 ? '需要至少 2 位員工' : '培訓問答，花 $18。答對 ≥ 4 題 → 可選 1 員工 +1 能力'}
         >
-          📚 培訓{staff.length < 2 ? `（需 ${2 - staff.length} 位員工）` : ''}
+          培訓{staff.length < 2 ? `（需 ${2 - staff.length} 位員工）` : ''}
         </button>
       </div>
 
@@ -74,29 +75,23 @@ export function StaffList() {
             key={dog.id}
             className="p-3 rounded-2xl cursor-pointer"
             style={{
-              background: dog.status === 'pip' ? 'rgba(255,230,200,0.6)' : 'rgba(255,255,255,0.9)',
-              border: dog.status === 'pip' ? '2px solid #eb93a3' : '1px solid rgba(90,70,54,0.12)',
+              background: dog.status === 'pip' ? '#fff7f7' : '#ffffff',
+              border: dog.status === 'pip' ? '1px solid rgba(255,112,112,0.24)' : '1px solid var(--line)',
             }}
             onClick={() => openAction(i)}
           >
             <div className="flex items-center gap-3">
-              <div className="rounded-full overflow-hidden" style={{ width: 48, height: 48, border: '2px solid white' }}>
-                {dog.image ? (
-                  <img src={dog.image} alt={dog.role} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl" style={{ background: '#fff0d9' }}>
-                    {dog.emoji}
-                  </div>
-                )}
+              <div className="rounded-full overflow-hidden flex items-center justify-center" style={{ width: 48, height: 48, border: '2px solid white', background: '#eef6ff' }}>
+                <DogAvatar role={dog.role} breed={dog.breed} size={48} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-bold">{dog.name}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#f4a8b8', color: 'white' }}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: 'linear-gradient(180deg, #2f8df4, #1c63c8)', color: 'white' }}>
                     {dog.grade}
                   </span>
                   {dog.status === 'pip' && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#fbd5db', color: '#e65100' }}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: '#fff0f0', color: '#d34a4a' }}>
                       PIP {dog.pipDaysLeft}天
                     </span>
                   )}
@@ -107,9 +102,9 @@ export function StaffList() {
                 {/* 指派 chip */}
                 <div className="text-[11px] mt-0.5">
                   {project ? (
-                    <span style={{ color: '#2b7abd' }}>💼 {project.title}</span>
+                    <span style={{ color: '#2b7abd' }}>{project.title}</span>
                   ) : (
-                    <span style={{ color: 'var(--muted)' }}>🛌 待命中</span>
+                    <span style={{ color: 'var(--muted)' }}>待命中</span>
                   )}
                 </div>
               </div>
@@ -120,9 +115,9 @@ export function StaffList() {
 
             {/* 三條進度：個人士氣 / 疲勞 / 忠誠 */}
             <div className="grid grid-cols-3 gap-1.5 mt-2 text-[10px]">
-              <MeterMini label="❤️ 士氣" value={dog.morale} color="#a8d8a8" />
-              <MeterMini label="😴 疲勞" value={dog.fatigue} color="#f6c24b" inverted />
-              <MeterMini label="🤝 忠誠" value={dog.loyalty} color="#c6deff" />
+              <MeterMini label="士氣" value={dog.morale} color="#35c59c" />
+              <MeterMini label="疲勞" value={dog.fatigue} color="#ffc35c" inverted />
+              <MeterMini label="忠誠" value={dog.loyalty} color="#2f8df4" />
             </div>
 
             {/* 已習得特性徽章 */}
@@ -136,13 +131,13 @@ export function StaffList() {
                       key={tid}
                       className="text-[10px] px-1.5 py-0.5 rounded-full"
                       style={{
-                        background: 'linear-gradient(180deg, #fff5d9, #ffe9b3)',
-                        border: '1px solid #e0c98a',
-                        color: '#7a5a2a',
+                        background: '#eef6ff',
+                        border: '1px solid var(--line)',
+                        color: 'var(--blue)',
                       }}
                       title={def.desc}
                     >
-                      {def.emoji} {def.name}
+                      {def.name}
                     </span>
                   );
                 })}
@@ -159,12 +154,12 @@ export function StaffList() {
                 }}
                 className="w-full mt-2 py-1.5 rounded-full font-bold text-xs"
                 style={{
-                  background: 'linear-gradient(180deg, #fff5d9, #ffd36a)',
-                  border: '1.5px solid #c9a064',
-                  color: '#7a5a2a',
+                  background: 'linear-gradient(180deg, #ffffff, #edf5ff)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--blue)',
                 }}
               >
-                ✨ 升級待選特性 →
+                升級待選特性
               </button>
             )}
 
@@ -172,17 +167,17 @@ export function StaffList() {
             {dog.grade !== 'S' && !dog.isCEO && (
               <div className="mt-1.5">
                 <div className="flex justify-between text-[10px] mb-0.5">
-                  <span style={{ color: 'var(--muted)' }}>🎓 經驗</span>
+                  <span style={{ color: 'var(--muted)' }}>經驗</span>
                   <span style={{ color: 'var(--muted)' }}>
                     {dog.experience} / {expGoal}
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#eadfce' }}>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
                   <div
                     className="h-full"
                     style={{
                       width: `${expProgress}%`,
-                      background: 'linear-gradient(90deg, #ffd36a, #c9a064)',
+                      background: 'linear-gradient(90deg, #2f8df4, #20c7b3)',
                     }}
                   />
                 </div>
@@ -214,7 +209,7 @@ function MeterMini({
         <span style={{ color: 'var(--muted)' }}>{label}</span>
         <span style={{ color: 'var(--muted)' }}>{display}</span>
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#eadfce' }}>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
         <div
           className="h-full"
           style={{

@@ -1,4 +1,4 @@
-import type { InterviewQuestion, TrainingQuestion } from '@/types';
+﻿import type { InterviewQuestion, TrainingQuestion } from '@/types';
 
 export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   { q: '你覺得團隊合作最重要的是什麼？', goodAnswer: '互相信任與及時溝通', badAnswer: '我自己做就好' },
@@ -131,39 +131,39 @@ export type TutorialStepData = {
 
 export const TUTORIAL_STEPS: TutorialStepData[] = [
   {
-    dog: '🐕',
+    dog: '',
     title: '歡迎來到狗狗公司！',
     text: '汪汪！我是<b>小柴</b>，你的經營顧問！<br/>這裡是你的辦公室，讓我帶你認識一下～',
-    tip: '💡 教學很快，別擔心！',
+    tip: ' 教學很快，別擔心！',
   },
   {
-    dog: '🏢',
+    dog: '',
     title: '你的等角辦公室',
-    text: '畫面中間是你的房間，裡面有<b>三棟可點擊的建築</b>：<br/>🛒 商店、👥 員工宿舍、📋 人資辦公室。',
-    tip: '🏠 滑鼠移到建築上會上浮，點一下打開功能',
+    text: '畫面中間是你的房間，裡面有<b>三棟可點擊的建築</b>：<br/> 商店、 員工宿舍、 人資辦公室。',
+    tip: ' 滑鼠移到建築上會上浮，點一下打開功能',
   },
   {
-    dog: '📋',
+    dog: '',
     title: '點「人資辦公室」面試',
     text: '右前角的<b>人資辦公室</b>上方會浮出面試狗狗！<br/>點擊建築打開履歷，決定是否錄用。',
-    tip: '⏳ 候選人有耐心值，等太久會自己跑掉！',
+    tip: ' 候選人有耐心值，等太久會自己跑掉！',
   },
   {
     dog: '✅',
     title: '錄用或婉拒',
     text: '覺得適合就按<b>「錄用」</b>，不適合就<b>「婉拒」</b>。<br/>錄用的狗狗會在辦公室裡<b>走來走去</b>。',
-    tip: '💡 A 級優秀、D 級要小心',
+    tip: ' A 級優秀、D 級要小心',
   },
   {
-    dog: '🛒',
+    dog: '',
     title: '商店與員工宿舍',
     text: '後牆的<b>商店建築</b>能擴建辦公室、買裝飾、升級設備。<br/>左邊的<b>員工宿舍</b>能陪玩、培訓、調整職位，好的<b>職業搭配</b>還會觸發化學反應！',
-    tip: '🎮 飛盤、翻牌、培訓問答三種小遊戲',
+    tip: ' 飛盤、翻牌、培訓問答三種小遊戲',
   },
   {
-    dog: '🚀',
+    dog: '',
     title: '準備好了嗎？',
     text: '每幾秒一天，公司會<b>自動結算</b>。<br/>經營不善可能破產，先從點<b>人資辦公室</b>面試開始吧！',
-    tip: '💪 汪汪加油！',
+    tip: ' 汪汪加油！',
   },
 ];

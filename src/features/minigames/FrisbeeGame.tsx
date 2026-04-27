@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { SvgIcon } from '@/components/SvgIcon';
 import { useGameStore } from '@/store/gameStore';
 
 export function FrisbeeGame() {
@@ -25,62 +27,45 @@ export function FrisbeeGame() {
   if (!mg || mg.type !== 'frisbee') return null;
 
   return (
-    <div className="fixed inset-0 z-[850] flex items-center justify-center bg-black/40 p-4">
-      <div className="rounded-3xl p-5 w-[520px] max-w-full" style={{ background: '#fffaf0', border: '2px solid rgba(90,70,54,0.12)' }}>
+    <div className="fixed inset-0 z-[850] flex items-center justify-center bg-[#08204d]/45 backdrop-blur-sm p-4">
+      <div className="rounded-xl p-5 w-[520px] max-w-full" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))', border: '1px solid var(--line)', boxShadow: '0 24px 70px rgba(30,90,180,0.28)' }}>
         <div className="flex justify-between items-center mb-3">
-          <div className="font-extrabold">🥏 接飛盤遊戲</div>
-          <div className="text-sm" style={{ color: 'var(--muted)' }}>
-            時間 {mg.timeLeft.toFixed(1)}s ・ 分數 {mg.score}
-          </div>
+          <div className="font-extrabold flex items-center gap-1.5"><SvgIcon name="training" size={21} />接飛盤遊戲</div>
+          <div className="text-sm" style={{ color: 'var(--muted)' }}>時間 {mg.timeLeft.toFixed(1)}s ・ 分數 {mg.score}</div>
         </div>
-        <div
-          className="relative rounded-2xl overflow-hidden"
-          style={{
-            height: 360,
-            background: 'linear-gradient(180deg, #cce7ff 0%, #b8ddff 50%, #8bc34a 50%, #7cb342 100%)',
-          }}
-        >
+        <div className="relative rounded-xl overflow-hidden" style={{ height: 360, background: 'linear-gradient(180deg, #cfe9ff 0%, #eaf7ff 54%, #dff8ef 54%, #c8f0df 100%)', border: '1px solid var(--line)' }}>
           {mg.treats.map((t) => (
-            <div key={t.id} className="absolute text-3xl" style={{ left: `${t.x}%`, top: `${t.y}%`, transform: 'translate(-50%, -50%)' }}>
-              {t.emoji}
+            <div key={t.id} className="absolute" style={{ left: `${t.x}%`, top: `${t.y}%`, transform: 'translate(-50%, -50%)' }}>
+              <SvgIcon name={t.pts >= 3 ? 'gem' : 'money'} size={28} />
             </div>
           ))}
-          <div
-            className="absolute text-4xl"
-            style={{ left: `${mg.dogX}%`, bottom: 20, transform: 'translateX(-50%)' }}
-          >
-            🐕
+          <div className="absolute" style={{ left: `${mg.dogX}%`, bottom: 20, transform: 'translateX(-50%)' }}>
+            <SvgIcon name="appDog" size={42} />
           </div>
         </div>
         <div className="flex justify-between gap-2 mt-3">
-          <button
-            onMouseDown={() => setDir(-1)}
-            onMouseUp={() => setDir(0)}
-            onMouseLeave={() => setDir(0)}
-            onTouchStart={() => setDir(-1)}
-            onTouchEnd={() => setDir(0)}
-            style={{ background: '#dcecff', flex: 1 }}
-          >
-            ← 左
-          </button>
-          <button onClick={() => finish(true)} style={{ background: '#ffdba5', flex: 1 }}>
-            提早結束
-          </button>
-          <button
-            onMouseDown={() => setDir(1)}
-            onMouseUp={() => setDir(0)}
-            onMouseLeave={() => setDir(0)}
-            onTouchStart={() => setDir(1)}
-            onTouchEnd={() => setDir(0)}
-            style={{ background: '#dcecff', flex: 1 }}
-          >
-            右 →
-          </button>
+          <MoveButton onDown={() => setDir(-1)} onUp={() => setDir(0)}>← 左</MoveButton>
+          <button onClick={() => finish(true)} className="rounded-lg font-bold" style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)', flex: 1 }}>提早結束</button>
+          <MoveButton onDown={() => setDir(1)} onUp={() => setDir(0)}>右 →</MoveButton>
         </div>
-        <div className="text-center text-xs mt-2" style={{ color: 'var(--muted)' }}>
-          用 ← → 或 A/D 移動狗狗，接到零食得分
-        </div>
+        <div className="text-center text-xs mt-2" style={{ color: 'var(--muted)' }}>用 ← → 或 A/D 移動狗狗，接到零食得分</div>
       </div>
     </div>
+  );
+}
+
+function MoveButton({ children, onDown, onUp }: { children: ReactNode; onDown: () => void; onUp: () => void }) {
+  return (
+    <button
+      onMouseDown={onDown}
+      onMouseUp={onUp}
+      onMouseLeave={onUp}
+      onTouchStart={onDown}
+      onTouchEnd={onUp}
+      className="rounded-lg font-bold"
+      style={{ background: 'linear-gradient(180deg, #ffffff, #edf5ff)', color: 'var(--blue)', border: '1px solid var(--line)', flex: 1 }}
+    >
+      {children}
+    </button>
   );
 }

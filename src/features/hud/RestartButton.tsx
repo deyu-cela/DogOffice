@@ -24,35 +24,47 @@ export function RestartButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs px-2 py-1 rounded-full"
+        className="grid h-12 w-12 place-items-center rounded-xl text-xl"
         style={{
-          background: 'transparent',
-          color: '#7a685a',
-          border: '1px solid rgba(90,70,54,0.15)',
-          cursor: 'pointer',
+          background: 'linear-gradient(180deg, #ffffff, #f4f9ff)',
+          color: 'var(--text)',
+          border: '1px solid rgba(121, 164, 224, 0.34)',
+          boxShadow: '0 4px 12px rgba(46,104,180,0.1), inset 0 1px 0 rgba(255,255,255,0.95)',
         }}
+        title="重新開始"
+        aria-label="重新開始"
       >
-        🔄 重來
+        <RestartIcon />
       </button>
       {open && (
-        <div className="fixed inset-0 z-[920] bg-black/60 flex items-center justify-center p-5">
+        <div className="fixed inset-0 z-[920] flex items-center justify-center bg-slate-950/50 p-5 backdrop-blur-sm">
           <div
-            className="max-w-sm w-full rounded-3xl p-6"
-            style={{ background: '#fffaf0', border: '2px solid rgba(90,70,54,0.12)' }}
+            className="w-full max-w-sm rounded-2xl p-6"
+            style={{
+              background: 'linear-gradient(180deg, #ffffff, #f4f9ff)',
+              border: '1px solid var(--line)',
+              boxShadow: '0 24px 60px rgba(23,53,111,0.28)',
+            }}
           >
-            <div className="text-xl font-extrabold mb-2" style={{ color: '#5b3c2b' }}>
-              重新開始？
+            <div className="mb-2 text-xl font-extrabold" style={{ color: 'var(--text)' }}>
+              重新開始遊戲？
             </div>
-            <p className="text-sm mb-5" style={{ color: '#7a685a' }}>
-              目前的公司會被解散，雲端存檔也會刪除。確定要從頭開始嗎？
+            <p className="mb-5 text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
+              這會清除目前雲端存檔並建立一局新公司。這個動作無法復原。
             </p>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={busy}
-                className="flex-1 py-2 rounded-full text-sm font-bold"
-                style={{ background: '#eeeae4', color: '#5b3c2b', cursor: busy ? 'wait' : 'pointer' }}
+                className="flex-1 rounded-xl py-2 text-sm font-bold"
+                style={{
+                  background: '#eef6ff',
+                  color: 'var(--text)',
+                  border: '1px solid var(--line)',
+                  boxShadow: 'none',
+                  cursor: busy ? 'wait' : 'pointer',
+                }}
               >
                 取消
               </button>
@@ -60,19 +72,49 @@ export function RestartButton() {
                 type="button"
                 onClick={doRestart}
                 disabled={busy}
-                className="flex-1 py-2 rounded-full font-extrabold text-sm"
+                className="flex-1 rounded-xl py-2 text-sm font-extrabold"
                 style={{
-                  background: busy ? '#c9a57b' : 'linear-gradient(180deg, #ff8a8a, #d75d5d)',
+                  background: busy ? '#91a0b8' : 'linear-gradient(180deg, #ff7b7b, #ef5b5b)',
                   color: 'white',
+                  border: '1px solid rgba(239,91,91,0.2)',
                   cursor: busy ? 'wait' : 'pointer',
                 }}
               >
-                {busy ? '處理中…' : '確定重來'}
+                {busy ? '處理中...' : '確認重開'}
               </button>
             </div>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+function RestartIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+      <defs>
+        <linearGradient id="restart-icon-blue" x1="0" x2="0" y1="4" y2="28">
+          <stop stopColor="#4f95ef" />
+          <stop offset="1" stopColor="#1d5fb8" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M23.8 9.2A10 10 0 1 0 25 20.5"
+        fill="none"
+        stroke="url(#restart-icon-blue)"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M23.4 5.8v6.4H17"
+        fill="none"
+        stroke="url(#restart-icon-blue)"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="16" cy="16" r="3.2" fill="#ffd96a" stroke="#1d5fb8" strokeWidth="1.4" />
+    </svg>
   );
 }

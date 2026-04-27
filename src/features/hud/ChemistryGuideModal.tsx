@@ -1,4 +1,4 @@
-import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
+﻿import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import { DOG_ROLES, CEO_DOG } from '@/constants/dogRoles';
 import type { ChemistryCombo, ProjectCategory } from '@/types';
 
@@ -11,10 +11,10 @@ const ROLE_EMOJI = (() => {
 
 const CATEGORY_LABEL: Record<ProjectCategory | 'any', string> = {
   any: '全類別',
-  tech: '💻 技術',
-  design: '🎨 設計',
-  marketing: '📣 行銷',
-  service: '💬 客服',
+  tech: ' 技術',
+  design: ' 設計',
+  marketing: ' 行銷',
+  service: ' 客服',
 };
 
 function effectLines(combo: ChemistryCombo): string[] {
@@ -49,7 +49,7 @@ export function ChemistryGuideModal({ onClose }: { onClose: () => void }) {
       >
         <div className="p-4 pb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🧪</span>
+            <span className="text-2xl"></span>
             <span className="font-extrabold text-base">化學反應一覽</span>
           </div>
           <button
@@ -84,7 +84,7 @@ export function ChemistryGuideModal({ onClose }: { onClose: () => void }) {
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                   {combo.roles.map((r, ri) => (
                     <span key={ri} className="flex items-center gap-1">
-                      <span className="text-lg">{ROLE_EMOJI[r] ?? '🐕'}</span>
+                      <span className="text-lg">{ROLE_EMOJI[r] ?? ''}</span>
                       <span className="text-sm font-bold">{r}</span>
                       {ri < combo.roles.length - 1 && (
                         <span className="text-xs" style={{ color: 'var(--muted)' }}>+</span>
