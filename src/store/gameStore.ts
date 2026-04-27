@@ -745,6 +745,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (project.assignedStaffIds.includes(dogId)) return; // 已指派
     // 員工已被指派到別案 → 不允許
     if (dog.assignedProjectId && dog.assignedProjectId !== projectId) return;
+    // 過勞中（fatigue 100）→ 禁止指派，避免 0 貢獻佔位
+    if (dog.fatigue >= 100) return;
     const next: GameState = {
       ...s,
       clients: s.clients.map((c) =>

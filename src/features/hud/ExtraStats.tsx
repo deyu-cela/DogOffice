@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import type { Dog } from '@/types';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
+import { ChemistryGuideModal } from './ChemistryGuideModal';
 
 const ROLE_ICON: Record<string, SvgIconName> = {
   工程師: 'tech',
@@ -27,8 +29,8 @@ function groupByRole(staff: Dog[]): { role: string; count: number }[] {
 export function ExtraStats() {
   const staff = useGameStore((s) => s.staff);
   const queue = useGameStore((s) => s.queue);
-  const openTraining = useGameStore((s) => s.openTraining);
   const roleStats = groupByRole(staff);
+  const [chemOpen, setChemOpen] = useState(false);
 
   return (
     <section
@@ -75,18 +77,23 @@ export function ExtraStats() {
 
       <button
         type="button"
-        onClick={openTraining}
-        className="mt-3 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-extrabold"
+        onClick={() => setChemOpen(true)}
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl font-extrabold"
         style={{
-          background: 'linear-gradient(180deg, #3e8cf0, #246bd0)',
-          color: 'white',
-          border: '1px solid rgba(36,107,208,0.22)',
-          boxShadow: '0 8px 18px rgba(47,125,225,0.22)',
+          padding: '8px 12px',
+          fontSize: 12,
+          lineHeight: 1.2,
+          background: 'linear-gradient(180deg, #ffffff, #eaf4ff)',
+          color: 'var(--text)',
+          border: '1px solid var(--line)',
+          boxShadow: 'var(--shadow-soft)',
         }}
       >
-        <SvgIcon name="training" size={18} />
-        點擊查看 / 技能
+        <SvgIcon name="teamwork" size={16} />
+        點擊查看 / 化學反應
       </button>
+
+      {chemOpen && <ChemistryGuideModal onClose={() => setChemOpen(false)} />}
     </section>
   );
 }

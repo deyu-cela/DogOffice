@@ -10,16 +10,28 @@ export function SplashScreen() {
   const startGame = useGameStore((s) => s.startGame);
   const authStatus = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const saveStatus = useSaveStore((s) => s.status);
   const cloud = useSaveStore((s) => s.cloud);
   const saveError = useSaveStore((s) => s.error);
   const base = import.meta.env.BASE_URL;
   const [lbOpen, setLbOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const authed = authStatus === 'authed' && !!user;
   const bootstrapping = authStatus === 'bootstrapping';
   const loadingSave = saveStatus === 'loading';
   const hasSave = !!cloud?.data;
+
+  async function onLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <div
@@ -46,9 +58,28 @@ export function SplashScreen() {
 
       {!bootstrapping && authed && (
         <>
-          <div className="mb-3 text-base md:text-lg" style={{ color: 'var(--text)' }}>
+          <div className="mb-1 text-base md:text-lg" style={{ color: 'var(--text)' }}>
             歡迎回來，<span className="font-extrabold">{user?.account}</span>！
           </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            disabled={loggingOut}
+            className="mb-3 inline-flex items-center gap-1.5 rounded-full font-extrabold"
+            style={{
+              padding: '6px 14px',
+              fontSize: 12,
+              lineHeight: 1,
+              background: 'rgba(255,255,255,0.92)',
+              color: 'var(--muted)',
+              border: '1px solid var(--line)',
+              boxShadow: 'var(--shadow-soft)',
+              cursor: loggingOut ? 'wait' : 'pointer',
+            }}
+          >
+            <SvgIcon name="restart" size={12} />
+            {loggingOut ? '登出中…' : '切換帳號 / 登出'}
+          </button>
 
           {loadingSave && <StatusPill icon="save">讀取雲端存檔中…</StatusPill>}
 

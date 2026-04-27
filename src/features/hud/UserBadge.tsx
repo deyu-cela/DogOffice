@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useGameStore } from '@/store/gameStore';
+import { useSaveStore } from '@/store/saveStore';
 
 export function UserBadge() {
   const user = useAuthStore((s) => s.user);
@@ -14,6 +15,12 @@ export function UserBadge() {
     if (busy) return;
     setBusy(true);
     try {
+      // 登出前先把當前進度存到雲端，避免遺失
+      try {
+        await useSaveStore.getState().saveToCloud();
+      } catch {
+        // 存檔失敗也繼續登出，不擋使用者
+      }
       await logout();
       setShowSplash(true);
     } finally {

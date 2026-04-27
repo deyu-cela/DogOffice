@@ -36,6 +36,7 @@ export default function App() {
   const authedUserId = authedUser?.userId ?? null;
   const loadCloud = useSaveStore((s) => s.loadCloud);
   const resetSaveStore = useSaveStore((s) => s.reset);
+  const resetGame = useGameStore((s) => s.resetToInitialGame);
 
   useEffect(() => {
     bootstrap();
@@ -49,9 +50,11 @@ export default function App() {
     if (authedUserId) {
       loadCloud();
     } else {
+      // 登出：同時清掉雲端 meta 與遊戲狀態，避免下個帳號看到殘留資料
       resetSaveStore();
+      resetGame();
     }
-  }, [authedUserId, loadCloud, resetSaveStore]);
+  }, [authedUserId, loadCloud, resetSaveStore, resetGame]);
 
   const bankrupt = useGameStore((s) => s.bankrupt);
   const miniGame = useGameStore((s) => s.miniGame);

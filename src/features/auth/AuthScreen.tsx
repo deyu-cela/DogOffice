@@ -101,14 +101,21 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
     <button
       type="button"
       onClick={onClick}
-      className="flex-1 text-sm font-extrabold py-2 rounded-full"
+      className="flex-1 rounded-full"
       style={{
+        padding: '8px 0',
+        fontSize: 14,
+        fontWeight: 800,
+        lineHeight: 1,
         background: active
           ? 'linear-gradient(180deg, #3e8cf0, #1c63c8)'
           : 'transparent',
         color: active ? 'white' : 'var(--muted)',
         border: '0',
         boxShadow: active ? '0 6px 16px rgba(47,125,225,0.28)' : 'none',
+        transform: 'none',
+        transition: 'background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease',
+        cursor: 'pointer',
       }}
     >
       {label}
