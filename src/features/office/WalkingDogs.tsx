@@ -1,4 +1,4 @@
-import { useGameStore } from '@/store/gameStore';
+﻿import { useGameStore } from '@/store/gameStore';
 import { useWalkerStore } from '@/store/walkerStore';
 import { ROLE_IMAGE_MAP } from '@/constants/dogRoles';
 
@@ -12,7 +12,7 @@ export function WalkingDogs() {
     : 70;
   const low = avgMorale < 40 || reputation < 25;
   const busy = avgMorale >= 60 && reputation >= 50;
-  const statusEmoji = low ? '💤' : busy ? '✨' : reputation < 35 ? '😵' : '';
+  const statusEmoji = low ? '' : busy ? '✨' : reputation < 35 ? '' : '';
 
   return (
     <div className="absolute inset-0 pointer-events-none">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { AuthForm } from './AuthForm';
 
@@ -93,7 +93,7 @@ export function AuthScreen() {
         />
         {slowHint && (
           <div className="mt-3 text-xs text-center" style={{ color: '#7a685a' }}>
-            ⏳ 伺服器喚醒中，首次開啟可能需要 15 秒…
+             伺服器喚醒中，首次開啟可能需要 15 秒…
           </div>
         )}
       </div>

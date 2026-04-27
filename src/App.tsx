@@ -1,10 +1,9 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import { Toast } from '@/components/Toast';
 import { DailySummary } from '@/components/DailySummary';
 import { SplashScreen } from '@/features/splash/SplashScreen';
 import { Tutorial } from '@/features/tutorial/Tutorial';
@@ -24,6 +23,7 @@ import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
 import { ProjectEventModal } from '@/features/clients/ProjectEventModal';
 import { ProjectsBar } from '@/features/clients/ProjectsBar';
 import { BankLoanModal } from '@/features/loan/BankLoanModal';
+import { SvgIcon } from '@/components/SvgIcon';
 
 export default function App() {
   useGameLoop();
@@ -120,7 +120,6 @@ export default function App() {
 
       <InfoButton />
 
-      <Toast />
       <DailySummary />
       {showSplash && <SplashScreen />}
       <Tutorial />
@@ -136,16 +135,18 @@ export default function App() {
       <ConflictModal />
 
       {bankrupt && (
-        <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/60 p-6">
-          <div className="text-center rounded-3xl p-8 max-w-md" style={{ background: '#fffaf0', border: '2px solid rgba(90,70,54,0.12)' }}>
-            <div className="text-8xl mb-3">🐕💔</div>
+        <div className="fixed inset-0 z-[900] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-6">
+          <div className="text-center rounded-xl p-8 max-w-md" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))', border: '1px solid var(--line)', boxShadow: '0 24px 70px rgba(30,90,180,0.28)' }}>
+            <div className="mx-auto mb-3 w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: '#fff7f7', border: '1px solid rgba(255,112,112,0.24)' }}>
+              <SvgIcon name="warning" size={38} />
+            </div>
             <div className="text-3xl font-extrabold mb-3">公司破產了...</div>
             <div className="text-base mb-4" style={{ color: 'var(--muted)' }}>
               狗狗們含著眼淚收拾行李離開了辦公室...
               <br />
               也許下次會經營得更好！
             </div>
-            <div className="text-sm mb-5 p-3 rounded-xl" style={{ background: 'white' }}>
+            <div className="text-sm mb-5 p-3 rounded-lg" style={{ background: '#f7fbff', border: '1px solid var(--line)' }}>
               撐了 {day} 天｜{staff.length} 位員工
               <br />
               最終資金 ${money}
@@ -156,7 +157,7 @@ export default function App() {
                 restart();
               }}
               className="px-8"
-              style={{ background: 'linear-gradient(180deg, #ffc7d1, #eb93a3)', color: 'white' }}
+              style={{ background: 'linear-gradient(180deg, #2f8df4, #1c63c8)', color: 'white' }}
             >
               重新開始
             </button>

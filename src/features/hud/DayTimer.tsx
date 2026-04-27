@@ -11,47 +11,83 @@ export function DayTimer() {
   const progress = Math.min(dayElapsed / BASE_DAY_MS, 1);
   const remainingMs = Math.max(0, BASE_DAY_MS - dayElapsed) / speedMultiplier;
   const remainingSec = (remainingMs / 1000).toFixed(1);
-
-  const patienceCls = !hasCurrent
-    ? ''
-    : candidatePatience <= 1
-      ? 'bg-red-100 text-red-700 animate-pulse'
-      : candidatePatience <= 2
-        ? 'bg-orange-100 text-orange-700'
-        : 'bg-green-100 text-green-700';
+  const cycleSpeed = () => setSpeed(speedMultiplier >= 3 ? 1 : speedMultiplier + 1);
 
   return (
-    <div className="mt-3">
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: '#eadfce' }}>
-        <div
-          className="h-full transition-[width] duration-150"
-          style={{ width: `${progress * 100}%`, background: 'linear-gradient(90deg, #a8d8a8, #66bb6a)' }}
-        />
-      </div>
-      <div className="flex justify-between items-center mt-1.5 text-xs" style={{ color: 'var(--muted)' }}>
-        <span>下一天 {remainingSec}s</span>
-        <div className="flex gap-1.5">
-          {[1, 2, 3].map((s) => (
-            <button
-              key={s}
-              onClick={() => setSpeed(s)}
-              className={`px-3 py-1 text-xs rounded-lg font-bold`}
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-extrabold" style={{ color: 'var(--text)' }}>
+            下一天 {remainingSec}s
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={cycleSpeed}
+            className="grid h-12 w-12 place-items-center rounded-xl"
+            style={{
+              background: 'linear-gradient(180deg, #4f95ef, #246bd0)',
+              border: '1px solid rgba(36,107,208,0.22)',
+              boxShadow: '0 8px 18px rgba(47,125,225,0.24)',
+            }}
+            title="切換倍速"
+          >
+            <span
               style={{
-                background: speedMultiplier === s ? '#f4a8b8' : '#fff',
-                color: speedMultiplier === s ? 'white' : 'var(--text)',
-                boxShadow: 'none',
+                width: 0,
+                height: 0,
+                borderTop: '9px solid transparent',
+                borderBottom: '9px solid transparent',
+                borderLeft: '14px solid white',
+                marginLeft: 3,
               }}
-            >
-              {s}x
-            </button>
-          ))}
+            />
+          </button>
+
+          <div
+            className="flex h-12 items-center gap-2 rounded-xl px-3"
+            style={{
+              background: 'linear-gradient(180deg, #ffffff, #f4f9ff)',
+              border: '1px solid var(--line)',
+              boxShadow: 'var(--shadow-soft)',
+            }}
+          >
+            <span className="text-sm font-extrabold" style={{ color: 'var(--text)' }}>
+              {speedMultiplier}x
+            </span>
+            <span className="text-xs font-bold" style={{ color: 'var(--muted)' }}>
+              倍速
+            </span>
+          </div>
         </div>
       </div>
+
       {hasCurrent && (
-        <span className={`inline-block text-xs px-2 py-0.5 rounded-full mt-1.5 ${patienceCls}`}>
-          候選人耐心 {candidatePatience} 天
-        </span>
+        <div>
+          <span
+            className="inline-block rounded-full px-3 py-1 text-xs font-extrabold"
+            style={{
+              background: '#fff2ec',
+              color: '#ef5b5b',
+              border: '1px solid rgba(239,91,91,0.18)',
+            }}
+          >
+            候選人耐心 {candidatePatience} 天
+          </span>
+        </div>
       )}
-    </div>
+
+      <div className="h-2 overflow-hidden rounded-full" style={{ background: '#dceafe' }}>
+        <div
+          className="h-full rounded-full transition-[width] duration-150"
+          style={{
+            width: `${progress * 100}%`,
+            background: 'linear-gradient(90deg, #2f7de1, #20c7b3)',
+          }}
+        />
+      </div>
+    </section>
   );
 }

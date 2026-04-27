@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
@@ -30,7 +30,7 @@ export function SplashScreen() {
       }}
     >
       <div className="text-5xl md:text-6xl font-extrabold mb-2 drop-shadow-lg" style={{ color: '#5b3c2b' }}>
-        🐕 狗狗公司
+         狗狗公司
       </div>
       <div className="text-base md:text-xl mb-6" style={{ color: '#7a685a' }}>
         可愛又療癒的狗狗經營小遊戲
@@ -41,7 +41,7 @@ export function SplashScreen() {
           className="px-6 py-4 rounded-2xl text-sm font-bold"
           style={{ background: 'rgba(255,255,255,0.85)', color: '#7a685a' }}
         >
-          ⏳ 正在確認登入狀態…
+           正在確認登入狀態…
         </div>
       )}
 
@@ -56,7 +56,7 @@ export function SplashScreen() {
               className="mb-5 px-4 py-2 rounded-xl text-sm"
               style={{ background: 'rgba(255,255,255,0.85)', color: '#7a685a' }}
             >
-              ☁️ 讀取雲端存檔中…
+               讀取雲端存檔中…
             </div>
           )}
 
@@ -78,7 +78,7 @@ export function SplashScreen() {
               className="mb-5 px-4 py-2 rounded-xl text-xs"
               style={{ background: '#ffe6e6', color: '#a03d3d' }}
             >
-              ⚠️ 讀取存檔失敗，可以開新的公司繼續玩
+               讀取存檔失敗，可以開新的公司繼續玩
             </div>
           )}
 
@@ -87,7 +87,7 @@ export function SplashScreen() {
               className="mb-4 px-4 py-2 rounded-full text-xs"
               style={{ background: 'rgba(255,255,255,0.85)', color: '#5b3c2b', border: '1px solid rgba(90,70,54,0.15)' }}
             >
-              🎯 IPO 上市條件：信譽 80 + 資金 $50k + 辦公室 Lv3 + 完成 30 案
+               IPO 上市條件：信譽 80 + 資金 $50k + 辦公室 Lv3 + 完成 30 案
             </div>
           )}
 
@@ -111,7 +111,7 @@ export function SplashScreen() {
             className="mt-3 px-4 py-1.5 rounded-full text-xs font-bold"
             style={{ background: 'rgba(255,255,255,0.85)', color: '#7a685a', border: '1px solid rgba(90,70,54,0.15)' }}
           >
-            🏆 查看排行榜
+             查看排行榜
           </button>
         </>
       )}
@@ -149,9 +149,9 @@ function IpoProgress({
 }) {
   const cleared = ipoAchievedAt !== null;
   const conditions = [
-    { label: '📈 信譽', cur: reputation, target: IPO_REPUTATION, fmt: (v: number) => Math.round(v).toString() },
-    { label: '💰 資金', cur: money, target: IPO_MONEY, fmt: (v: number) => `$${v.toLocaleString()}` },
-    { label: '🏢 辦公室', cur: officeLevel, target: IPO_OFFICE_LEVEL, fmt: (v: number) => `Lv${v + 1}` },
+    { label: ' 信譽', cur: reputation, target: IPO_REPUTATION, fmt: (v: number) => Math.round(v).toString() },
+    { label: ' 資金', cur: money, target: IPO_MONEY, fmt: (v: number) => `$${v.toLocaleString()}` },
+    { label: ' 辦公室', cur: officeLevel, target: IPO_OFFICE_LEVEL, fmt: (v: number) => `Lv${v + 1}` },
     { label: '✅ 完成案', cur: projectsCompleted, target: IPO_PROJECTS, fmt: (v: number) => `${v} 件` },
   ];
 
@@ -162,7 +162,7 @@ function IpoProgress({
     >
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm font-extrabold" style={{ color: '#5b3c2b' }}>
-          {cleared ? '🏆 已 IPO 上市' : '🎯 IPO 進度'}
+          {cleared ? ' 已 IPO 上市' : ' IPO 進度'}
         </div>
         <div className="text-[11px]" style={{ color: '#7a685a' }}>
           第 {day} 天 · {staffCount} 位員工

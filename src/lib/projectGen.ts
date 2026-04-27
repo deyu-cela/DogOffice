@@ -161,15 +161,20 @@ export function fillInbox(
   officeLevel: number,
   rerollPenalty: boolean,
 ): Project[] {
+  const active = clients.filter((c) => c.status === 'active');
   const offered = clients.filter((c) => c.status === 'offered');
-  const needed = INBOX_SIZE - offered.length;
-  if (needed <= 0) return clients;
+  const liveSlotsLeft = Math.max(0, INBOX_SIZE - active.length);
+  const keptOfferedIds = new Set(offered.slice(0, liveSlotsLeft).map((p) => p.id));
+  const cappedClients = clients.filter((c) => c.status !== 'offered' || keptOfferedIds.has(c.id));
+  const cappedOffered = cappedClients.filter((c) => c.status === 'offered');
+  const needed = liveSlotsLeft - cappedOffered.length;
+  if (needed <= 0) return cappedClients;
   // 保留原 clients 順序（接案/拒絕後位置不打亂），新案 append 到末尾
   const fresh: Project[] = [];
   for (let i = 0; i < needed; i++) {
     fresh.push(generateProject(tierBudget, currentDay, officeLevel, rerollPenalty));
   }
-  return [...clients, ...fresh];
+  return [...cappedClients, ...fresh];
 }
 
 // ---- 重 roll 收件匣費用 ----
@@ -185,8 +190,10 @@ export function rerollInbox(
   officeLevel: number,
 ): Project[] {
   const others = clients.filter((c) => c.status !== 'offered');
+  const activeCount = others.filter((c) => c.status === 'active').length;
+  const offeredSlots = Math.max(0, INBOX_SIZE - activeCount);
   const fresh: Project[] = [];
-  for (let i = 0; i < INBOX_SIZE; i++) {
+  for (let i = 0; i < offeredSlots; i++) {
     fresh.push(generateProject(tierBudget, currentDay, officeLevel, true));
   }
   return [...fresh, ...others];

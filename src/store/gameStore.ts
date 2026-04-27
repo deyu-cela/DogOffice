@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import type {
   CompanyBuffs,
   Dog,
@@ -228,7 +228,7 @@ function refillCurrent(state: GameState): GameState {
     if (Math.random() < 0.1) {
       vacancy = true;
       vacancyTimer = 1 + Math.floor(Math.random() * 2);
-      const entry = [...log, { day: state.day, msg: '😴 目前沒有狗狗來面試...' }];
+      const entry = [...log, { day: state.day, msg: ' 目前沒有狗狗來面試...' }];
       if (entry.length > 18) entry.splice(0, entry.length - 18);
       log = entry;
     } else {
@@ -309,7 +309,7 @@ function runAdvanceDay(prev: GameState): GameState {
   const pruneResult = pruneExpiredOffered(s.clients, s.day);
   s.clients = pruneResult.next;
   if (pruneResult.expiredCount > 0) {
-    s = pushLog(s, `📭 ${pruneResult.expiredCount} 個放太久的案子過期消失了`);
+    s = pushLog(s, ` ${pruneResult.expiredCount} 個放太久的案子過期消失了`);
   }
   s.clients = fillInbox(s.clients, s.tierBudget, s.day, s.officeLevel, false);
   s.clients = trimSettled(s.clients);
@@ -333,7 +333,6 @@ function runAdvanceDay(prev: GameState): GameState {
     if (s.candidatePatience <= 0) {
       const leavingName = s.current.name;
       s = pushLog(s, `${leavingName} 等太久了，不耐煩走掉了！`);
-      s.toast = { msg: `😤 ${leavingName} 等太久了走掉了！`, type: 'negative' };
       s.current = null;
       s = refillCurrent(s);
     }
@@ -348,7 +347,7 @@ function runAdvanceDay(prev: GameState): GameState {
     s.loanRepayDaysLeft -= 1;
     loanPaidToday = 5;
     if (s.loanRepayDaysLeft === 0) {
-      s = pushLog(s, '🏦 銀行貸款已還清！');
+      s = pushLog(s, ' 銀行貸款已還清！');
     }
   }
 
@@ -356,7 +355,7 @@ function runAdvanceDay(prev: GameState): GameState {
   if (s.money <= 0) {
     s.bankruptCountdown += 1;
     s.money = 0;
-    s = pushLog(s, `⚠️ 資金見底（已連續 ${s.bankruptCountdown} 天）`);
+    s = pushLog(s, ` 資金見底（已連續 ${s.bankruptCountdown} 天）`);
     // 破產第 1 天：若還沒借過 + 沒有未還貸款 → 自動彈貸款 modal
     if (s.bankruptCountdown === 1 && !s.loanTaken && s.loanRepayDaysLeft === 0) {
       s.loanModalOpen = true;
@@ -370,7 +369,7 @@ function runAdvanceDay(prev: GameState): GameState {
   }
   if (s.reputation <= 5) {
     s.bankrupt = true;
-    s = pushLog(s, '⚠️ 信譽崩盤，公司倒閉了！');
+    s = pushLog(s, ' 信譽崩盤，公司倒閉了！');
     return s;
   }
 
@@ -426,8 +425,7 @@ function runAdvanceDay(prev: GameState): GameState {
         console.warn('[leaderboard] submit failed:', err);
       }
     });
-    s = pushLog(s, `🏆🏆🏆 公司 IPO 上市成功！用時 ${s.day} 天！`);
-    s.toast = { msg: `🏆 IPO 上市成功！${s.day} 天`, type: 'positive' };
+    s = pushLog(s, ` 公司 IPO 上市成功！用時 ${s.day} 天！`);
   }
 
   return s;
@@ -483,13 +481,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...s,
       staff: [...s.staff, dog],
       money: Math.max(0, s.money - dog.expectedSalary * 2),
-      toast: { msg: `🥹💼✨ ${dog.name} 開心得尾巴狂搖，加入公司！`, type: 'positive' },
       current: null,
     };
     next = pushLog(
       next,
       dog.isCEO
-        ? `🎉🎉🎉 傳說中的 CEO ${dog.name} 加入了！全公司都沸騰了！`
+        ? ` 傳說中的 CEO ${dog.name} 加入了！全公司都沸騰了！`
         : `錄用了 ${dog.name}（${dog.breed} ${dog.role} ${dog.grade}級），${dog.flavor}`,
     );
     next = refillCurrent(next);
@@ -503,7 +500,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const dog = s.current;
     let next: GameState = {
       ...s,
-      toast: { msg: `🥺📄 ${dog.name} 有點可惜地收起履歷，默默離開了。`, type: 'negative' },
       current: null,
     };
     next = pushLog(next, `婉拒了 ${dog.name}，下一位！`);
@@ -643,7 +639,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...s,
       staff: newStaff.map((d, i) => (i === index ? { ...d, morale: clamp(d.morale - 4, 0, 100) } : d)),
     };
-    next = pushLog(next, `⚠️ ${dog.name} 進入 PIP 改善流程（3天觀察期），需完成改善任務。`);
+    next = pushLog(next, ` ${dog.name} 進入 PIP 改善流程（3天觀察期），需完成改善任務。`);
     set(next as Partial<GameStore>);
   },
 
@@ -718,10 +714,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       staff: s.staff.map((d) =>
         validIds.includes(d.id) ? { ...d, assignedProjectId: projectId } : d,
       ),
-      toast: { msg: `📨 接下「${project.title}」（${project.clientName}）`, type: 'positive' },
     };
     const staffMsg = validIds.length > 0 ? `（${validIds.length} 人已上工）` : '（待命）';
-    const next = pushLog(updated, `📨 接案：${project.title}（tier${project.clientTier}・${project.defaultDeadlineDays}天期）${staffMsg}`);
+    const next = pushLog(updated, ` 接案：${project.title}（tier${project.clientTier}・${project.defaultDeadlineDays}天期）${staffMsg}`);
     // 不立即補位（隔天 morning 才補），保持 inbox 順序穩定
     set(next as Partial<GameStore>);
   },
@@ -735,7 +730,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       // 拒絕後直接移除，其他案件位置保留（隔天 morning 才補位）
       clients: s.clients.filter((c) => c.id !== projectId),
       reputation: clamp(s.reputation - 1, 0, 100),
-      toast: { msg: `❌ 拒絕了「${project.title}」`, type: 'negative' },
     };
     next = pushLog(next, `❌ 拒絕：${project.title}（${project.clientName}）→ 信譽 -1`);
     next.tierBudget = recomputeTierBudget(next);
@@ -789,9 +783,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       money: s.money - cost,
       lastRerollDay: s.day,
       clients: rerollInbox(s.clients, s.tierBudget, s.day, s.officeLevel),
-      toast: { msg: `🔄 重新整理收件匣 -$${cost}`, type: 'positive' },
     };
-    next = pushLog(next, `🔄 花 $${cost} 重新整理收件匣（5 個新案）`);
+    next = pushLog(next, ` 花 $${cost} 重新整理收件匣（5 個新案）`);
     set(next as Partial<GameStore>);
   },
 
@@ -838,7 +831,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       },
     }),
   openMemory: () => {
-    const emojis = ['🐕', '🐩', '🐶', '🐺', '🐾', '🦴', '🥏', '🧀'];
+    const emojis = ['', '', '', '', '', '', '', ''];
     const cards = [...emojis, ...emojis]
       .sort(() => Math.random() - 0.5)
       .map((e, i) => ({ id: i, emoji: e, flipped: false, matched: false }));
@@ -872,9 +865,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
     if (mg.spawnTick > 0.65) {
       mg.spawnTick = 0;
-      const emojis = ['🥏', '🦴', '🍖', '🧀', '⭐'];
+      const emojis = ['', '', '', '', '⭐'];
       const e = rand(emojis);
-      const pts = e === '⭐' ? 3 : e === '🥏' ? 2 : 1;
+      const pts = e === '⭐' ? 3 : e === '' ? 2 : 1;
       treats.push({ id: nextTreatId(), x: 10 + Math.random() * 80, y: -8, speed: 18 + Math.random() * 20, emoji: e, pts });
     }
     mg.treats = treats;
@@ -984,14 +977,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       // 保送 1 個 tier 平均 +1 的案到 inbox
       const avgTier = Math.round(1 + next.tierBudget / 25);
       const forced = Math.min(5, Math.max(1, avgTier + 1));
-      const offeredCount = next.clients.filter((c) => c.status === 'offered').length;
-      if (offeredCount < 5) {
+      const liveCount = next.clients.filter((c) => c.status === 'offered' || c.status === 'active').length;
+      if (liveCount < 5) {
         next.clients = [
           ...next.clients,
           generateProject(next.tierBudget, next.day, next.officeLevel, false, forced as 1 | 2 | 3 | 4 | 5),
         ];
       }
-      next = pushLog(next, `🎯 Pitch Memory 全配對！inbox 多了 1 個 tier${forced} 案`);
+      next = pushLog(next, ` Pitch Memory 全配對！inbox 多了 1 個 tier${forced} 案`);
     }
     const cashMsg = cashReward > 0 ? `，回饋 $${cashReward}` : '';
     next = pushLog(next, `翻牌結束！配對 ${mg.matches}/8，士氣 +${moraleGain}${cashMsg}。`);
@@ -1247,7 +1240,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       trainingSession: null,
       log: [
         ...s.log,
-        { day: s.day, msg: `🎯 ${dog.name} 培訓 +1 ${stat === 'speed' ? '速度' : stat === 'quality' ? '專業' : stat === 'teamwork' ? '協作' : '魅力'}！` },
+        { day: s.day, msg: ` ${dog.name} 培訓 +1 ${stat === 'speed' ? '速度' : stat === 'quality' ? '專業' : stat === 'teamwork' ? '協作' : '魅力'}！` },
       ].slice(-30),
     });
   },
@@ -1263,7 +1256,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       bankruptCountdown: 0,
       log: [
         ...s.log,
-        { day: s.day, msg: '🏦 銀行貸款 +$300，未來 80 天每日扣 $5 利息' },
+        { day: s.day, msg: ' 銀行貸款 +$300，未來 80 天每日扣 $5 利息' },
       ].slice(-30),
     });
   },
@@ -1284,7 +1277,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       vacancyTimer: 0,
       log: [
         ...s.log,
-        { day: s.day, msg: `🎯 花 $${TARGETED_COST} 指定招聘 ${role}：${dog.name}（${dog.grade} 級）來面試！` },
+        { day: s.day, msg: ` 花 $${TARGETED_COST} 指定招聘 ${role}：${dog.name}（${dog.grade} 級）來面試！` },
       ].slice(-30),
     });
   },

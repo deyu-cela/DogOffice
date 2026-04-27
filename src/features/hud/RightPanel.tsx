@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { Panel, Badge } from '@/components/Panel';
+import { Panel } from '@/components/Panel';
 import { companyStage } from '@/lib/utils';
 import { DayTimer } from './DayTimer';
 import { StatPanel } from './StatPanel';
 import { ExtraStats } from './ExtraStats';
 import { ChemistryGuideModal } from './ChemistryGuideModal';
+import { SvgIcon } from '@/components/SvgIcon';
 
 export function RightPanel() {
   const staff = useGameStore((s) => s.staff);
@@ -18,35 +19,31 @@ export function RightPanel() {
   const [chemOpen, setChemOpen] = useState(false);
 
   return (
-    <Panel className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto">
-      <div className="flex justify-between items-center">
-        <h2 className="text-base font-extrabold">公司資訊</h2>
-        <Badge>{stage}</Badge>
-      </div>
-      <DayTimer />
-      <StatPanel />
-      <ExtraStats />
-      <div>
+    <Panel className="flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <SvgIcon name="chart" size={25} />
+          <h2 className="text-base font-extrabold">公司資訊</h2>
+        </div>
         <button
           type="button"
           onClick={() => setChemOpen(true)}
-          className="text-[9px] px-1.5 rounded-full font-bold"
+          className="rounded-xl px-3 py-2 text-xs font-extrabold"
           style={{
-            background: 'linear-gradient(180deg, #f0e0ff, #d4b8f0)',
-            color: '#5a3a8a',
-            border: '1px solid #b89adb',
-            lineHeight: 1.1,
-            paddingTop: 1,
-            paddingBottom: 1,
+            background: 'linear-gradient(180deg, #ffffff, #eaf4ff)',
+            color: 'var(--text)',
+            border: '1px solid var(--line)',
+            boxShadow: 'var(--shadow-soft)',
           }}
-          title="化學反應一覽"
         >
-          🧪 化學反應
+          {stage}
         </button>
       </div>
-      <p className="text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
-        💡 點 OfficeScene 的建築物開啟接案處 / 商店 / 員工 / 面試。
-      </p>
+
+      <DayTimer />
+      <StatPanel />
+      <ExtraStats />
+
       {chemOpen && <ChemistryGuideModal onClose={() => setChemOpen(false)} />}
     </Panel>
   );

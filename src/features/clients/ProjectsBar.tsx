@@ -1,36 +1,23 @@
 import { useState } from 'react';
-import { useGameStore } from '@/store/gameStore';
-import type { Dog, Project, ProjectCategory, ClientTier } from '@/types';
+import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 import { OFFER_TTL_DAYS, rerollCost } from '@/lib/projectGen';
+import { useGameStore } from '@/store/gameStore';
+import type { ClientTier, Dog, Project, ProjectCategory } from '@/types';
 import { ProjectDetailModal } from './ProjectDetailModal';
 
-const CATEGORY_ICON: Record<ProjectCategory, string> = {
-  tech: '💻',
-  design: '🎨',
-  marketing: '📣',
-  service: '💬',
+const CATEGORY_ICON: Record<ProjectCategory, SvgIconName> = {
+  tech: 'tech',
+  design: 'design',
+  marketing: 'marketing',
+  service: 'service',
 };
 
-function tierColor(tier: ClientTier): string {
-  switch (tier) {
-    case 1: return '#9aa39a';
-    case 2: return '#5a9b5a';
-    case 3: return '#5a8ab8';
-    case 4: return '#a36a3a';
-    case 5: return '#c0392b';
-  }
-}
-
-// active 統一藍色：進行中視覺語意明確（藍=進行中、紅=警告，不會混淆）
-const ACTIVE_COLOR = {
-  bg: 'linear-gradient(180deg, #d0e4ff, #a5c5f0)',
-  border: '#7a9ed0',
-};
-
-// offered 便條紙統一灰白色（讓 active 案視覺上更醒目）
-const OFFERED_COLOR = {
-  bg: 'linear-gradient(180deg, #ffffff, #f4ede0)',
-  border: '#bba98e',
+const TIER_COLOR: Record<ClientTier, string> = {
+  1: '#8da1bf',
+  2: '#30a778',
+  3: '#2f8df4',
+  4: '#6d7a91',
+  5: '#ef3f3f',
 };
 
 export function ProjectsBar() {
@@ -47,67 +34,44 @@ export function ProjectsBar() {
 
   const offered = clients.filter((c) => c.status === 'offered');
   const active = clients.filter((c) => c.status === 'active');
-  // 顯示順序：active 在前（重要事項先看），offered 在後
-  const visible = [...active, ...offered];
-
+  const visible = [...active, ...offered].slice(0, 5);
   const cost = rerollCost(tierBudget);
   const canReroll = lastRerollDay < day && money >= cost;
 
   const openModal = (project: Project) => {
-    if (project.pendingEvent) {
-      openEvent(project.id);
-    } else {
-      setOpenProjectId(project.id);
-    }
+    if (project.pendingEvent) openEvent(project.id);
+    else setOpenProjectId(project.id);
   };
 
   return (
     <>
-      <style>{`
-        @keyframes slideInFromRight {
-          from { transform: translateX(100%) rotate(-3deg); opacity: 0; }
-          to { transform: translateX(0) rotate(-1.5deg); opacity: 1; }
-        }
-        @keyframes pendingPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(192,57,43,0.6), 0 4px 8px rgba(0,0,0,0.15); }
-          50% { box-shadow: 0 0 0 8px rgba(192,57,43,0), 0 4px 8px rgba(0,0,0,0.15); }
-        }
-        .sticky-note {
-          animation: slideInFromRight 0.4s ease-out;
-          transition: transform 0.15s ease;
-        }
-        .sticky-note:hover {
-          transform: translateY(-3px) rotate(0deg) !important;
-        }
-        .sticky-note-pending {
-          animation: slideInFromRight 0.4s ease-out, pendingPulse 1.5s infinite;
-        }
-      `}</style>
-      <div
-        className="rounded-2xl"
+      <section
+        className="rounded-xl px-3 py-2"
         style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,248,241,0.6))',
-          border: '1.5px dashed rgba(90,70,54,0.18)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.94), rgba(244,249,255,0.9))',
+          border: '1px solid var(--line)',
+          boxShadow: 'var(--shadow-soft)',
         }}
       >
-        {/* 頂部控制條 */}
-        <div className="flex items-center justify-between gap-2 px-3 pt-2 pb-1">
-          <div className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--muted)' }}>
-            <span>📨 收件匣 <b>{offered.length}</b></span>
-            <span>·</span>
-            <span>🔨 進行中 <b>{active.length}</b></span>
-            <span>·</span>
-            <span>✨ 稀有度 <b>{tierBudget}</b></span>
+        <div className="flex items-center justify-between gap-3 pb-2">
+          <div className="flex items-center gap-4 min-w-0">
+            <StatusStat icon="briefcase" label="進行中" value={active.length} />
+            <Divider />
+            <StatusStat icon="service" label="可承接" value={offered.length} />
+            <Divider />
+            <StatusStat icon="quality" label="稀有度" value={tierBudget} />
           </div>
+
           <button
             type="button"
             onClick={reroll}
             disabled={!canReroll}
-            className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap"
+            className="h-11 px-5 rounded-lg text-sm font-extrabold whitespace-nowrap inline-flex items-center gap-2"
             style={{
-              background: canReroll ? 'linear-gradient(180deg, #ffe5a0, #f6c24b)' : '#eee',
-              color: canReroll ? '#5a3a10' : '#999',
-              border: '1.5px solid rgba(90,70,54,0.15)',
+              background: canReroll ? 'linear-gradient(180deg, #3e8cf0, #246bd0)' : '#e9f1ff',
+              color: canReroll ? 'white' : '#8aa2c8',
+              border: '1px solid var(--line)',
+              boxShadow: canReroll ? '0 8px 16px rgba(36,107,208,0.24)' : 'none',
               cursor: canReroll ? 'pointer' : 'not-allowed',
             }}
             title={
@@ -116,36 +80,40 @@ export function ProjectsBar() {
                   : `花 $${cost} 重新整理 5 個案件`
             }
           >
-            {lastRerollDay >= day ? '🔄 今日已重整' : `🔄 重整收件匣 $${cost}`}
+            <SvgIcon name="restart" size={19} />
+            <span>{lastRerollDay >= day ? '今日已重整' : `重整收件匣 $${cost}`}</span>
           </button>
         </div>
 
-        {/* 便條紙列 */}
         {visible.length === 0 ? (
-          <div
-            className="px-3 pb-3 pt-1 text-[11px] text-center"
-            style={{ color: 'var(--muted)' }}
-          >
+          <div className="h-24 rounded-lg flex items-center justify-center text-sm" style={{ color: 'var(--muted)', background: '#f7fbff', border: '1px solid var(--line)' }}>
             收件匣空了，明天會補新案件
           </div>
         ) : (
-          <div className="flex gap-3 px-3 pb-3 pt-2 overflow-x-auto" style={{ minHeight: 100 }}>
-            {visible.map((p) => {
-              const color = p.status === 'offered' ? OFFERED_COLOR : ACTIVE_COLOR;
-              return (
-                <StickyNote
-                  key={p.id}
-                  project={p}
-                  day={day}
-                  staff={staff}
-                  color={color}
-                  onClick={() => openModal(p)}
-                />
-              );
-            })}
+          <div className="grid gap-3 project-card-grid">
+            {visible.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                day={day}
+                staff={staff}
+                onClick={() => openModal(project)}
+              />
+            ))}
           </div>
         )}
-      </div>
+      </section>
+
+      <style>{`
+        .project-card-grid {
+          grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
+        }
+        @media (min-width: 1180px) {
+          .project-card-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+          }
+        }
+      `}</style>
 
       {openProjectId && (
         <ProjectDetailModal
@@ -157,150 +125,136 @@ export function ProjectsBar() {
   );
 }
 
-function StickyNote({
+function StatusStat({ icon, label, value }: { icon: SvgIconName; label: string; value: number }) {
+  return (
+    <div className="flex items-center gap-2 text-sm font-extrabold whitespace-nowrap" style={{ color: '#173b78' }}>
+      <SvgIcon name={icon} size={24} />
+      <span>{label}</span>
+      <span style={{ color: 'var(--blue)' }}>{value}</span>
+    </div>
+  );
+}
+
+function Divider() {
+  return <div className="h-7 w-px" style={{ background: 'linear-gradient(180deg, transparent, #c8daf2, transparent)' }} />;
+}
+
+function ProjectCard({
   project,
   day,
   staff,
-  color,
   onClick,
 }: {
   project: Project;
   day: number;
   staff: Dog[];
-  color: { bg: string; border: string };
   onClick: () => void;
 }) {
   const isOffered = project.status === 'offered';
-  const progress = isOffered ? 0 : Math.min(100, (project.workDone / project.workRequired) * 100);
-  const daysLeft = isOffered
-    ? OFFER_TTL_DAYS - (day - project.createdDay) // offered: 距離過期天數
-    : project.deadlineDay - day;                  // active: 距離 deadline 天數
+  const isActive = !isOffered;
+  const daysLeft = isOffered ? OFFER_TTL_DAYS - (day - project.createdDay) : project.deadlineDay - day;
   const overdue = !isOffered && daysLeft < 0;
   const urgent = !overdue && daysLeft <= 1;
-  // active 案件：已進行天數 / 期限 / 容忍
-  const acceptedDay = project.acceptedDay ?? day;
-  const progressDays = day - acceptedDay;
-  const totalDays = project.defaultDeadlineDays;
-  const graceDays = project.graceDays;
-
   const assignedDogs = staff.filter((d) => project.assignedStaffIds.includes(d.id));
   const hasPending = !!project.pendingEvent;
+  const progress = isOffered ? 0 : Math.min(100, (project.workDone / project.workRequired) * 100);
+
+  // 進行中（non-pending）綠系 / 待事件處理紅系 / offered 中性藍系
+  const cardBg = hasPending
+    ? 'linear-gradient(180deg, #fff7f7, #ffffff)'
+    : isActive
+      ? 'linear-gradient(180deg, #f0fbf6, #ffffff)'
+      : 'linear-gradient(180deg, #ffffff, #f7fbff)';
+  const cardBorder = hasPending
+    ? '1.5px solid rgba(239,63,63,0.45)'
+    : isActive
+      ? '1.5px solid rgba(32,200,140,0.5)'
+      : '1px solid #cfe0f8';
+  const cardShadow = isActive && !hasPending
+    ? '0 8px 18px rgba(32,200,140,0.18), inset 0 1px 0 rgba(255,255,255,0.85)'
+    : '0 8px 18px rgba(46,104,180,0.12), inset 0 1px 0 rgba(255,255,255,0.85)';
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={hasPending ? 'sticky-note sticky-note-pending' : 'sticky-note'}
+      className="rounded-lg text-left p-3 min-w-0 transition relative"
       style={{
-        flex: '0 0 auto',
-        width: 200,
-        padding: '10px 12px',
-        background: color.bg,
-        border: `1.5px solid ${color.border}`,
-        borderRadius: 6,
-        boxShadow: '0 4px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6)',
-        transform: 'rotate(-1.5deg)',
-        textAlign: 'left',
+        minHeight: 142,
+        background: cardBg,
+        border: cardBorder,
+        boxShadow: cardShadow,
         cursor: 'pointer',
-        position: 'relative',
-        fontFamily: 'inherit',
-        opacity: isOffered ? 0.92 : 1,
       }}
-      title={hasPending ? '⚠️ 點擊處理事件' : isOffered ? '點擊查看 / 接案' : '點擊查看 / 指派員工'}
+      title={hasPending ? '點擊處理事件' : isOffered ? '點擊查看 / 接案' : '點擊查看 / 指派員工'}
     >
-      {/* 紙膠帶頂部 */}
-      <div
-        style={{
-          position: 'absolute',
-          top: -6,
-          left: '50%',
-          transform: 'translateX(-50%) rotate(2deg)',
-          width: 40,
-          height: 12,
-          background: 'rgba(150, 130, 100, 0.35)',
-          borderRadius: 1,
-          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-        }}
-      />
-
-      {/* 標題列 */}
-      <div className="flex items-center gap-1 mb-1">
-        <span style={{ fontSize: 14 }}>{CATEGORY_ICON[project.category]}</span>
-        <span
-          className="text-[11px] font-extrabold flex-1 truncate"
-          style={{ color: '#3d2f25' }}
-        >
-          {project.title}
-        </span>
-        <span
-          className="text-[9px] px-1 py-0.5 rounded font-bold"
-          style={{ background: tierColor(project.clientTier), color: 'white' }}
-        >
-          T{project.clientTier}
-        </span>
-      </div>
-
-      {/* 客戶 + 期限 */}
-      <div className="flex items-center justify-between text-[10px] mb-1.5">
-        <span className="truncate" style={{ color: 'rgba(60,40,30,0.7)' }}>
-          {project.clientName}
-        </span>
-        <span
-          className="font-bold whitespace-nowrap"
-          style={{ color: overdue ? '#c0392b' : urgent ? '#a36a3a' : 'rgba(60,40,30,0.7)' }}
-        >
-          {isOffered
-            ? `📅 過期剩 ${Math.max(0, daysLeft)} 天`
-            : overdue
-              ? `📅 ${progressDays}/${totalDays} 超${-daysLeft}`
-              : `📅 ${progressDays}/${totalDays} (+${graceDays})`}
-        </span>
-      </div>
-
-      {/* offered: 顯示 reward；active: 顯示進度條 */}
-      {isOffered ? (
+      {/* 進行中標籤（左上角小色帶）*/}
+      {isActive && !hasPending && (
         <div
-          className="h-5 flex items-center justify-between px-1 rounded text-[11px] mb-1"
-          style={{ background: 'rgba(0,0,0,0.06)' }}
+          className="absolute left-0 top-0 text-[10px] font-extrabold px-2 py-0.5 rounded-tl-lg rounded-br-lg"
+          style={{
+            background: 'linear-gradient(135deg, #20c88c, #16a77f)',
+            color: 'white',
+            letterSpacing: '0.5px',
+          }}
         >
-          <span style={{ color: 'rgba(60,40,30,0.7)' }}>酬勞</span>
-          <span className="font-extrabold" style={{ color: '#3a7a3f' }}>${project.reward}</span>
+          ● 進行中
         </div>
-      ) : (
-        <div
-          className="h-1.5 rounded-full overflow-hidden mb-1"
-          style={{ background: 'rgba(0,0,0,0.12)' }}
-        >
+      )}
+
+      <div className={`flex items-start gap-2 ${isActive && !hasPending ? 'mt-3' : ''}`}>
+        <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ background: '#eef6ff', border: '1px solid var(--line)' }}>
+          <SvgIcon name={CATEGORY_ICON[project.category]} size={23} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-1.5">
+            <div className="text-sm font-extrabold truncate flex-1" style={{ color: '#173b78' }}>
+              {project.title}
+            </div>
+            <span
+              className="text-[11px] px-1.5 py-0.5 rounded-md font-extrabold shrink-0"
+              style={{ background: TIER_COLOR[project.clientTier], color: 'white' }}
+            >
+              T{project.clientTier}
+            </span>
+          </div>
+          <div className="mt-1 flex items-center justify-between gap-2 text-[11px] font-bold" style={{ color: '#6f83a5' }}>
+            <span className="truncate">{project.clientName}</span>
+            <span className="shrink-0" style={{ color: overdue ? '#d34a4a' : urgent ? '#c07a20' : '#6f83a5' }}>
+              {isOffered ? `過期剩下 ${Math.max(0, daysLeft)} 天` : overdue ? `已超期 ${-daysLeft} 天` : `剩下 ${daysLeft} 天`}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 text-xs font-extrabold" style={{ color: '#173b78' }}>酬勞</div>
+      <div className="mt-0.5 flex items-center justify-between gap-2">
+        <div className="text-base font-extrabold" style={{ color: '#20a889' }}>${project.reward}</div>
+        {hasPending && <span className="text-[11px] font-extrabold" style={{ color: '#d34a4a' }}>事件待處理</span>}
+      </div>
+
+      {!isOffered && (
+        <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
           <div
             className="h-full"
             style={{
               width: `${progress}%`,
-              background: overdue ? '#c0392b' : 'linear-gradient(90deg, #66bb6a, #3a8a3a)',
-              transition: 'width 0.3s',
+              background: overdue ? '#d34a4a' : 'linear-gradient(90deg, #2f8df4, #20c7b3)',
             }}
           />
         </div>
       )}
 
-      {/* 員工 emoji + 待處理事件徽章 */}
-      <div className="flex items-center gap-1 text-[11px]">
+      <div className="mt-3 h-8 rounded-md px-2 flex items-center gap-1.5 text-[12px] font-extrabold" style={{ background: '#eef6ff', color: 'var(--blue)', border: '1px solid #dbe9fb' }}>
+        <SvgIcon name="briefcase" size={17} />
         {hasPending ? (
-          <span className="font-bold flex-1" style={{ color: '#c0392b' }}>
-            ⚠️ 事件待處理
-          </span>
+          <span>處理事件</span>
         ) : isOffered ? (
-          <span style={{ color: 'rgba(60,40,30,0.65)' }}>
-            👆 點擊接案
-          </span>
+          <span>點擊接案</span>
         ) : assignedDogs.length === 0 ? (
-          <span style={{ color: '#c0392b', fontWeight: 'bold' }}>👥 未指派</span>
+          <span>指派員工</span>
         ) : (
-          <span className="flex-1 truncate">
-            {assignedDogs.map((d) => d.emoji).join('')}{' '}
-            <span style={{ color: 'rgba(60,40,30,0.65)' }}>
-              {Math.round(project.workDone)}/{project.workRequired}
-            </span>
-          </span>
+          <span className="truncate">{assignedDogs.length} 位員工 · {Math.round(project.workDone)}/{project.workRequired}</span>
         )}
       </div>
     </button>

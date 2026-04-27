@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { Stats } from '@/types';
 import { clamp } from '@/lib/utils';
+import type { Stats } from '@/types';
 
 type Props = {
   stats: Stats;
@@ -20,7 +20,6 @@ export function RadarChart({ stats, size = 160 }: Props) {
     const cx = w / 2;
     const cy = h / 2;
     const r = Math.min(w, h) / 2 - 30;
-    // 4 軸：速度 / 專業 / 協作 / 魅力（範圍 1-10）
     const labels = ['速度', '專業', '協作', '魅力'];
     const values = [
       clamp(stats.speed / 10, 0, 1),
@@ -31,7 +30,6 @@ export function RadarChart({ stats, size = 160 }: Props) {
     const N = 4;
     ctx.clearRect(0, 0, w, h);
 
-    // 繪製同心多邊形格線
     for (let level = 1; level <= 4; level++) {
       ctx.beginPath();
       const lr = (r * level) / 4;
@@ -43,12 +41,11 @@ export function RadarChart({ stats, size = 160 }: Props) {
         else ctx.lineTo(x, y);
       }
       ctx.closePath();
-      ctx.strokeStyle = 'rgba(90,70,54,0.12)';
+      ctx.strokeStyle = 'rgba(47,141,244,0.16)';
       ctx.lineWidth = 1;
       ctx.stroke();
     }
 
-    // 繪製數據區域
     ctx.beginPath();
     for (let i = 0; i <= N; i++) {
       const idx = i % N;
@@ -59,14 +56,13 @@ export function RadarChart({ stats, size = 160 }: Props) {
       else ctx.lineTo(x, y);
     }
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,179,71,0.3)';
+    ctx.fillStyle = 'rgba(47,141,244,0.18)';
     ctx.fill();
-    ctx.strokeStyle = '#f4a8b8';
+    ctx.strokeStyle = '#2f8df4';
     ctx.lineWidth = 2.5;
     ctx.stroke();
 
-    // 標籤
-    ctx.fillStyle = '#5b3c2b';
+    ctx.fillStyle = '#173b78';
     ctx.font = 'bold 11px ui-rounded, sans-serif';
     ctx.textAlign = 'center';
     for (let i = 0; i < N; i++) {

@@ -1,11 +1,11 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 
 const STAT_OPTIONS: { id: 'speed' | 'quality' | 'teamwork' | 'charisma'; label: string; color: string }[] = [
   { id: 'speed', label: '⚡ 速度', color: '#3a7a3f' },
   { id: 'quality', label: '✨ 專業', color: '#2b7abd' },
-  { id: 'teamwork', label: '🤝 協作', color: '#7b3a9f' },
-  { id: 'charisma', label: '📣 魅力', color: '#d07a1f' },
+  { id: 'teamwork', label: ' 協作', color: '#7b3a9f' },
+  { id: 'charisma', label: ' 魅力', color: '#d07a1f' },
 ];
 
 export function TrainingQuiz() {
@@ -28,7 +28,7 @@ export function TrainingQuiz() {
       <div className="rounded-3xl p-5 w-[520px] max-w-full" style={{ background: '#fffaf0', border: '2px solid rgba(90,70,54,0.12)' }}>
         {finished ? (
           <>
-            <div className="text-2xl font-extrabold text-center mb-2">🎓 培訓完成！</div>
+            <div className="text-2xl font-extrabold text-center mb-2"> 培訓完成！</div>
             <div className="text-center text-sm mb-3" style={{ color: 'var(--muted)' }}>
               答對 {correctCount} / {maxQuestions} 題 · 累積 {totalReward} 分
             </div>
