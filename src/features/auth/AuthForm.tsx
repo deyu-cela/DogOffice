@@ -58,7 +58,7 @@ export function AuthForm({ mode, loading, error, onSubmit }: Props) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-left">
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-bold" style={{ color: '#5b3c2b' }}>
+        <span className="text-xs font-bold" style={{ color: 'var(--text)' }}>
           帳號 / Email
         </span>
         <input
@@ -75,18 +75,18 @@ export function AuthForm({ mode, loading, error, onSubmit }: Props) {
           className="px-3 py-2.5 rounded-xl text-sm outline-none"
           style={{
             background: 'white',
-            border: `2px solid ${accountErr ? '#d75d5d' : 'rgba(90,70,54,0.15)'}`,
+            border: `1.5px solid ${accountErr ? 'var(--danger)' : 'var(--line)'}`,
           }}
         />
         {accountErr && (
-          <span className="text-xs" style={{ color: '#d75d5d' }}>
+          <span className="text-xs font-bold" style={{ color: 'var(--danger)' }}>
             {accountErr.message}
           </span>
         )}
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-bold" style={{ color: '#5b3c2b' }}>
+        <span className="text-xs font-bold" style={{ color: 'var(--text)' }}>
           密碼
         </span>
         <input
@@ -102,17 +102,17 @@ export function AuthForm({ mode, loading, error, onSubmit }: Props) {
           className="px-3 py-2.5 rounded-xl text-sm outline-none"
           style={{
             background: 'white',
-            border: `2px solid ${passwordErr ? '#d75d5d' : 'rgba(90,70,54,0.15)'}`,
+            border: `1.5px solid ${passwordErr ? 'var(--danger)' : 'var(--line)'}`,
           }}
         />
         {passwordErr && (
-          <span className="text-xs" style={{ color: '#d75d5d' }}>
+          <span className="text-xs font-bold" style={{ color: 'var(--danger)' }}>
             {passwordErr.message}
           </span>
         )}
       </label>
 
-      <label className="flex items-center gap-2 text-xs cursor-pointer select-none" style={{ color: '#5b3c2b' }}>
+      <label className="flex items-center gap-2 text-xs cursor-pointer select-none font-bold" style={{ color: 'var(--muted)' }}>
         <input
           type="checkbox"
           checked={remember}
@@ -122,7 +122,7 @@ export function AuthForm({ mode, loading, error, onSubmit }: Props) {
             if (!v) clearLastAccount();
           }}
           disabled={loading}
-          className="w-4 h-4 accent-orange-400"
+          className="w-4 h-4 accent-blue-500"
         />
         <span>記住帳號（下次自動填入）</span>
       </label>
@@ -130,7 +130,7 @@ export function AuthForm({ mode, loading, error, onSubmit }: Props) {
       {formErr && (
         <div
           className="px-3 py-2 rounded-xl text-xs font-bold"
-          style={{ background: '#ffe6e6', color: '#a03d3d' }}
+          style={{ background: '#fff4f4', color: '#c75050', border: '1px solid rgba(231,108,108,0.24)' }}
         >
           {formErr.message}
         </div>
@@ -141,10 +141,13 @@ export function AuthForm({ mode, loading, error, onSubmit }: Props) {
         disabled={loading}
         className="px-6 py-3 text-base rounded-full font-extrabold mt-1"
         style={{
-          background: loading ? '#c9a57b' : 'linear-gradient(180deg, #ffc7d1, #eb93a3)',
+          background: loading
+            ? 'linear-gradient(180deg, #b8c8e0, #8da4c4)'
+            : 'linear-gradient(180deg, #3e8cf0, #1c63c8)',
           color: 'white',
           cursor: loading ? 'wait' : 'pointer',
-          boxShadow: '0 6px 18px rgba(255,159,67,0.35)',
+          border: '1px solid rgba(36,107,208,0.32)',
+          boxShadow: '0 8px 22px rgba(47,125,225,0.32)',
         }}
       >
         {loading ? '請稍候…' : mode === 'login' ? '登入' : '註冊並登入'}
