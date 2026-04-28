@@ -272,6 +272,7 @@ export function ProjectDetailModal({
   };
 
   const handleAccept = () => {
+    if (pickedIds.length === 0) return;
     accept(project.id, pickedIds);
     onClose();
   };
@@ -585,7 +586,7 @@ export function ProjectDetailModal({
                   className="text-[11px] mb-1.5 text-center"
                   style={{ color: '#c07a20' }}
                 >
-                  ⚠️ 請至少指派 1 位員工才能接案
+                  請至少指派 1 位員工才能接案
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2">
@@ -593,16 +594,16 @@ export function ProjectDetailModal({
                   type="button"
                   onClick={handleAccept}
                   disabled={pickedIds.length === 0}
-                  className="py-2.5 rounded-full text-sm font-extrabold"
+                  className="py-2.5 rounded-lg text-sm font-extrabold"
                   style={{
                     background:
                       pickedIds.length === 0
-                        ? '#e0e0e0'
+                        ? '#e9f1ff'
                         : 'linear-gradient(180deg, #35c59c, #16a77f)',
-                    color: pickedIds.length === 0 ? '#999' : 'white',
+                    color: pickedIds.length === 0 ? '#8aa2c8' : 'white',
                     border:
                       pickedIds.length === 0
-                        ? '1px solid #ccc'
+                        ? '1px solid var(--line)'
                         : '1px solid rgba(22,167,127,0.35)',
                     cursor: pickedIds.length === 0 ? 'not-allowed' : 'pointer',
                   }}
@@ -613,7 +614,7 @@ export function ProjectDetailModal({
                 <button
                   type="button"
                   onClick={handleReject}
-                  className="py-2.5 rounded-full text-sm font-extrabold"
+                  className="py-2.5 rounded-lg text-sm font-extrabold"
                   style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
                 >
                   拒絕

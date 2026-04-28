@@ -158,12 +158,13 @@ function ProjectCard({
   const assignedDogs = staff.filter((d) => project.assignedStaffIds.includes(d.id));
   const hasPending = !!project.pendingEvent;
   const progress = isOffered ? 0 : Math.min(100, (project.workDone / project.workRequired) * 100);
+  const progressText = `${Math.round(project.workDone)} / ${project.workRequired}`;
 
   // 進行中（non-pending）綠系 / 待事件處理紅系 / offered 中性藍系
   const cardBg = hasPending
     ? 'linear-gradient(180deg, #fff7f7, #ffffff)'
     : isActive
-      ? 'linear-gradient(180deg, #f0fbf6, #ffffff)'
+      ? 'linear-gradient(180deg, #eafff7, #f8fffd)'
       : 'linear-gradient(180deg, #ffffff, #f7fbff)';
   const cardBorder = hasPending
     ? '1.5px solid rgba(239,63,63,0.45)'
@@ -171,7 +172,7 @@ function ProjectCard({
       ? '1.5px solid rgba(32,200,140,0.5)'
       : '1px solid #cfe0f8';
   const cardShadow = isActive && !hasPending
-    ? '0 8px 18px rgba(32,200,140,0.18), inset 0 1px 0 rgba(255,255,255,0.85)'
+    ? '0 10px 22px rgba(32,200,140,0.22), inset 0 1px 0 rgba(255,255,255,0.9)'
     : '0 8px 18px rgba(46,104,180,0.12), inset 0 1px 0 rgba(255,255,255,0.85)';
 
   return (
@@ -191,14 +192,15 @@ function ProjectCard({
       {/* 進行中標籤（左上角小色帶）*/}
       {isActive && !hasPending && (
         <div
-          className="absolute left-0 top-0 text-[10px] font-extrabold px-2 py-0.5 rounded-tl-lg rounded-br-lg"
+          className="absolute left-0 top-0 text-[10px] font-extrabold px-2 py-0.5 rounded-tl-lg rounded-br-lg inline-flex items-center gap-1"
           style={{
             background: 'linear-gradient(135deg, #20c88c, #16a77f)',
             color: 'white',
             letterSpacing: '0.5px',
           }}
         >
-          ● 進行中
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'white', boxShadow: '0 0 0 2px rgba(255,255,255,0.28)' }} />
+          進行中
         </div>
       )}
 
@@ -234,27 +236,41 @@ function ProjectCard({
       </div>
 
       {!isOffered && (
-        <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
-          <div
-            className="h-full"
-            style={{
-              width: `${progress}%`,
-              background: overdue ? '#d34a4a' : 'linear-gradient(90deg, #2f8df4, #20c7b3)',
-            }}
-          />
+        <div className="mt-2">
+          <div className="flex items-center justify-between text-[10px] font-bold mb-1" style={{ color: '#16926f' }}>
+            <span>正在推進</span>
+            <span>{progressText}</span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#d6f5eb' }}>
+            <div
+              className="h-full"
+              style={{
+                width: `${progress}%`,
+                background: overdue ? '#d34a4a' : 'linear-gradient(90deg, #16a77f, #20c7b3)',
+                boxShadow: '0 0 10px rgba(32,199,179,0.45)',
+              }}
+            />
+          </div>
         </div>
       )}
 
-      <div className="mt-3 h-8 rounded-md px-2 flex items-center gap-1.5 text-[12px] font-extrabold" style={{ background: '#eef6ff', color: 'var(--blue)', border: '1px solid #dbe9fb' }}>
+      <div
+        className="mt-3 h-8 rounded-md px-2 flex items-center gap-1.5 text-[12px] font-extrabold"
+        style={{
+          background: isActive && !hasPending ? '#dcf8ef' : '#eef6ff',
+          color: isActive && !hasPending ? '#138464' : 'var(--blue)',
+          border: isActive && !hasPending ? '1px solid rgba(32,200,140,0.25)' : '1px solid #dbe9fb',
+        }}
+      >
         <SvgIcon name="briefcase" size={17} />
         {hasPending ? (
           <span>處理事件</span>
         ) : isOffered ? (
           <span>點擊接案</span>
         ) : assignedDogs.length === 0 ? (
-          <span>指派員工</span>
+          <span>進行中 · 尚未指派</span>
         ) : (
-          <span className="truncate">{assignedDogs.length} 位員工 · {Math.round(project.workDone)}/{project.workRequired}</span>
+          <span className="truncate">進行中 · {assignedDogs.length} 位員工</span>
         )}
       </div>
     </button>
