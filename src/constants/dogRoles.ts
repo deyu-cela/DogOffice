@@ -141,5 +141,35 @@ export const ROLE_WAITING_IMAGE_MAP: Partial<Record<string, string>> = {
   行銷: `${base}assets/dog-sprites/marketing-waiting.png`,
   客服: `${base}assets/dog-sprites/customer-service-waiting.png`,
   PM: `${base}assets/dog-sprites/pm-waiting.png`,
+  HR: `${base}assets/dog-sprites/hr-waiting.png`,
+  主管: `${base}assets/dog-sprites/manager-waiting.png`,
+  行政: `${base}assets/dog-sprites/admin-waiting.png`,
+  數據分析: `${base}assets/dog-sprites/data-waiting.png`,
+  翻譯: `${base}assets/dog-sprites/translation-waiting.png`,
+  營運: `${base}assets/dog-sprites/operations-waiting.png`,
+  財務: `${base}assets/dog-sprites/finance-waiting.png`,
+  開發: `${base}assets/dog-sprites/dev-waiting.png`,
   CEO: `${base}assets/dog-sprites/ceo-waiting.png`,
 };
+
+export const ROLE_WAITING_SPRITE_MAP: Partial<Record<string, string>> = {
+  工程師: `${base}assets/dog-sprites/engineering-waiting-idle-sheet.png`,
+  QA: `${base}assets/dog-sprites/qa-waiting-idle-sheet.png`,
+  美術: `${base}assets/dog-sprites/design-waiting-idle-sheet.png`,
+  企劃: `${base}assets/dog-sprites/planning-waiting-idle-sheet.png`,
+  業務: `${base}assets/dog-sprites/business-waiting-idle-sheet.png`,
+  行銷: `${base}assets/dog-sprites/marketing-waiting-idle-sheet.png`,
+  客服: `${base}assets/dog-sprites/customer-service-waiting-idle-sheet.png`,
+  PM: `${base}assets/dog-sprites/pm-waiting-idle-sheet.png`,
+  HR: `${base}assets/dog-sprites/hr-waiting-idle-sheet.png`,
+  主管: `${base}assets/dog-sprites/manager-waiting-idle-sheet.png`,
+  行政: `${base}assets/dog-sprites/admin-waiting-idle-sheet.png`,
+  數據分析: `${base}assets/dog-sprites/data-waiting-idle-sheet.png`,
+  翻譯: `${base}assets/dog-sprites/translation-waiting-idle-sheet.png`,
+  營運: `${base}assets/dog-sprites/operations-waiting-idle-sheet.png`,
+  財務: `${base}assets/dog-sprites/finance-waiting-idle-sheet.png`,
+  開發: `${base}assets/dog-sprites/dev-waiting-idle-sheet.png`,
+  CEO: `${base}assets/dog-sprites/ceo-waiting-idle-sheet.png`,
+};
+
+export const ROLE_WAITING_SPRITE_FRAMES: Partial<Record<string, number>> = {};

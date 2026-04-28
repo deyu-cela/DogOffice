@@ -1,4 +1,4 @@
-﻿import { Component, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
+﻿import { Component, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ErrorInfo, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useTexture, Billboard, Html } from '@react-three/drei';
 import { CanvasTexture, DoubleSide, LinearFilter, LinearMipmapLinearFilter, NearestFilter, Object3D, type InstancedMesh as ThreeInstancedMesh, type Texture } from 'three';
@@ -7,7 +7,7 @@ import { gridToWorld } from './threeIso';
 import { useUiStore, type BuildingKind } from '@/store/uiStore';
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
-import { ROLE_IMAGE_MAP, ROLE_WAITING_IMAGE_MAP } from '@/constants/dogRoles';
+import { ROLE_IMAGE_MAP, ROLE_WAITING_IMAGE_MAP, ROLE_WAITING_SPRITE_FRAMES, ROLE_WAITING_SPRITE_MAP } from '@/constants/dogRoles';
 import { useWalkerStore } from '@/store/walkerStore';
 import { ROOM_GRID } from './iso';
 import { BUILDING_LAYOUT, PURCHASE_LAYOUT } from './layout';
@@ -17,6 +17,13 @@ import type { ShopItemEffectKey } from '@/types';
 const ROOM = 17;       // 地板 17x17
 const WALL_H = 8;      // 牆高 8
 const HALF = ROOM / 2; // 8.5
+const DOG_SPRITE_ROWS = 2;
+const DOG_SPRITE_FRAME_MS = 130;
+// Three.js texture offset.y starts from the bottom of the image.
+// Our sheets are authored top row = left-facing, bottom row = right-facing.
+const DOG_SPRITE_LEFT_ROW = 1;
+const DOG_SPRITE_RIGHT_ROW = 0;
+const DEFAULT_DOG_SPRITE_FRAMES = 6;
 
 // 預載常用 texture（放進 effect 避免 HMR 每次 reload 重跑）
 const PRELOAD_URLS = [
@@ -637,7 +644,11 @@ function HrNotice3D() {
       : candidatePatience <= 1 ? '#c0392b'
         : candidatePatience <= 2 ? '#b45a1c'
           : '#2f7a3a';
+  const waitingSprite = current ? ROLE_WAITING_SPRITE_MAP[current.role] : null;
   const waitingImage = current ? ROLE_WAITING_IMAGE_MAP[current.role] : null;
+  const waitingSpriteStyle = waitingSprite
+    ? ({ '--waiting-dog-sprite': `url("${waitingSprite}")` } as CSSProperties)
+    : undefined;
 
   // 不用 distanceFactor（orthographic 下會偶發 scale 失控變巨大橢圓），改用固定 HTML 大小
   return (
@@ -660,7 +671,14 @@ function HrNotice3D() {
         </div>
         {current && (
           <>
-            {waitingImage ? (
+            {waitingSprite ? (
+              <span
+                className="waiting-dog-idle waiting-dog-sprite"
+                style={waitingSpriteStyle}
+                role="img"
+                aria-label={`${current.role} 候選狗狗`}
+              />
+            ) : waitingImage ? (
               <span className="waiting-dog-idle">
                 <img src={waitingImage} alt={`${current.role} 候選狗狗`} draggable={false} />
               </span>
@@ -688,11 +706,15 @@ function Walkers3D() {
 
   if (!bounds || bounds.w === 0 || bounds.h <= bounds.floorTop) return null;
   const now = performance.now();
+  const anyWalking = walkers.some((w) => w.idleUntil <= now);
 
   return (
     <>
+      {anyWalking && <DemandPulse rate={12} />}
       {walkers.map((w) => {
-        const image = w.dogData.image || ROLE_IMAGE_MAP[w.dogData.role];
+        const sprite = ROLE_WAITING_SPRITE_MAP[w.dogData.role];
+        const image = sprite || ROLE_WAITING_IMAGE_MAP[w.dogData.role] || ROLE_IMAGE_MAP[w.dogData.role];
+        const frames = ROLE_WAITING_SPRITE_FRAMES[w.dogData.role] ?? DEFAULT_DOG_SPRITE_FRAMES;
         if (!image) return null;
         const gx = (w.x / bounds.w) * ROOM_GRID;
         const gy =
@@ -705,6 +727,8 @@ function Walkers3D() {
             gx={gx}
             gy={gy}
             src={image}
+            spriteSheet={Boolean(sprite)}
+            frames={frames}
             facingRight={w.facingRight}
             walking={walking}
           />
@@ -718,27 +742,64 @@ function WalkerSprite({
   gx,
   gy,
   src,
+  spriteSheet,
+  frames,
   facingRight,
   walking,
 }: {
   gx: number;
   gy: number;
   src: string;
+  spriteSheet: boolean;
+  frames: number;
   facingRight: boolean;
   walking: boolean;
 }) {
-  const texture = usePixelTexture(src);
+  const baseTexture = usePixelTexture(src);
+  const texture = useMemo(() => baseTexture.clone(), [baseTexture]);
+  const invalidate = useThree((s) => s.invalidate);
   const [x, , z] = gridToWorld(gx, gy);
   const bob = walking ? Math.sin(Date.now() / 160) * 0.04 : 0;
   const img = texture.image as HTMLImageElement | undefined;
-  const aspect = img && img.width && img.height ? img.width / img.height : 1;
+  const aspect = img && img.width && img.height
+    ? spriteSheet
+      ? (img.width / frames) / (img.height / DOG_SPRITE_ROWS)
+      : img.width / img.height
+    : 1;
   const height = 1.3;
   const width = height * aspect;
+
+  useLayoutEffect(() => {
+    if (spriteSheet) {
+      texture.repeat.set(1 / frames, 1 / DOG_SPRITE_ROWS);
+      texture.offset.set(0, (facingRight ? DOG_SPRITE_RIGHT_ROW : DOG_SPRITE_LEFT_ROW) / DOG_SPRITE_ROWS);
+    } else {
+      texture.repeat.set(1, 1);
+      texture.offset.set(0, 0);
+    }
+    texture.needsUpdate = true;
+    invalidate();
+  }, [texture, spriteSheet, frames, facingRight, invalidate]);
+
+  useEffect(() => () => texture.dispose(), [texture]);
+
+  useFrame(({ clock }) => {
+    if (!spriteSheet) return;
+    const frame = walking
+      ? Math.floor((clock.elapsedTime * 1000) / DOG_SPRITE_FRAME_MS) % frames
+      : 0;
+    const rowOffset = (facingRight ? DOG_SPRITE_RIGHT_ROW : DOG_SPRITE_LEFT_ROW) / DOG_SPRITE_ROWS;
+    const colOffset = frame / frames;
+    if (texture.offset.x !== colOffset || texture.offset.y !== rowOffset) {
+      texture.offset.set(colOffset, rowOffset);
+    }
+  });
+
   return (
     <mesh
       position={[x, height / 2 + bob - SPRITE_Y_COMPENSATION * 0.4, z]}
       rotation={[0, FACING_Y, 0]}
-      scale={[facingRight ? 1 : -1, 1, 1]}
+      scale={[spriteSheet || facingRight ? 1 : -1, 1, 1]}
     >
       <planeGeometry args={[width, height]} />
       <meshBasicMaterial map={texture} transparent alphaTest={0.1} side={DoubleSide} />
