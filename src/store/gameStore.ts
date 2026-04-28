@@ -17,6 +17,7 @@ import { SHOP_ITEMS } from '@/constants/shopItems';
 import { pickTraitChoices } from '@/constants/dogTraits';
 import { clamp, nextTreatId, rand } from '@/lib/utils';
 import { ensureQueueLength, generateCandidate } from '@/lib/candidateGen';
+import { pickRegion, pickPersonalities } from '@/constants/dogTags';
 import {
   computeTierBudget,
   fillInbox,
@@ -27,6 +28,12 @@ import {
   trimSettled,
 } from '@/lib/projectGen';
 import { runProjectsDay, resolveProjectEvent } from '@/lib/projectEngine';
+import { computeSynergiesFromStaff } from '@/lib/synergyEngine';
+
+// === 在每次 staff 列表異動後重算 synergy 表 ===
+function withSynergyRecompute(state: GameState): GameState {
+  return { ...state, activeSynergies: computeSynergiesFromStaff(state.staff) };
+}
 
 const initialQueue = [generateCandidate(), generateCandidate(), generateCandidate()];
 
@@ -182,6 +189,8 @@ const initialState: GameState = {
   loanTaken: false,
   loanRepayDaysLeft: 0,
   loanModalOpen: false,
+
+  activeSynergies: {},
 };
 
 // === 排行榜 localStorage helpers ===
@@ -428,6 +437,9 @@ function runAdvanceDay(prev: GameState): GameState {
     s = pushLog(s, ` 公司 IPO 上市成功！用時 ${s.day} 天！`);
   }
 
+  // === Phase 10: 重算 synergy（員工可能因事件被挖走/離職）===
+  s = withSynergyRecompute(s);
+
   return s;
 }
 
@@ -491,6 +503,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
     next = refillCurrent(next);
     next.tierBudget = recomputeTierBudget(next);
+    next = withSynergyRecompute(next);
     set(next as Partial<GameStore>);
   },
 
@@ -686,6 +699,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     };
     next = pushLog(next, `${dog.name} 完成資遣，支付 $${dog.severance}。`);
     next.tierBudget = recomputeTierBudget(next);
+    next = withSynergyRecompute(next);
     set(next as Partial<GameStore>);
   },
 
@@ -1085,6 +1099,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
   applySave: (data) => {
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
     const [first, ...rest] = fresh;
+    // 舊存檔相容：補上缺少的 region / personalities
+    const migratedStaff: Dog[] = data.staff.map((d) => {
+      const region = d.region ?? pickRegion();
+      // 舊版可能存在 d.personality（單數）或完全沒有
+      const legacyPersonality = (d as Dog & { personality?: string }).personality;
+      const personalities: ReturnType<typeof pickPersonalities> = Array.isArray(d.personalities)
+        ? d.personalities
+        : legacyPersonality
+          ? [legacyPersonality as never]
+          : pickPersonalities();
+      const traits = d.region && Array.isArray(d.personalities) ? d.traits : [region, ...personalities];
+      return { ...d, region, personalities, traits };
+    });
     set({
       day: data.day,
       money: data.money,
@@ -1097,7 +1124,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       bankrupt: data.bankrupt,
       bankruptCountdown: data.bankruptCountdown ?? 0,
       tutorialStep: data.tutorialStep,
-      staff: data.staff,
+      staff: migratedStaff,
       clients: data.clients ?? initialInbox(),
       projectsCompleted: data.projectsCompleted ?? 0,
       projectsFailed: data.projectsFailed ?? 0,
@@ -1124,6 +1151,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       loanRepayDaysLeft: data.loanRepayDaysLeft ?? 0,
       loanModalOpen: false,
       dailySummary: null,
+      activeSynergies: computeSynergiesFromStaff(migratedStaff),
     });
   },
 
