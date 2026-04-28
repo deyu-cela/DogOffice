@@ -6,6 +6,8 @@ export type SvgIconName =
   | 'office'
   | 'trophy'
   | 'save'
+  | 'account'
+  | 'lock'
   | 'restart'
   | 'people'
   | 'shop'
@@ -101,6 +103,23 @@ export function SvgIcon({ name, size = 24, className }: Props) {
           <path d="M11 5h9v8h-9V5Z" fill="#f7fbff" />
           <path d="M13 20h6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
           <path d="M10 18h12v9H10v-9Z" fill="#fff" opacity="0.18" />
+        </svg>
+      );
+    case 'account':
+      return (
+        <svg {...common}>
+          <rect x="5.5" y="8" width="21" height="16" rx="3" fill="#f7fbff" stroke={BLUE} strokeWidth="2" />
+          <path d="m7.5 11 8.5 6 8.5-6" fill="none" stroke={LIGHT_BLUE} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="m8 22 6.2-5M24 22l-6.2-5" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'lock':
+      return (
+        <svg {...common}>
+          <rect x="7" y="13" width="18" height="13" rx="3" fill="#f7fbff" stroke={BLUE} strokeWidth="2" />
+          <path d="M11 13v-2.2C11 7.6 13.1 5.5 16 5.5s5 2.1 5 5.3V13" fill="none" stroke={LIGHT_BLUE} strokeWidth="2.4" strokeLinecap="round" />
+          <circle cx="16" cy="19" r="2" fill={ORANGE} />
+          <path d="M16 20.8v2.4" stroke={ORANGE} strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
     case 'restart':
