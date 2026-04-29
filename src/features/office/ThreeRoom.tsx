@@ -38,6 +38,7 @@ const PRELOAD_URLS = [
   JP_ASSETS.pictureFrame,
   JP_ASSETS.toyBall,
   JP_ASSETS.gymArea,
+  JP_ASSETS.constructionDog,
   JP_ASSETS.sakuraPetal,
   JP_ASSETS.gptFloor,
   JP_ASSETS.gptWall,
@@ -433,6 +434,7 @@ export function ThreeRoom() {
           {/* 櫻花暫時關閉以減少 GPU 負擔 */}
           {/* <SakuraRain3D /> */}
           <HrNotice3D />
+          <ConstructionDog3D />
           <PurchaseArea3D />
           <WallPolicy3D />
         </Suspense>
@@ -464,6 +466,64 @@ function PurchaseArea3D() {
         );
       })}
     </>
+  );
+}
+
+function ConstructionDog3D() {
+  const openDrawer = useUiStore((s) => s.openDrawer);
+  const [hover, setHover] = useState(false);
+  const texture = usePixelTexture(JP_ASSETS.constructionDog);
+  const gx = 14.5;
+  const gy = 5.5;
+  const height = hover ? 2.22 : 2.05;
+  const width = height;
+  const [x, , z] = gridToWorld(gx, gy);
+  const yOffset = hover ? 0.12 : 0;
+
+  const handleOver = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
+    setHover(true);
+    document.body.style.cursor = 'pointer';
+  };
+  const handleOut = () => {
+    setHover(false);
+    document.body.style.cursor = 'auto';
+  };
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    openDrawer('shop');
+  };
+
+  return (
+    <group position={[x, 0, z]}>
+      <GroundShadow gx={gx} gy={gy} radius={0.58} opacity={0.34} />
+      <mesh
+        position={[0, height / 2 + yOffset, 0]}
+        rotation={[0, FACING_Y, 0]}
+        onClick={handleClick}
+        onPointerOver={handleOver}
+        onPointerOut={handleOut}
+      >
+        <planeGeometry args={[width, height]} />
+        <meshBasicMaterial map={texture} transparent alphaTest={0.05} side={DoubleSide} />
+      </mesh>
+      <Html position={[0, -0.05 + yOffset, 0]} center zIndexRange={[10, 0]}>
+        <div
+          onClick={() => openDrawer('shop')}
+          className="px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap select-none"
+          style={{
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            background: 'rgba(255,255,255,0.95)',
+            border: '1px solid #f2b76d',
+            color: '#9a4b12',
+            boxShadow: '0 2px 6px rgba(180,96,34,0.18)',
+          }}
+        >
+          營建
+        </div>
+      </Html>
+    </group>
   );
 }
 
