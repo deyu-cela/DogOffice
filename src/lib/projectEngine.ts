@@ -1,5 +1,4 @@
 ﻿import type {
-  ActiveSynergies,
   ChemistryCombo,
   Dog,
   GameState,
@@ -24,7 +23,6 @@ import {
   getProjectRewardMul,
   getProjectExpMulForDog,
 } from './dogTraitsEngine';
-import { getSynergyBonusForDog } from './synergyEngine';
 
 // === 類別主/次 stat 加成（plan §2.2）===
 type CategoryMul = {
@@ -171,7 +169,6 @@ function pushProjectProgress(
   project: Project,
   ctx: DayProgress,
   buffs: { speedBoost: number; qualityBoost: number; teamworkBoost: number; charismaBoost: number },
-  activeSynergies: ActiveSynergies,
 ): { project: Project; chemTriggered: ChemistryCombo[]; chemMoraleDelta: number; assignedDogs: Dog[] } {
   if (project.status !== 'active') {
     return { project, chemTriggered: [], chemMoraleDelta: 0, assignedDogs: [] };
@@ -196,9 +193,8 @@ function pushProjectProgress(
   let qualityAdded = 0;
 
   for (const dog of assignedDogs) {
-    const synergyBonus = getSynergyBonusForDog(dog, activeSynergies);
-    const speed = dog.stats.speed + buffs.speedBoost + synergyBonus.speed;
-    const quality = dog.stats.quality + buffs.qualityBoost + synergyBonus.quality;
+    const speed = dog.stats.speed + buffs.speedBoost;
+    const quality = dog.stats.quality + buffs.qualityBoost;
 
     // contrib = speed × catMul × roleMatch × synergy × chemSpeedMul × moraleMul × fatigueMul × traitSpeedMul
     const roleMatch = isRoleMatched(dog, project.category) ? 1.15 : 1.0;
@@ -428,7 +424,6 @@ export function estimateDailyContrib(
   category: ProjectCategory,
   dogs: Dog[],
   buffs: { speedBoost: number; qualityBoost: number; teamworkBoost: number; charismaBoost: number },
-  activeSynergies: ActiveSynergies = {},
 ): number {
   if (dogs.length === 0) return 0;
   const catMul = categoryMulFor(category);
@@ -441,8 +436,7 @@ export function estimateDailyContrib(
 
   let total = 0;
   for (const dog of dogs) {
-    const synergyBonus = getSynergyBonusForDog(dog, activeSynergies);
-    const speed = dog.stats.speed + buffs.speedBoost + synergyBonus.speed;
+    const speed = dog.stats.speed + buffs.speedBoost;
     const roleMatch = isRoleMatched(dog, category) ? 1.15 : 1.0;
     const traitSpeed = getDogSpeedMul(dog);
     const traitCharisma = getDogCharismaMul(dog);
@@ -514,7 +508,7 @@ export function runProjectsDay(state: GameState): DayResult {
     const assignedDogs = project.assignedStaffIds
       .map((id) => ctxForEstimate.staffById.get(id))
       .filter((d): d is Dog => !!d && d.onLeaveDay !== ctxForEstimate.currentDay);
-    const estContrib = estimateDailyContrib(project.category, assignedDogs, s.companyBuffs, s.activeSynergies);
+    const estContrib = estimateDailyContrib(project.category, assignedDogs, s.companyBuffs);
     const willCompleteToday = project.workDone + estContrib >= project.workRequired;
     if (daysHeld < 3 && !willCompleteToday) continue;
     // 自動套 default
@@ -538,7 +532,7 @@ export function runProjectsDay(state: GameState): DayResult {
       updatedClients.push(project);
       continue;
     }
-    const result = pushProjectProgress(project, ctx, s.companyBuffs, s.activeSynergies);
+    const result = pushProjectProgress(project, ctx, s.companyBuffs);
     updatedClients.push(result.project);
     // 化學反應 morale 變化分配給隊員
     if (result.chemMoraleDelta !== 0) {
