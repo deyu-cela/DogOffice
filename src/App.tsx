@@ -23,6 +23,9 @@ import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
 import { ProjectEventModal } from '@/features/clients/ProjectEventModal';
 import { ProjectsBar } from '@/features/clients/ProjectsBar';
 import { BankLoanModal } from '@/features/loan/BankLoanModal';
+import { AchievementsScreen } from '@/features/achievements/AchievementsScreen';
+import { AchievementToast } from '@/features/achievements/AchievementToast';
+import { useUiStore } from '@/store/uiStore';
 import { SvgIcon } from '@/components/SvgIcon';
 
 export default function App() {
@@ -64,6 +67,7 @@ export default function App() {
   const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
   const restart = useGameStore((s) => s.restart);
+  const showAchievements = useUiStore((s) => s.showAchievements);
 
   return (
     <>
@@ -136,6 +140,8 @@ export default function App() {
       <BankLoanModal />
       <VictoryModal />
       <ConflictModal />
+      {showAchievements && <AchievementsScreen />}
+      <AchievementToast />
 
       {bankrupt && (
         <div className="fixed inset-0 z-[900] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-6">

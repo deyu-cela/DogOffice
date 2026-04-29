@@ -38,6 +38,7 @@ export function serialize(state: GameState): GameSaveData {
     ipoDismissed: state.ipoDismissed,
     loanTaken: state.loanTaken,
     loanRepayDaysLeft: state.loanRepayDaysLeft,
+    unlockedAchievementIds: [...state.unlockedAchievementIds],
   };
 }
 
@@ -87,6 +88,9 @@ export function deserialize(raw: unknown): GameSaveData | null {
     ipoDismissed: d.ipoDismissed === true,
     loanTaken: d.loanTaken === true,
     loanRepayDaysLeft: asNum(d.loanRepayDaysLeft, 0),
+    unlockedAchievementIds: Array.isArray(d.unlockedAchievementIds)
+      ? d.unlockedAchievementIds.filter((x): x is string => typeof x === 'string')
+      : [],
   };
 }
 
