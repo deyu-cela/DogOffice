@@ -82,7 +82,16 @@ export function StaffList() {
           >
             <div className="flex items-center gap-3">
               <div className="rounded-full overflow-hidden flex items-center justify-center" style={{ width: 48, height: 48, border: '2px solid white', background: '#eef6ff' }}>
-                <DogAvatar role={dog.role} breed={dog.breed} size={48} />
+                {dog.image ? (
+                  <img
+                    src={dog.image}
+                    alt={`${dog.breed} ${dog.role}`}
+                    className="block h-full w-full object-contain"
+                    draggable={false}
+                  />
+                ) : (
+                  <DogAvatar role={dog.role} breed={dog.breed} size={48} />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">

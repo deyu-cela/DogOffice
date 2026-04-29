@@ -28,7 +28,16 @@ export function StaffActionModal() {
       >
         <div className="flex items-center gap-3 mb-3">
           <div className="rounded-full overflow-hidden flex items-center justify-center" style={{ width: 64, height: 64, border: '2px solid white', background: '#eef6ff' }}>
-            <DogAvatar role={dog.role} breed={dog.breed} size={64} />
+            {dog.image ? (
+              <img
+                src={dog.image}
+                alt={`${dog.breed} ${dog.role}`}
+                className="block h-full w-full object-contain"
+                draggable={false}
+              />
+            ) : (
+              <DogAvatar role={dog.role} breed={dog.breed} size={64} />
+            )}
           </div>
           <div>
             <div className="text-lg font-extrabold">{dog.name}</div>
