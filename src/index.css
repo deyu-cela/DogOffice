@@ -161,6 +161,19 @@ button:disabled {
   animation: waiting-dog-shadow 1.15s steps(2, end) infinite;
 }
 
+.waiting-dog-sprite::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  background-image: var(--waiting-dog-sprite);
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 600% 200%;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.18));
+}
+
 .waiting-dog-idle img {
   position: relative;
   z-index: 1;

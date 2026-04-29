@@ -6,6 +6,20 @@ export type Stats = {
   charisma: number;
 };
 
+// === 地區 / 人格 tag（自走棋 synergy 系統，定義在 constants/dogTags.ts）===
+// 為了避免循環引入，這裡用 string alias；實際取值與型別約束由 constants/dogTags 維護。
+export type Region = '南部' | '北部';
+export type PersonalityTag = '網紅' | '拚命郎' | '運動咖';
+export type SynergyKey = Region | PersonalityTag;
+
+export type SynergyBuff = {
+  key: SynergyKey;
+  tier: 1 | 2;
+  memberIds: string[];
+};
+
+export type ActiveSynergies = Partial<Record<SynergyKey, SynergyBuff>>;
+
 export type DogRole = {
   role: string;
   breed: string;
@@ -26,6 +40,8 @@ export type Dog = {
   breed: string;
   emoji: string;
   name: string;
+  region: Region;                // 地區：synergy 系統用
+  personalities: PersonalityTag[]; // 狗格 tag 列表（0~2 個，synergy 系統用）
   traits: string[];
   flavor: string;
   passive: string;
@@ -353,6 +369,9 @@ export type GameState = {
   loanTaken: boolean;            // 已借過（一輩子限一次）
   loanRepayDaysLeft: number;     // 剩餘還款天數，0 = 無貸款
   loanModalOpen: boolean;        // 貸款 modal 是否顯示
+
+  // 自走棋風格 synergy（地區 + 人格 tag 達門檻時的 buff）
+  activeSynergies: ActiveSynergies;
 };
 
 export type LeaderboardEntry = {

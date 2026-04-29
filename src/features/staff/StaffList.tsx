@@ -1,8 +1,10 @@
 ﻿import { useGameStore } from '@/store/gameStore';
 import { RadarChart } from '@/components/RadarChart';
 import { DOG_TRAITS_MAP, type DogTraitId } from '@/constants/dogTraits';
+import { isRegion, isPersonality } from '@/constants/dogTags';
 import type { Dog } from '@/types';
 import { DogAvatar } from '@/components/DogAvatar';
+import { SynergyPanel } from './SynergyPanel';
 
 const EXP_THRESHOLDS: Record<Dog['grade'], number> = {
   D: 8,
@@ -30,6 +32,7 @@ export function StaffList() {
 
   return (
     <div className="flex flex-col gap-3">
+      <SynergyPanel />
       <div className="grid grid-cols-2 gap-2.5">
         <button
           type="button"
@@ -82,7 +85,16 @@ export function StaffList() {
           >
             <div className="flex items-center gap-3">
               <div className="rounded-full overflow-hidden flex items-center justify-center" style={{ width: 48, height: 48, border: '2px solid white', background: '#eef6ff' }}>
-                <DogAvatar role={dog.role} breed={dog.breed} size={48} />
+                {dog.image ? (
+                  <img
+                    src={dog.image}
+                    alt={`${dog.breed} ${dog.role}`}
+                    className="block h-full w-full object-contain"
+                    draggable={false}
+                  />
+                ) : (
+                  <DogAvatar role={dog.role} breed={dog.breed} size={48} />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -111,6 +123,28 @@ export function StaffList() {
               <div>
                 <RadarChart stats={dog.stats} size={120} />
               </div>
+            </div>
+
+            {/* 地區 + 人格 tag chips */}
+            <div className="flex gap-1 mt-1.5 flex-wrap">
+              {(dog.traits ?? []).map((t) => {
+                const isReg = isRegion(t);
+                const isPer = isPersonality(t);
+                if (!isReg && !isPer) return null;
+                return (
+                  <span
+                    key={t}
+                    className="text-[10px] px-1.5 py-0.5 rounded font-bold"
+                    style={
+                      isReg
+                        ? { background: 'linear-gradient(180deg, #eaf3ff, #d4e7ff)', border: '1px solid rgba(47,141,244,0.35)', color: '#1c63c8' }
+                        : { background: 'linear-gradient(180deg, #fff0f5, #ffe0ec)', border: '1px solid rgba(225,90,142,0.35)', color: '#c53d75' }
+                    }
+                  >
+                    {isReg ? '地' : '狗'} {t}
+                  </span>
+                );
+              })}
             </div>
 
             {/* 三條進度：個人士氣 / 疲勞 / 忠誠 */}
