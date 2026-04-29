@@ -2,7 +2,6 @@ import type { Dog, Stats } from '@/types';
 import { CEO_CHANCE, CEO_DOG, DOG_ROLES, ROLE_IMAGE_MAP } from '@/constants/dogRoles';
 import { INTERVIEW_QUESTIONS } from '@/constants/questions';
 import { pickTraitChoices } from '@/constants/dogTraits';
-import { pickRegion, pickPersonalities } from '@/constants/dogTags';
 import { rand, clamp, nextDogId } from './utils';
 
 // Grade 修正：乘法（取代原本的加減）
@@ -60,18 +59,13 @@ export function generateCandidate(opts?: { role?: string }): Dog {
   const severance = Math.round(expectedSalary * 3);
   const patience = isCeoRoll ? 1 : 2 + Math.floor(Math.random() * 3);
 
-  const region = pickRegion();
-  const personalities = pickPersonalities();
-
   const dog: Dog = {
     id: nextDogId(),
     role: template.role,
     breed: template.breed,
     emoji: template.emoji,
     name: rand(template.names),
-    region,
-    personalities,
-    traits: [region, ...personalities],
+    traits: template.traits,
     flavor: template.flavor,
     passive: template.passive,
     motto: template.motto,

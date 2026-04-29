@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import type { ActiveSynergies, ChemistryCombo, Dog, ProjectCategory, ClientTier } from '@/types';
+import type { ChemistryCombo, Dog, ProjectCategory, ClientTier } from '@/types';
 import { OFFER_TTL_DAYS } from '@/lib/projectGen';
 import { estimateDailyContrib } from '@/lib/projectEngine';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
@@ -113,7 +113,6 @@ function pickAutoAssign(
   alreadyPicked: Dog[],
   remainingWork: number,
   buffs: { speedBoost: number; qualityBoost: number; teamworkBoost: number; charismaBoost: number },
-  activeSynergies: ActiveSynergies,
 ): Dog[] {
   const result: Dog[] = [...alreadyPicked];
   const pool = candidates.slice();
@@ -121,7 +120,7 @@ function pickAutoAssign(
 
   const daysFor = (dogs: Dog[]): number => {
     if (dogs.length === 0) return Infinity;
-    const c = estimateDailyContrib(category, dogs, buffs, activeSynergies);
+    const c = estimateDailyContrib(category, dogs, buffs);
     if (c <= 0) return Infinity;
     return Math.ceil(remainingWork / c);
   };
@@ -210,7 +209,6 @@ export function ProjectDetailModal({
   const day = useGameStore((s) => s.day);
   const staff = useGameStore((s) => s.staff);
   const companyBuffs = useGameStore((s) => s.companyBuffs);
-  const activeSynergies = useGameStore((s) => s.activeSynergies);
   const accept = useGameStore((s) => s.acceptProject);
   const reject = useGameStore((s) => s.rejectProject);
   const assign = useGameStore((s) => s.assignStaff);
@@ -244,8 +242,8 @@ export function ProjectDetailModal({
       : staff.filter((d) => project.assignedStaffIds.includes(d.id));
 
   const dailyContrib = useMemo(
-    () => (project ? estimateDailyContrib(project.category, pickedDogs, companyBuffs, activeSynergies) : 0),
-    [project, pickedDogs, companyBuffs, activeSynergies],
+    () => (project ? estimateDailyContrib(project.category, pickedDogs, companyBuffs) : 0),
+    [project, pickedDogs, companyBuffs],
   );
   const chemistries = useMemo(
     () => (project ? findChemistries(pickedDogs, project.category) : []),
@@ -424,7 +422,6 @@ export function ProjectDetailModal({
                       isOffered ? [] : alreadyPicked,
                       remainingWork,
                       companyBuffs,
-                      activeSynergies,
                     );
                     if (isOffered) {
                       setPickedIds(picked.map((d) => d.id));
