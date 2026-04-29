@@ -208,7 +208,16 @@ export function ResumeCard() {
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,.8)',
             }}
           >
-            <DogAvatar role={current.role} breed={current.breed} size={118} />
+            {current.image ? (
+              <img
+                src={current.image}
+                alt={`${current.breed} ${current.role}`}
+                className="block h-full w-full object-contain"
+                draggable={false}
+              />
+            ) : (
+              <DogAvatar role={current.role} breed={current.breed} size={118} />
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
