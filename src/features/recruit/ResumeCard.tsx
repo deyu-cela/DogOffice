@@ -2,10 +2,22 @@ import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { DOG_ROLES } from '@/constants/dogRoles';
+import { isRegion, isPersonality } from '@/constants/dogTags';
 import { DogAvatar } from '@/components/DogAvatar';
 import { RadarChart } from '@/components/RadarChart';
 import { SvgIcon } from '@/components/SvgIcon';
 import type { SvgIconName } from '@/components/SvgIcon';
+
+// 地區 chip：藍系；人格 chip：粉系；其他（保險）：原樣式
+function tagChipStyle(tag: string): { bg: string; border: string; color: string } {
+  if (isRegion(tag)) {
+    return { bg: 'linear-gradient(180deg, #eaf3ff, #d4e7ff)', border: '1px solid rgba(47,141,244,0.35)', color: '#1c63c8' };
+  }
+  if (isPersonality(tag)) {
+    return { bg: 'linear-gradient(180deg, #fff0f5, #ffe0ec)', border: '1px solid rgba(225,90,142,0.35)', color: '#c53d75' };
+  }
+  return { bg: '#f1f7ff', border: '1px solid var(--line)', color: 'var(--blue-2)' };
+}
 
 const TARGETED_COST = 40;
 
@@ -238,15 +250,18 @@ export function ResumeCard() {
               {current.breed}・{current.role}
             </div>
             <div className="flex gap-1.5 flex-wrap mt-2">
-              {current.traits.map((t) => (
-                <span
-                  key={t}
-                  className="text-[11px] px-2 py-1 rounded-md font-bold"
-                  style={{ background: '#f1f7ff', border: '1px solid var(--line)', color: 'var(--blue-2)' }}
-                >
-                  {t}
-                </span>
-              ))}
+              {current.traits.map((t) => {
+                const s = tagChipStyle(t);
+                return (
+                  <span
+                    key={t}
+                    className="text-[11px] px-2 py-1 rounded-md font-bold"
+                    style={{ background: s.bg, border: s.border, color: s.color }}
+                  >
+                    {t}
+                  </span>
+                );
+              })}
             </div>
             <div className="text-xs mt-2 font-bold flex items-center gap-1.5" style={{ color: 'var(--muted)' }}>
               <SvgIcon name="money" size={17} />
