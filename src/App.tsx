@@ -6,6 +6,7 @@ import { useGameLoop } from '@/hooks/useGameLoop';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { DailySummary } from '@/components/DailySummary';
 import { SplashScreen } from '@/features/splash/SplashScreen';
+import { StudioIntro } from '@/features/intro/StudioIntro';
 import { Tutorial } from '@/features/tutorial/Tutorial';
 import { ConflictModal } from '@/features/save/ConflictModal';
 import { OfficeScene } from '@/features/office/OfficeScene';
@@ -142,6 +143,7 @@ export default function App() {
       {showAchievements && <AchievementsScreen />}
       <AchievementToast />
       <CoinBurstOverlay />
+      <StudioIntro />
 
       {bankrupt && (
         <div className="fixed inset-0 z-[900] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-6">
