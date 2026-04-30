@@ -29,135 +29,45 @@ export function AchievementsScreen() {
   const viewing = viewingId ? ACHIEVEMENTS.find((a) => a.id === viewingId) ?? null : null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1000,
-        background:
-          'linear-gradient(180deg, rgba(243,250,255,0.96), rgba(225,240,255,0.96))',
-        overflow: 'auto',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1240,
-          margin: '0 auto',
-          padding: '32px 28px 60px',
-        }}
-      >
-        <header
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-            marginBottom: 22,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 28,
-                fontWeight: 900,
-                color: '#173b78',
-                letterSpacing: 0.4,
-              }}
-            >
-              🏆 成就 CG 收藏
-            </div>
-            <div
-              style={{
-                marginTop: 6,
-                fontSize: 13,
-                color: '#5a6f95',
-                fontWeight: 700,
-              }}
-            >
+    <div className="achievements-page">
+      <div className="achievements-page__shell">
+        <header className="achievements-hero">
+          <div className="achievements-hero__copy">
+            <span className="achievements-hero__pin" aria-hidden="true" />
+            <div className="achievements-hero__eyebrow">達成成長</div>
+            <h1 className="achievements-hero__title">成就 CG 收藏</h1>
+            <p className="achievements-hero__subtitle">
               經營狗狗公司路上的高光時刻，每一張 CG 都是一段故事。
-            </div>
+            </p>
           </div>
           <button
             type="button"
             onClick={closeAchievements}
-            style={{
-              background: '#ffffff',
-              border: '1px solid #c8d2dc',
-              borderRadius: 10,
-              padding: '10px 22px',
-              fontWeight: 900,
-              color: '#3a4a66',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-            }}
+            className="achievements-hero__close"
           >
             返回
           </button>
         </header>
 
-        <div
-          style={{
-            background: '#ffffff',
-            borderRadius: 14,
-            padding: '14px 18px',
-            marginBottom: 24,
-            border: '1px solid #d9e3f0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-            boxShadow: '0 8px 22px rgba(46,104,180,0.08)',
-          }}
-        >
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 900,
-              color: '#173b78',
-            }}
-          >
-            進度 {unlockedCount} / {total}
+        <section className="achievements-progress" aria-label="成就進度">
+          <span className="achievements-progress__pin" aria-hidden="true" />
+          <div className="achievements-progress__label">
+            <span className="achievements-progress__icon">🏆</span>
+            <span>收藏進度</span>
+            <strong>
+              {unlockedCount} / {total}
+            </strong>
           </div>
-          <div
-            style={{
-              flex: 1,
-              maxWidth: 480,
-              height: 12,
-              borderRadius: 999,
-              background: '#eef2f7',
-              overflow: 'hidden',
-              border: '1px solid #d9e3f0',
-            }}
-          >
+          <div className="achievements-progress__track">
             <div
-              style={{
-                width: `${percent}%`,
-                height: '100%',
-                background: 'linear-gradient(90deg, #57a8ff, #257ee8)',
-                transition: 'width 320ms ease',
-              }}
+              className="achievements-progress__fill"
+              style={{ width: `${percent}%` }}
             />
           </div>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 800,
-              color: '#5a6f95',
-              minWidth: 40,
-              textAlign: 'right',
-            }}
-          >
-            {percent}%
-          </div>
-        </div>
+          <strong className="achievements-progress__percent">{percent}%</strong>
+        </section>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: 18,
-          }}
-        >
+        <div className="achievements-grid">
           {ACHIEVEMENTS.map((a) => {
             const unlocked = unlockedSet.has(a.id);
             return (
