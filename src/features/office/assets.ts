@@ -29,6 +29,7 @@ export const JP_ASSETS = {
   wallClock: `${BASE}wall_clock.png`,
   wallScroll: `${BASE}wall_scroll.png`,
   gymArea: `${BASE}gps_gym.png`,
+  constructionDog: `${BASE}construction-dog.png`,
   gptFloor: `${BASE}gpt_floor.png`,
   gptWall: `${BASE}gpt_wall.png`,
 } as const;
