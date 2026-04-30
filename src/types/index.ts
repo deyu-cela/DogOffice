@@ -353,6 +353,10 @@ export type GameState = {
   loanTaken: boolean;            // 已借過（一輩子限一次）
   loanRepayDaysLeft: number;     // 剩餘還款天數，0 = 無貸款
   loanModalOpen: boolean;        // 貸款 modal 是否顯示
+
+  // 成就系統
+  unlockedAchievementIds: string[];      // 已解鎖（持久化）
+  pendingAchievementToasts: string[];    // 待播 toast 佇列（純 UI，不持久化）
 };
 
 export type LeaderboardEntry = {

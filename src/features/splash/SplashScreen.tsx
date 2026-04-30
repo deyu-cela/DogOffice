@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
+import { useUiStore } from '@/store/uiStore';
+import { ACHIEVEMENTS } from '@/features/achievements/achievementConfigs';
 import { AuthScreen } from '@/features/auth/AuthScreen';
 import { LeaderboardPanel } from '@/features/leaderboard/LeaderboardPanel';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
@@ -31,6 +33,8 @@ export function SplashScreen() {
   const saveStatus = useSaveStore((s) => s.status);
   const cloud = useSaveStore((s) => s.cloud);
   const saveError = useSaveStore((s) => s.error);
+  const openAchievements = useUiStore((s) => s.openAchievements);
+  const unlockedAchievementIds = useGameStore((s) => s.unlockedAchievementIds);
   const base = import.meta.env.BASE_URL;
   const [lbOpen, setLbOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -102,6 +106,9 @@ export function SplashScreen() {
           onStart={startGame}
           onLogout={onLogout}
           onLeaderboard={() => setLbOpen(true)}
+          onAchievements={openAchievements}
+          unlockedAchievements={unlockedAchievementIds.length}
+          totalAchievements={ACHIEVEMENTS.length}
         />
       )}
 
@@ -196,6 +203,9 @@ type AuthedSplashShellProps = {
   onStart: () => void;
   onLogout: () => void;
   onLeaderboard: () => void;
+  onAchievements: () => void;
+  unlockedAchievements: number;
+  totalAchievements: number;
 };
 
 function AuthedSplashShell({
@@ -222,6 +232,9 @@ function AuthedSplashShell({
   onStart,
   onLogout,
   onLeaderboard,
+  onAchievements,
+  unlockedAchievements,
+  totalAchievements,
 }: AuthedSplashShellProps) {
   const office = OFFICE_LEVELS[officeLevel];
   const maxStaff = office?.maxStaff ?? 0;
@@ -312,6 +325,14 @@ function AuthedSplashShell({
             <button type="button" onClick={onLeaderboard} className="authed-rank-button mt-4">
               <MetallicTrophy size={28} />
               <span>排行榜</span>
+            </button>
+
+            <button type="button" onClick={onAchievements} className="authed-achievement-button mt-3">
+              <span className="authed-achievement-icon">🏆</span>
+              <span>查看成就 CG</span>
+              <span className="authed-achievement-count">
+                {unlockedAchievements} / {totalAchievements}
+              </span>
             </button>
           </div>
         </section>
@@ -510,6 +531,35 @@ function AuthedSplashShell({
           gap: 8px;
           font-weight: 900;
           box-shadow: 0 12px 24px rgba(46,104,180,0.14);
+        }
+        .authed-achievement-button {
+          width: 210px;
+          height: 46px;
+          border-radius: 8px;
+          border: 1px solid rgba(255,212,148,0.9);
+          background: linear-gradient(180deg, #fff7e0, #ffe9b8);
+          color: #8a5a1c;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-weight: 900;
+          box-shadow: 0 12px 24px rgba(204,138,42,0.18);
+          cursor: pointer;
+        }
+        .authed-achievement-icon {
+          font-size: 18px;
+          line-height: 1;
+        }
+        .authed-achievement-count {
+          margin-left: 4px;
+          font-size: 12px;
+          font-weight: 900;
+          color: #b07020;
+          background: rgba(255,255,255,0.6);
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,212,148,0.9);
         }
         .authed-status-strip {
           min-height: 34px;

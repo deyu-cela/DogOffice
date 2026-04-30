@@ -40,6 +40,9 @@ export type GameSaveData = {
 
   loanTaken: boolean;
   loanRepayDaysLeft: number;
+
+  // 成就系統（v3 起；舊存檔沒有此欄位 → 載入時會以遊戲狀態靜默補頒）
+  unlockedAchievementIds?: string[];
 };
 
 export type SavePayload = {

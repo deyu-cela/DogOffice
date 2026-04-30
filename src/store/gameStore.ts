@@ -18,6 +18,11 @@ import { pickTraitChoices } from '@/constants/dogTraits';
 import { clamp, nextTreatId, rand } from '@/lib/utils';
 import { ensureQueueLength, generateCandidate } from '@/lib/candidateGen';
 import {
+  ACHIEVEMENTS,
+  type AchievementCheckPayload,
+  type AchievementEvent,
+} from '@/features/achievements/achievementConfigs';
+import {
   computeTierBudget,
   fillInbox,
   generateProject,
@@ -115,6 +120,11 @@ type Actions = {
   openTraitChoiceModal: (dogId: string) => void;
   closeTraitChoiceModal: () => void;
   chooseTrait: (dogId: string, traitId: string) => void;
+
+  // === 成就 ===
+  unlockAchievement: (id: string, silent?: boolean) => void;
+  dismissAchievementToast: (id: string) => void;
+  checkAchievements: (event: AchievementEvent, payload?: AchievementCheckPayload) => void;
 };
 
 export type GameStore = GameState & Actions;
@@ -182,6 +192,9 @@ const initialState: GameState = {
   loanTaken: false,
   loanRepayDaysLeft: 0,
   loanModalOpen: false,
+
+  unlockedAchievementIds: [],
+  pendingAchievementToasts: [],
 };
 
 // === 排行榜 localStorage helpers ===
@@ -434,7 +447,10 @@ function runAdvanceDay(prev: GameState): GameState {
 export const useGameStore = create<GameStore>((set, get) => ({
   ...initialState,
 
-  startGame: () => set((s) => ({ showSplash: false, tutorialStep: s.tutorialStep > 0 ? s.tutorialStep : 1 })),
+  startGame: () => {
+    set((s) => ({ showSplash: false, tutorialStep: s.tutorialStep > 0 ? s.tutorialStep : 1 }));
+    get().checkAchievements('game_start');
+  },
   advanceTutorial: () => set((s) => ({ tutorialStep: Math.min(s.tutorialStep + 1, 7) })),
   skipTutorial: () => set({ tutorialStep: 7 }),
   setSpeed: (speedMultiplier) => set({ speedMultiplier }),
@@ -448,6 +464,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (newElapsed >= BASE_DAY_MS) {
       const next = runAdvanceDay({ ...s, dayElapsed: 0 });
       set(next as Partial<GameStore>);
+      get().checkAchievements('day_end');
     } else {
       set({ dayElapsed: newElapsed });
     }
@@ -459,6 +476,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   hireCandidate: () => {
     const s = get();
     if (!s.current || atCapacity(s)) return;
+    const prevStaffCount = s.staff.length;
     const dog: Dog = {
       ...s.current,
       status: 'active',
@@ -492,6 +510,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     next = refillCurrent(next);
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
+    get().checkAchievements('hire', { dog, prevStaffCount });
   },
 
   rejectCandidate: () => {
@@ -614,6 +633,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     next = pushLog(next, `辦公室升級為「${OFFICE_LEVELS[nextLevel].name}」！`);
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
+    get().checkAchievements('office_upgrade');
   },
 
   openStaffAction: (index) => set({ staffActionModal: { staffIndex: index } }),
@@ -1124,6 +1144,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       loanRepayDaysLeft: data.loanRepayDaysLeft ?? 0,
       loanModalOpen: false,
       dailySummary: null,
+      unlockedAchievementIds: data.unlockedAchievementIds ?? [],
+      pendingAchievementToasts: [],
+    });
+    // 舊存檔（沒有 unlockedAchievementIds 欄位）載入後，
+    // 對已達條件的成就靜默補頒，不噴 toast。
+    const after = get();
+    const already = new Set(after.unlockedAchievementIds);
+    ACHIEVEMENTS.forEach((a) => {
+      if (already.has(a.id)) return;
+      if (a.check(after)) get().unlockAchievement(a.id, true);
     });
   },
 
@@ -1282,6 +1312,37 @@ export const useGameStore = create<GameStore>((set, get) => ({
         { day: s.day, msg: ` 花 $${TARGETED_COST} 指定招聘 ${role}：${dog.name}（${dog.grade} 級）來面試！` },
       ].slice(-30),
     });
+  },
+
+  unlockAchievement: (id, silent = false) => {
+    const s = get();
+    if (s.unlockedAchievementIds.includes(id)) return;
+    set({
+      unlockedAchievementIds: [...s.unlockedAchievementIds, id],
+      pendingAchievementToasts: silent
+        ? s.pendingAchievementToasts
+        : [...s.pendingAchievementToasts, id],
+    });
+  },
+
+  dismissAchievementToast: (id) => {
+    const s = get();
+    if (!s.pendingAchievementToasts.includes(id)) return;
+    set({
+      pendingAchievementToasts: s.pendingAchievementToasts.filter((x) => x !== id),
+    });
+  },
+
+  checkAchievements: (event, payload) => {
+    const state = get();
+    const unlocked = new Set(state.unlockedAchievementIds);
+    for (const a of ACHIEVEMENTS) {
+      if (unlocked.has(a.id)) continue;
+      if (!a.triggerEvents.includes(event)) continue;
+      if (a.check(state, payload)) {
+        get().unlockAchievement(a.id, false);
+      }
+    }
   },
 }));
 
