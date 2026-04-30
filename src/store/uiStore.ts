@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type BuildingKind = 'shop' | 'dorm' | 'hr';
+export type BuildingKind = 'shop' | 'dorm' | 'hr' | 'construction';
 
 type UIState = {
   openBuilding: BuildingKind | null;

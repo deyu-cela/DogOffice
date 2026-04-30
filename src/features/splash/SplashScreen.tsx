@@ -696,18 +696,18 @@ function DashboardSectionTitle({ icon, title, sub, action }: { icon: SvgIconName
 function StatTile({ icon, value, label }: { icon: SvgIconName; value: string; label: string }) {
   return (
     <div
-      className="h-[82px] rounded-lg px-4 flex items-center justify-between"
+      className="h-[82px] rounded-lg px-3 flex items-center justify-between gap-2"
       style={{
         background: 'rgba(246,251,255,0.86)',
         border: '1px solid rgba(207,225,249,0.92)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.92), 0 8px 18px rgba(64,121,193,0.08)',
       }}
     >
-      <div className="text-left min-w-0">
-        <div className="text-2xl font-extrabold truncate" style={{ color: '#5a8ce6' }}>{value}</div>
+      <div className="text-left min-w-0 flex-1">
+        <div className="text-xl font-extrabold whitespace-nowrap" style={{ color: '#5a8ce6' }}>{value}</div>
         <div className="text-[11px] font-extrabold tracking-[0.08em]" style={{ color: '#a7b8d0' }}>{label}</div>
       </div>
-      <SvgIcon name={icon} size={31} />
+      <SvgIcon name={icon} size={26} />
     </div>
   );
 }

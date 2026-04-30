@@ -20,11 +20,11 @@ import { VictoryModal } from '@/features/victory/VictoryModal';
 import { FrisbeeGame } from '@/features/minigames/FrisbeeGame';
 import { MemoryGame } from '@/features/minigames/MemoryGame';
 import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
-import { ProjectEventModal } from '@/features/clients/ProjectEventModal';
 import { ProjectsBar } from '@/features/clients/ProjectsBar';
 import { BankLoanModal } from '@/features/loan/BankLoanModal';
 import { AchievementsScreen } from '@/features/achievements/AchievementsScreen';
 import { AchievementToast } from '@/features/achievements/AchievementToast';
+import { CoinBurstOverlay } from '@/components/CoinBurstOverlay';
 import { useUiStore } from '@/store/uiStore';
 import { SvgIcon } from '@/components/SvgIcon';
 
@@ -135,13 +135,13 @@ export default function App() {
       {miniGame?.type === 'memory' && <MemoryGame />}
       {trainingSession && <TrainingQuiz />}
       {staffModal && <StaffActionModal />}
-      <ProjectEventModal />
       <TraitChoiceModal />
       <BankLoanModal />
       <VictoryModal />
       <ConflictModal />
       {showAchievements && <AchievementsScreen />}
       <AchievementToast />
+      <CoinBurstOverlay />
 
       {bankrupt && (
         <div className="fixed inset-0 z-[900] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-6">

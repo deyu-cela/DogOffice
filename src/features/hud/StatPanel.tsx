@@ -136,7 +136,7 @@ function MoneyCard({ money, dailyExpense }: { money: number; dailyExpense: numbe
         <span>資金</span>
       </div>
       <div className="mt-2 flex items-end justify-between gap-3">
-        <div className="text-3xl font-extrabold leading-none" style={{ color: 'var(--text)' }}>
+        <div data-money-target className="text-3xl font-extrabold leading-none" style={{ color: 'var(--text)' }}>
           ${money.toLocaleString()}
         </div>
         <div className="text-sm font-extrabold" style={{ color: runwayDays <= 5 ? '#ef5b5b' : '#20b79c' }}>

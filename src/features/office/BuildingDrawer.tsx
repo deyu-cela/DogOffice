@@ -1,19 +1,22 @@
 import { useEffect } from 'react';
 import { useUiStore } from '@/store/uiStore';
 import { ShopPanel } from '@/features/shop/ShopPanel';
+import { ConstructionPanel } from '@/features/shop/ConstructionPanel';
 import { StaffList } from '@/features/staff/StaffList';
-import { ResumeCard } from '@/features/recruit/ResumeCard';
+import { GachaPanel } from '@/features/recruit/GachaPanel';
 
 const TITLE = {
   shop: '商店',
-  dorm: '員工管理',
-  hr: '招募中心',
+  dorm: '員工宿舍',
+  hr: '招募',
+  construction: '營建',
 } as const;
 
 const SUBTITLE = {
   shop: '購買裝飾與辦公用品，提升公司營運能力。',
-  dorm: '查看員工狀態、能力、士氣與 PIP 管理。',
-  hr: '面試候選狗狗，補強團隊缺口。',
+  dorm: '管理產業 team、查看員工狀態、用 $ 或碎片強化員工。',
+  hr: '抽卡招募狗狗・單抽 / 連抽十發都有。',
+  construction: '擴建辦公室，提升員工上限與案件 tier 上限。',
 } as const;
 
 export function BuildingDrawer() {
@@ -110,8 +113,9 @@ export function BuildingDrawer() {
         </div>
         <div className="flex-1 overflow-y-auto mt-2 pr-1">
           {kind === 'shop' && <ShopPanel />}
+          {kind === 'construction' && <ConstructionPanel />}
           {kind === 'dorm' && <StaffList />}
-          {kind === 'hr' && <ResumeCard />}
+          {kind === 'hr' && <GachaPanel />}
         </div>
       </div>
     </>

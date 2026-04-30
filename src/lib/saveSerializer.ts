@@ -39,6 +39,7 @@ export function serialize(state: GameState): GameSaveData {
     loanTaken: state.loanTaken,
     loanRepayDaysLeft: state.loanRepayDaysLeft,
     unlockedAchievementIds: [...state.unlockedAchievementIds],
+    teams: state.teams,
   };
 }
 
@@ -52,7 +53,7 @@ export function deserialize(raw: unknown): GameSaveData | null {
   if (typeof d.day !== 'number' || d.day < 1) return null;
   if (!Array.isArray(d.staff)) return null;
 
-  // 舊存檔補 learnedTraits / pendingTraitChoice / onLeaveDay 預設
+  // 舊存檔補 learnedTraits / pendingTraitChoice / onLeaveDay / level / fragments 預設
   const staff = (d.staff as Array<Record<string, unknown>>).map((dog) => ({
     ...dog,
     learnedTraits: Array.isArray(dog.learnedTraits) ? dog.learnedTraits : [],
@@ -61,6 +62,8 @@ export function deserialize(raw: unknown): GameSaveData | null {
         ? dog.pendingTraitChoice
         : null,
     onLeaveDay: typeof dog.onLeaveDay === 'number' ? dog.onLeaveDay : null,
+    level: typeof dog.level === 'number' ? dog.level : 1,
+    fragments: typeof dog.fragments === 'number' ? dog.fragments : 0,
   })) as GameSaveData['staff'];
 
   return {
@@ -91,6 +94,7 @@ export function deserialize(raw: unknown): GameSaveData | null {
     unlockedAchievementIds: Array.isArray(d.unlockedAchievementIds)
       ? d.unlockedAchievementIds.filter((x): x is string => typeof x === 'string')
       : [],
+    teams: d.teams,  // 舊存檔沒有 → applySave 會 fallback 為空 teams
   };
 }
 

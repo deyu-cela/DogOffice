@@ -3,7 +3,9 @@ import type {
   Dog,
   LogEntry,
   Project,
+  ProjectCategory,
   ShopItemEffectKey,
+  Team,
 } from './index';
 
 export const SAVE_VERSION = 2;
@@ -43,6 +45,9 @@ export type GameSaveData = {
 
   // 成就系統（v3 起；舊存檔沒有此欄位 → 載入時會以遊戲狀態靜默補頒）
   unlockedAchievementIds?: string[];
+
+  // 團隊重構（v4 起；舊存檔沒有此欄位 → 載入時 fallback 為空 teams + 員工補 level=1）
+  teams?: Record<ProjectCategory, Team>;
 };
 
 export type SavePayload = {
