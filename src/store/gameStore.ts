@@ -19,6 +19,7 @@ import { SHOP_ITEMS } from '@/constants/shopItems';
 import { pickTraitChoices } from '@/constants/dogTraits';
 import { clamp, nextDogId, nextTreatId, rand } from '@/lib/utils';
 import { ensureQueueLength, generateCandidate } from '@/lib/candidateGen';
+import { createStarterCeo } from '@/lib/starterPackDog';
 import {
   ACHIEVEMENTS,
   type AchievementCheckPayload,
@@ -234,6 +235,9 @@ type Actions = {
   removeDogFromTeam: (industry: ProjectCategory, dogId: string) => void;
   upgradeDogLevel: (dogId: string) => void;          // 用 $
   upgradeDogWithFragments: (dogId: string) => void;  // 用碎片
+
+  // === 新手禮包 ===
+  claimStarterPack: () => void;
 };
 
 export type GameStore = GameState & Actions;
@@ -302,6 +306,8 @@ const initialState: GameState = {
   unlockedAchievementIds: [],
   pendingAchievementToasts: [],
   pendingCoinBursts: [],
+
+  claimedStarterPack: false,
 };
 
 // === 排行榜 localStorage helpers ===
@@ -1310,6 +1316,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       dailySummary: null,
       unlockedAchievementIds: data.unlockedAchievementIds ?? [],
       pendingAchievementToasts: [],
+      claimedStarterPack: data.claimedStarterPack ?? false,
     });
     // 舊存檔（沒有 unlockedAchievementIds 欄位）載入後，
     // 對已達條件的成就靜默補頒，不噴 toast。
@@ -1671,6 +1678,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       staff: s.staff.map((d) => (d.id === dogId ? { ...d, fragments: d.fragments - need } : d)),
     };
     set(applyDogLevelUp(reduced, dog.id) as Partial<GameStore>);
+  },
+
+  claimStarterPack: () => {
+    const s = get();
+    if (s.claimedStarterPack) return;
+    const dog = createStarterCeo();
+    let next: GameState = {
+      ...s,
+      staff: [...s.staff, dog],
+      claimedStarterPack: true,
+    };
+    next = pushLog(next, ` 開局禮包到貨：${dog.name}（CEO）加入了！0 元薪水、永不抱怨。`);
+    next.tierBudget = recomputeTierBudget(next);
+    set(next as Partial<GameStore>);
   },
 }));
 

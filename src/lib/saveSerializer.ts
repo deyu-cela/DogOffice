@@ -40,6 +40,7 @@ export function serialize(state: GameState): GameSaveData {
     loanRepayDaysLeft: state.loanRepayDaysLeft,
     unlockedAchievementIds: [...state.unlockedAchievementIds],
     teams: state.teams,
+    claimedStarterPack: state.claimedStarterPack,
   };
 }
 
@@ -95,6 +96,7 @@ export function deserialize(raw: unknown): GameSaveData | null {
       ? d.unlockedAchievementIds.filter((x): x is string => typeof x === 'string')
       : [],
     teams: d.teams,  // 舊存檔沒有 → applySave 會 fallback 為空 teams
+    claimedStarterPack: d.claimedStarterPack === true,
   };
 }
 

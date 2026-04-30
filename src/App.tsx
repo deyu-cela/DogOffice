@@ -26,10 +26,14 @@ import { BankLoanModal } from '@/features/loan/BankLoanModal';
 import { AchievementsScreen } from '@/features/achievements/AchievementsScreen';
 import { AchievementToast } from '@/features/achievements/AchievementToast';
 import { CoinBurstOverlay } from '@/components/CoinBurstOverlay';
+import { StarterPackModal } from '@/features/starterPack/StarterPackModal';
+import { StarterPackBanner } from '@/features/starterPack/StarterPackBanner';
 import { useUiStore } from '@/store/uiStore';
 import { SvgIcon } from '@/components/SvgIcon';
 import { BgmController, type BgmScene } from '@/components/BgmController';
 import { BgmToggle } from '@/components/BgmToggle';
+
+const STARTER_PACK_SESSION_KEY = 'dogoffice:starter-pack-shown';
 
 export default function App() {
   useGameLoop();
@@ -72,6 +76,15 @@ export default function App() {
   const restart = useGameStore((s) => s.restart);
   const showAchievements = useUiStore((s) => s.showAchievements);
   const bgmScene: BgmScene = showAchievements ? 'memories' : showSplash ? 'splash' : 'office';
+  const claimedStarterPack = useGameStore((s) => s.claimedStarterPack);
+  const openStarterPack = useUiStore((s) => s.openStarterPack);
+
+  useEffect(() => {
+    if (showSplash || claimedStarterPack) return;
+    if (sessionStorage.getItem(STARTER_PACK_SESSION_KEY) === '1') return;
+    sessionStorage.setItem(STARTER_PACK_SESSION_KEY, '1');
+    openStarterPack();
+  }, [showSplash, claimedStarterPack, openStarterPack]);
 
   return (
     <>
@@ -149,6 +162,8 @@ export default function App() {
       <StudioIntro />
       <BgmController scene={bgmScene} />
       <BgmToggle />
+      <StarterPackModal />
+      {!showSplash && <StarterPackBanner />}
 
       {bankrupt && (
         <div className="fixed inset-0 z-[900] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-6">

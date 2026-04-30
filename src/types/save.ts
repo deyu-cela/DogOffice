@@ -48,6 +48,9 @@ export type GameSaveData = {
 
   // 團隊重構（v4 起；舊存檔沒有此欄位 → 載入時 fallback 為空 teams + 員工補 level=1）
   teams?: Record<ProjectCategory, Team>;
+
+  // 新手禮包：本局是否已領
+  claimedStarterPack?: boolean;
 };
 
 export type SavePayload = {
