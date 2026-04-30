@@ -18,7 +18,6 @@ export function DailySummary() {
     summary.completedCount > 0 ||
     summary.failedCount > 0 ||
     summary.levelUps.length > 0 ||
-    summary.newEventCount > 0 ||
     summary.bankruptCountdown > 0;
   if (!hasContent) return null;
 
@@ -99,12 +98,6 @@ export function DailySummary() {
                 <span><b>{u.name}</b> 升 {u.to} 級</span>
               </div>
             ))}
-          </div>
-        )}
-
-        {summary.newEventCount > 0 && (
-          <div className="text-[11px]" style={{ color: '#c07a20' }}>
-            觸發 {summary.newEventCount} 個中途事件待處理
           </div>
         )}
 

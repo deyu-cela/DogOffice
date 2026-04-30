@@ -491,7 +491,7 @@ function ConstructionDog3D() {
   };
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    openDrawer('shop');
+    openDrawer('construction');
   };
 
   return (
@@ -509,7 +509,7 @@ function ConstructionDog3D() {
       </mesh>
       <Html position={[0, -0.05 + yOffset, 0]} center zIndexRange={[10, 0]}>
         <div
-          onClick={() => openDrawer('shop')}
+          onClick={() => openDrawer('construction')}
           className="px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap select-none"
           style={{
             cursor: 'pointer',
@@ -1582,13 +1582,15 @@ function ZoneFurniture3D() {
   return <>{items}</>;
 }
 
-const SRC_MAP: Record<BuildingKind, string> = {
+type TileBuildingKind = Exclude<BuildingKind, 'construction'>;
+
+const SRC_MAP: Record<TileBuildingKind, string> = {
   shop: JP_ASSETS.shopBuilding,
   dorm: JP_ASSETS.dormBuilding,
   hr: JP_ASSETS.hrOffice,
 };
 
-const BUILDING_LABEL: Record<BuildingKind, string> = {
+const BUILDING_LABEL: Record<TileBuildingKind, string> = {
   shop: '商店',
   dorm: '員工',
   hr: '招募',
@@ -1601,7 +1603,7 @@ function Building3D({
   w,
   h,
 }: {
-  kind: BuildingKind;
+  kind: TileBuildingKind;
   gx: number;
   gy: number;
   w: number;
@@ -1611,7 +1613,6 @@ function Building3D({
   const hasCurrent = useGameStore((s) => !!s.current);
   const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
-  const clients = useGameStore((s) => s.clients);
   const [hover, setHover] = useState(false);
 
   const texture = usePixelTexture(SRC_MAP[kind]);
@@ -1621,9 +1622,6 @@ function Building3D({
   const avgMorale = staff.length > 0
     ? staff.reduce((n, d) => n + d.morale, 0) / staff.length
     : 100;
-  const hasPendingEvent = clients.some((c) => c.pendingEvent != null);
-
-  void hasPendingEvent;
   const needNotif =
     kind === 'hr' ? hasCurrent
       : kind === 'dorm' ? avgMorale < 40

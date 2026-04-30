@@ -57,6 +57,11 @@ export type Dog = {
   // 升級習得特性
   learnedTraits: string[];                       // DogTraitId 列表，升級時 +1
   pendingTraitChoice: { choices: string[]; roundsLeft?: number } | null; // 升級後待玩家選的 3 選項；roundsLeft > 1 代表選完還會接下一輪（S 直接面試會一次給 2 輪）
+
+  // === 新團隊重構：強化系統 ===
+  level: number;                                // 1-10，玩家用 $ 或碎片升級
+  rosterId?: string;                            // 對應 DOG_ROSTER 條目；圖鑑唯一（重抽 → 加碎片）
+  fragments: number;                            // 累積碎片：升 Lv N→N+1 需要 N 個（與 $ 二擇一）；Lv 10 後抽到 → 全轉錢
 };
 
 export type PipTask = {
@@ -272,15 +277,17 @@ export type CompanyBuffs = {
   decor: number;
 };
 
-// === 中途事件待處理 modal ===
-export type ProjectEventModal = {
-  projectId: string;
-} | null;
-
 // === 升級特性選擇 modal ===
 export type TraitChoiceModal = {
   dogId: string;
 } | null;
+
+// === 產業團隊（重構後核心） ===
+export type Team = {
+  industry: ProjectCategory;
+  open: boolean;        // 是否接該產業的案
+  memberIds: string[];  // 1-4 隻
+};
 
 export type DailySummary = {
   day: number;
@@ -291,7 +298,6 @@ export type DailySummary = {
   completedCount: number;    // 完成案件
   failedCount: number;       // 失敗案件
   levelUps: { name: string; to: 'S' | 'A' | 'B' | 'C' | 'D' }[];
-  newEventCount: number;     // 觸發的中途事件數
   bankruptCountdown: number; // 連續無錢天數（>0 顯示警告）
 };
 
@@ -313,6 +319,9 @@ export type GameState = {
   projectsCompleted: number;
   projectsFailed: number;
   lastRerollDay: number;               // 最近重 roll 的天數，0 = 沒重 roll 過
+
+  // 產業團隊（重構後核心）
+  teams: Record<ProjectCategory, Team>;
 
   // 候選人（保留招聘流程）
   queue: Dog[];
@@ -340,9 +349,6 @@ export type GameState = {
   ipoAchievedAt: number | null;        // IPO 達成天數
   ipoDismissed: boolean;
 
-  // 事件 modal
-  projectEventModal: ProjectEventModal;
-
   // 升級特性選擇 modal
   traitChoiceModal: TraitChoiceModal;
 
@@ -357,6 +363,9 @@ export type GameState = {
   // 成就系統
   unlockedAchievementIds: string[];      // 已解鎖（持久化）
   pendingAchievementToasts: string[];    // 待播 toast 佇列（純 UI，不持久化）
+
+  // 完成案件金幣動畫（純 UI，不持久化）
+  pendingCoinBursts: { id: string; projectId: string; reward: number }[];
 };
 
 export type LeaderboardEntry = {

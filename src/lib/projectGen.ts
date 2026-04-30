@@ -112,10 +112,11 @@ export function generateProject(
   officeLevel: number,
   rerollPenalty: boolean,
   forcedTier?: ClientTier,
+  forcedCategory?: ProjectCategory,
 ): Project {
   const tierCap = OFFICE_TIER_CAP[officeLevel] ?? 3;
   const tier = forcedTier ?? weightedTierPick(tierBudget, tierCap, rerollPenalty);
-  const category = rand(CATEGORIES);
+  const category = forcedCategory ?? rand(CATEGORIES);
   const stats = TIER_TABLE[tier];
 
   const reward = pickInRange(stats.rewardMin, stats.rewardMax);
@@ -160,19 +161,42 @@ export function fillInbox(
   currentDay: number,
   officeLevel: number,
   rerollPenalty: boolean,
+  openIndustries: ProjectCategory[] = [],
 ): Project[] {
-  const active = clients.filter((c) => c.status === 'active');
-  const offered = clients.filter((c) => c.status === 'offered');
+  // 沒有 open team → 不留任何 offered，全清掉；active 案不動繼續做
+  if (openIndustries.length === 0) {
+    return clients.filter((c) => c.status !== 'offered');
+  }
+  const allowed = new Set(openIndustries);
+  // 1. 把已關閉產業的 offered 清掉（player 關了 team 就不該再有那產業 offered）
+  const culled = clients.filter((c) => c.status !== 'offered' || allowed.has(c.category));
+  const active = culled.filter((c) => c.status === 'active');
+  const offered = culled.filter((c) => c.status === 'offered');
   const liveSlotsLeft = Math.max(0, INBOX_SIZE - active.length);
   const keptOfferedIds = new Set(offered.slice(0, liveSlotsLeft).map((p) => p.id));
-  const cappedClients = clients.filter((c) => c.status !== 'offered' || keptOfferedIds.has(c.id));
+  const cappedClients = culled.filter((c) => c.status !== 'offered' || keptOfferedIds.has(c.id));
   const cappedOffered = cappedClients.filter((c) => c.status === 'offered');
   const needed = liveSlotsLeft - cappedOffered.length;
   if (needed <= 0) return cappedClients;
-  // 保留原 clients 順序（接案/拒絕後位置不打亂），新案 append 到末尾
+  // 2. 補新案：依 open 產業 round-robin，確保每個 open team 都有案子吃
+  const offeredByIndustry = new Map<ProjectCategory, number>();
+  for (const c of cappedOffered) {
+    offeredByIndustry.set(c.category, (offeredByIndustry.get(c.category) ?? 0) + 1);
+  }
   const fresh: Project[] = [];
   for (let i = 0; i < needed; i++) {
-    fresh.push(generateProject(tierBudget, currentDay, officeLevel, rerollPenalty));
+    // 每輪挑「目前 offered 數量最少」的產業，平均分配
+    let pickedIndustry = openIndustries[0];
+    let minCount = Infinity;
+    for (const ind of openIndustries) {
+      const c = (offeredByIndustry.get(ind) ?? 0);
+      if (c < minCount) {
+        minCount = c;
+        pickedIndustry = ind;
+      }
+    }
+    offeredByIndustry.set(pickedIndustry, (offeredByIndustry.get(pickedIndustry) ?? 0) + 1);
+    fresh.push(generateProject(tierBudget, currentDay, officeLevel, rerollPenalty, undefined, pickedIndustry));
   }
   return [...cappedClients, ...fresh];
 }

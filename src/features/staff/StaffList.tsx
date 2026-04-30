@@ -1,35 +1,59 @@
-﻿import { useGameStore } from '@/store/gameStore';
+﻿import { useState } from 'react';
+import { useGameStore, dogLevelUpCost, dogLevelUpFragmentCost, DOG_LEVEL_MAX, dogPrimaryIndustry } from '@/store/gameStore';
 import { RadarChart } from '@/components/RadarChart';
 import { DOG_TRAITS_MAP, type DogTraitId } from '@/constants/dogTraits';
-import type { Dog } from '@/types';
+import type { Dog, ProjectCategory } from '@/types';
 import { DogAvatar } from '@/components/DogAvatar';
+import { TeamEditModal } from './TeamEditModal';
 
-const EXP_THRESHOLDS: Record<Dog['grade'], number> = {
-  D: 8,
-  C: 25,
-  B: 60,
-  A: 130,
-  S: 0,
+const INDUSTRY_LABEL: Record<ProjectCategory, string> = {
+  tech: '工程', design: '美術', marketing: '行銷', service: '客服',
 };
+const INDUSTRY_COLOR: Record<ProjectCategory, string> = {
+  tech: '#5a8ce6', design: '#e88aaa', marketing: '#e8a85a', service: '#5fb38f',
+};
+const TRAIT_UNLOCK_LEVELS = new Set([3, 6, 9]);
+
 
 export function StaffList() {
   const staff = useGameStore((s) => s.staff);
+  const money = useGameStore((s) => s.money);
   const clients = useGameStore((s) => s.clients);
   const openAction = useGameStore((s) => s.openStaffAction);
   const playMini = useGameStore((s) => s.openPlayMiniGame);
   const openTraining = useGameStore((s) => s.openTraining);
   const openTraitChoice = useGameStore((s) => s.openTraitChoiceModal);
+  const upgradeDog = useGameStore((s) => s.upgradeDogLevel);
+  const upgradeDogFragments = useGameStore((s) => s.upgradeDogWithFragments);
+  const [teamModalOpen, setTeamModalOpen] = useState(false);
 
   if (staff.length === 0) {
     return (
-      <div className="text-center p-4 text-sm" style={{ color: 'var(--muted)' }}>
-        還沒有員工，先去招聘吧。
+      <div className="flex flex-col gap-3">
+        <div className="text-center p-4 text-sm" style={{ color: 'var(--muted)' }}>
+          還沒有員工，去抽卡招募吧。
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-3">
+      <button
+        type="button"
+        onClick={() => setTeamModalOpen(true)}
+        className="rounded-xl py-2.5 font-extrabold"
+        style={{
+          background: 'linear-gradient(180deg, #ffffff, #eef6ff)',
+          color: '#446da8',
+          border: '1.5px solid #7fb2ef',
+          boxShadow: '0 4px 10px rgba(127,178,239,0.2)',
+        }}
+      >
+        🐾 管理隊伍
+      </button>
+      {teamModalOpen && <TeamEditModal onClose={() => setTeamModalOpen(false)} />}
+
       <div className="grid grid-cols-2 gap-2.5">
         <button
           type="button"
@@ -67,8 +91,6 @@ export function StaffList() {
         const project = dog.assignedProjectId
           ? clients.find((c) => c.id === dog.assignedProjectId)
           : null;
-        const expGoal = EXP_THRESHOLDS[dog.grade];
-        const expProgress = expGoal > 0 ? Math.min(100, (dog.experience / expGoal) * 100) : 100;
 
         return (
           <div
@@ -96,8 +118,17 @@ export function StaffList() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-bold">{dog.name}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: 'linear-gradient(180deg, #2f8df4, #1c63c8)', color: 'white' }}>
-                    {dog.grade}
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: 'linear-gradient(180deg, #ffd95a, #f0a818)', color: '#6a3d05', border: '1px solid rgba(176,107,15,0.4)' }}>
+                    Lv.{dog.level}
+                  </span>
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded-md"
+                    style={{
+                      background: INDUSTRY_COLOR[dogPrimaryIndustry(dog.role)],
+                      color: 'white',
+                    }}
+                  >
+                    {INDUSTRY_LABEL[dogPrimaryIndustry(dog.role)]}
                   </span>
                   {dog.status === 'pip' && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: '#fff0f0', color: '#d34a4a' }}>
@@ -172,26 +203,61 @@ export function StaffList() {
               </button>
             )}
 
-            {/* 經驗條 */}
-            {dog.grade !== 'S' && !dog.isCEO && (
-              <div className="mt-1.5">
-                <div className="flex justify-between text-[10px] mb-0.5">
-                  <span style={{ color: 'var(--muted)' }}>經驗</span>
-                  <span style={{ color: 'var(--muted)' }}>
-                    {dog.experience} / {expGoal}
-                  </span>
+
+            {/* 強化（Lv 3/6/9 解鎖特性）：兩種升級方式並列 */}
+            {dog.level < DOG_LEVEL_MAX && (() => {
+              const cost = dogLevelUpCost(dog.level);
+              const fragNeed = dogLevelUpFragmentCost(dog.level);
+              const nextLevel = dog.level + 1;
+              const unlocksTrait = TRAIT_UNLOCK_LEVELS.has(nextLevel);
+              const moneyOK = money >= cost;
+              const fragOK = dog.fragments >= fragNeed;
+              return (
+                <div className="mt-2 flex flex-col gap-1.5">
+                  {unlocksTrait && (
+                    <div className="text-[10px] text-center font-extrabold" style={{ color: '#c0610a' }}>
+                      ✦ 升 Lv.{nextLevel} 解鎖新特性
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); upgradeDog(dog.id); }}
+                      disabled={!moneyOK}
+                      className="py-1.5 rounded-full font-bold text-[11px]"
+                      style={{
+                        background: moneyOK
+                          ? 'linear-gradient(180deg, #ffd95a, #f0a818)'
+                          : '#e9f1ff',
+                        color: moneyOK ? '#6a3d05' : '#8aa2c8',
+                        border: '1px solid rgba(176,107,15,0.4)',
+                        cursor: moneyOK ? 'pointer' : 'not-allowed',
+                      }}
+                      title={moneyOK ? `花 $${cost} 升級` : `需要 $${cost}`}
+                    >
+                      ${cost}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); upgradeDogFragments(dog.id); }}
+                      disabled={!fragOK}
+                      className="py-1.5 rounded-full font-bold text-[11px]"
+                      style={{
+                        background: fragOK
+                          ? 'linear-gradient(180deg, #c9e4ff, #6da8e8)'
+                          : '#e9f1ff',
+                        color: fragOK ? '#1c4f8a' : '#8aa2c8',
+                        border: '1px solid #5fa0e8',
+                        cursor: fragOK ? 'pointer' : 'not-allowed',
+                      }}
+                      title={fragOK ? `用 ${fragNeed} 碎片升級（剩 ${dog.fragments - fragNeed}）` : `碎片不足（${dog.fragments}/${fragNeed}）`}
+                    >
+                      碎片 {dog.fragments}/{fragNeed}
+                    </button>
+                  </div>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
-                  <div
-                    className="h-full"
-                    style={{
-                      width: `${expProgress}%`,
-                      background: 'linear-gradient(90deg, #2f8df4, #20c7b3)',
-                    }}
-                  />
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         );
       })}
