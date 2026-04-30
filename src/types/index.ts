@@ -366,6 +366,9 @@ export type GameState = {
 
   // 完成案件金幣動畫（純 UI，不持久化）
   pendingCoinBursts: { id: string; projectId: string; reward: number }[];
+
+  // 新手禮包：本局是否已領（重新開局會重置）
+  claimedStarterPack: boolean;
 };
 
 export type LeaderboardEntry = {

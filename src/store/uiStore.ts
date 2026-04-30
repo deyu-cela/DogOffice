@@ -12,6 +12,11 @@ type UIState = {
   showAchievements: boolean;
   openAchievements: () => void;
   closeAchievements: () => void;
+
+  // 新手禮包彈窗
+  showStarterPack: boolean;
+  openStarterPack: () => void;
+  closeStarterPack: () => void;
 };
 
 export const useUiStore = create<UIState>((set, get) => ({
@@ -23,4 +28,8 @@ export const useUiStore = create<UIState>((set, get) => ({
   showAchievements: false,
   openAchievements: () => set({ showAchievements: true }),
   closeAchievements: () => set({ showAchievements: false }),
+
+  showStarterPack: false,
+  openStarterPack: () => set({ showStarterPack: true }),
+  closeStarterPack: () => set({ showStarterPack: false }),
 }));
