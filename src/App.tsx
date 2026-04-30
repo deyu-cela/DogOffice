@@ -28,6 +28,8 @@ import { AchievementToast } from '@/features/achievements/AchievementToast';
 import { CoinBurstOverlay } from '@/components/CoinBurstOverlay';
 import { useUiStore } from '@/store/uiStore';
 import { SvgIcon } from '@/components/SvgIcon';
+import { BgmController, type BgmScene } from '@/components/BgmController';
+import { BgmToggle } from '@/components/BgmToggle';
 
 export default function App() {
   useGameLoop();
@@ -69,6 +71,7 @@ export default function App() {
   const money = useGameStore((s) => s.money);
   const restart = useGameStore((s) => s.restart);
   const showAchievements = useUiStore((s) => s.showAchievements);
+  const bgmScene: BgmScene = showAchievements ? 'memories' : showSplash ? 'splash' : 'office';
 
   return (
     <>
@@ -144,6 +147,8 @@ export default function App() {
       <AchievementToast />
       <CoinBurstOverlay />
       <StudioIntro />
+      <BgmController scene={bgmScene} />
+      <BgmToggle />
 
       {bankrupt && (
         <div className="fixed inset-0 z-[900] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-6">
