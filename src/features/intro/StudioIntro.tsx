@@ -12,6 +12,7 @@ export function StudioIntro() {
   const [phase, setPhase] = useState<Phase>(() =>
     sessionStorage.getItem(SESSION_KEY) === '1' ? 'done' : 'in',
   );
+  const [awaitingGesture, setAwaitingGesture] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   function stopAudio() {
@@ -33,10 +34,19 @@ export function StudioIntro() {
       const audio = new Audio(`${BASE}assets/studio-intro.mp3`);
       audio.volume = SOUND_VOLUME;
       audioRef.current = audio;
-      audio.play().catch(() => {});
-      const raf = requestAnimationFrame(() => setPhase('hold'));
+
+      let advanceTimer: ReturnType<typeof setTimeout> | undefined;
+      audio
+        .play()
+        .then(() => {
+          advanceTimer = setTimeout(() => setPhase('hold'), 0);
+        })
+        .catch(() => {
+          setAwaitingGesture(true);
+        });
+
       return () => {
-        cancelAnimationFrame(raf);
+        if (advanceTimer !== undefined) clearTimeout(advanceTimer);
         stopAudio();
       };
     }
@@ -52,9 +62,21 @@ export function StudioIntro() {
 
   if (phase === 'done') return null;
 
+  function handleClick() {
+    if (phase === 'in' && awaitingGesture) {
+      audioRef.current?.play().catch(() => {});
+      setAwaitingGesture(false);
+      setPhase('hold');
+      return;
+    }
+    if (phase !== 'in') {
+      finish();
+    }
+  }
+
   return (
     <div
-      onClick={finish}
+      onClick={handleClick}
       className="fixed inset-0 z-[2000] flex items-center justify-center cursor-pointer pointer-events-auto"
       style={{
         background: '#ffffff',
@@ -62,6 +84,22 @@ export function StudioIntro() {
         transition: `opacity ${FADE_MS}ms ease`,
       }}
     >
+      <style>{`
+        @keyframes studio-intro-wiggle {
+          0%   { transform: rotate(0deg) scale(1); }
+          8%   { transform: rotate(-5deg) scale(1.06); }
+          20%  { transform: rotate(5deg) scale(1.04); }
+          34%  { transform: rotate(-3deg) scale(1.03); }
+          50%  { transform: rotate(2deg) scale(1.02); }
+          66%  { transform: rotate(-1.5deg) scale(1.01); }
+          82%  { transform: rotate(0.7deg) scale(1.005); }
+          100% { transform: rotate(0deg) scale(1); }
+        }
+        @keyframes studio-intro-hint-pulse {
+          0%, 100% { opacity: 0.45; }
+          50%      { opacity: 0.85; }
+        }
+      `}</style>
       <img
         src={`${BASE}assets/studio-logo.png`}
         alt="畫小餅 Studio"
@@ -71,9 +109,27 @@ export function StudioIntro() {
           height: 'auto',
           opacity: phase === 'hold' ? 1 : 0,
           transition: `opacity ${FADE_MS}ms ease`,
+          animation:
+            phase === 'hold'
+              ? `studio-intro-wiggle 700ms ease-out ${FADE_MS}ms 1 both`
+              : undefined,
+          transformOrigin: 'center',
         }}
         draggable={false}
       />
+      {awaitingGesture && phase === 'in' && (
+        <div
+          className="absolute select-none pointer-events-none text-sm font-bold"
+          style={{
+            bottom: '14%',
+            color: '#5979a6',
+            letterSpacing: '0.08em',
+            animation: 'studio-intro-hint-pulse 1.4s ease-in-out infinite',
+          }}
+        >
+          點任何處啟動 ▶
+        </div>
+      )}
     </div>
   );
 }
