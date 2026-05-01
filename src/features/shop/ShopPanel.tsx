@@ -18,10 +18,10 @@ const ICON_BY_ID: Record<ShopItemEffectKey, SvgIconName> = {
 type CategoryStyle = { label: string; color: string; bg: string };
 
 const CATEGORY_STYLE: Record<ProjectCategory | 'all', CategoryStyle> = {
-  tech: { label: 'tech', color: '#1d5fb8', bg: '#eaf2ff' },
-  design: { label: 'design', color: '#7b61ff', bg: '#f1ebff' },
-  marketing: { label: 'marketing', color: '#f6a63a', bg: '#fff1e0' },
-  service: { label: 'service', color: '#16a77f', bg: '#e9faf2' },
+  tech: { label: '工程', color: '#1d5fb8', bg: '#eaf2ff' },
+  design: { label: '美術', color: '#7b61ff', bg: '#f1ebff' },
+  marketing: { label: '行銷', color: '#f6a63a', bg: '#fff1e0' },
+  service: { label: '客服', color: '#16a77f', bg: '#e9faf2' },
   all: { label: '全員', color: '#5b6b85', bg: '#f3f7ff' },
 };
 
@@ -81,7 +81,7 @@ export function ShopPanel() {
                   border: '1px solid var(--line)',
                 }}
               >
-                {isMax ? '滿級' : `Lv ${level}/${MAX_SHOP_LEVEL}`}
+                {isMax ? '滿級' : `等級 ${level}/${MAX_SHOP_LEVEL}`}
               </span>
             </div>
 
@@ -129,7 +129,7 @@ export function ShopPanel() {
                   ? '此設施已滿級'
                   : level === 0
                     ? `首次購置 $${cost}`
-                    : `升級至 Lv ${level + 1}（成本 $${cost}）`
+                    : `升級至 等級 ${level + 1}（成本 $${cost}）`
               }
             >
               {buttonLabel}

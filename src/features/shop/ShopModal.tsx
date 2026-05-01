@@ -50,7 +50,7 @@ export function ShopModal() {
                 商店
               </h2>
               <p className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
-                每樣設施對應不同職業，提升該 team 的產能。sofa 每日全員回復疲勞。
+                每樣設施對應不同職業，提升該 team 的產能。休息區每日全員回復疲勞。
               </p>
             </div>
           </div>

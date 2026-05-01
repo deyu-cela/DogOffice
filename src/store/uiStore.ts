@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { ShopItemEffectKey } from '@/types';
 
 export type BuildingKind = 'construction';
 
@@ -42,6 +43,11 @@ type UIState = {
   projectDetailId: string | null;
   openProjectDetail: (id: string) => void;
   closeProjectDetail: () => void;
+
+  // 設施資訊浮窗（點擊辦公室裡的設施觸發）
+  facilityInfoId: ShopItemEffectKey | null;
+  openFacilityInfo: (id: ShopItemEffectKey) => void;
+  closeFacilityInfo: () => void;
 };
 
 export const useUiStore = create<UIState>((set, get) => ({
@@ -77,4 +83,8 @@ export const useUiStore = create<UIState>((set, get) => ({
   projectDetailId: null,
   openProjectDetail: (id) => set({ projectDetailId: id }),
   closeProjectDetail: () => set({ projectDetailId: null }),
+
+  facilityInfoId: null,
+  openFacilityInfo: (id) => set({ facilityInfoId: id }),
+  closeFacilityInfo: () => set({ facilityInfoId: null }),
 }));

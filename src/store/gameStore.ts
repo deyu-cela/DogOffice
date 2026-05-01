@@ -267,6 +267,8 @@ const emptyCompanyBuffs: CompanyBuffs = {
   decor: 1,
   categorySpeed: { tech: 0, design: 0, marketing: 0, service: 0 },
   categoryQuality: { tech: 0, design: 0, marketing: 0, service: 0 },
+  patienceBoost: 0,
+  fatigueRecoveryBonus: 0,
 };
 
 // 舊存檔的 companyBuffs 沒有 categorySpeed/Quality，但 purchases 還在
@@ -280,19 +282,33 @@ function rebuildBuffsFromPurchases(
     decor: 1,
     categorySpeed: { tech: 0, design: 0, marketing: 0, service: 0 },
     categoryQuality: { tech: 0, design: 0, marketing: 0, service: 0 },
+    patienceBoost: 0,
+    fatigueRecoveryBonus: 0,
   };
   for (const item of SHOP_ITEMS) {
     const lv = purchases[item.id] ?? 0;
     if (lv <= 0) continue;
     switch (item.id) {
-      case 'desk': buffs.categorySpeed.tech += lv; break;
-      case 'policy': buffs.categoryQuality.tech += lv; break;
-      case 'artwall': buffs.categorySpeed.design += lv; buffs.decor += 2 * lv; break;
-      case 'lamp': buffs.categoryQuality.design += lv; buffs.decor += lv; break;
-      case 'coffee': buffs.categorySpeed.marketing += lv; break;
-      case 'snack': buffs.categoryQuality.marketing += lv; break;
-      case 'toy': buffs.categorySpeed.service += lv; buffs.decor += lv; break;
-      case 'gym': buffs.categoryQuality.service += lv; break;
+      case 'desk': buffs.speedBoost += lv; break;
+      case 'policy':
+        buffs.categoryQuality.tech += lv;
+        buffs.categorySpeed.tech += lv;
+        break;
+      case 'artwall':
+        buffs.categoryQuality.design += lv;
+        buffs.categorySpeed.design += lv;
+        break;
+      case 'lamp': buffs.fatigueRecoveryBonus += lv; break;
+      case 'coffee':
+        buffs.categoryQuality.service += lv;
+        buffs.categorySpeed.service += lv;
+        break;
+      case 'snack':
+        buffs.categoryQuality.marketing += lv;
+        buffs.categorySpeed.marketing += lv;
+        break;
+      case 'toy': /* 暫無作用 */ break;
+      case 'gym': buffs.patienceBoost += lv; break;
       case 'sofa': /* 每日結算讀 purchases.sofa，不寫入 buffs */ break;
     }
   }
@@ -504,12 +520,17 @@ function runAdvanceDay(prev: GameState): GameState {
   const expense = totalSalary + officeCost;
   s.money -= expense;
 
-  // === Phase 3: sofa 休息區每日疲勞回復 ===
+  // === Phase 3: sofa 休息區 + 暖光吊燈每日疲勞回復 ===
   const sofaLv = s.purchases.sofa ?? 0;
-  if (sofaLv > 0 && s.staff.length > 0) {
-    const recover = 3 + sofaLv * 2;
-    s.staff = s.staff.map((d) => ({ ...d, fatigue: clamp(d.fatigue - recover, 0, 100) }));
-    s = pushLog(s, `休息區運作中，全員疲勞 −${recover}。`);
+  const lampBonus = s.companyBuffs.fatigueRecoveryBonus ?? 0;
+  const sofaRecover = sofaLv > 0 ? 3 + sofaLv * 2 : 0;
+  const totalRecover = sofaRecover + lampBonus;
+  if (totalRecover > 0 && s.staff.length > 0) {
+    s.staff = s.staff.map((d) => ({ ...d, fatigue: clamp(d.fatigue - totalRecover, 0, 100) }));
+    const parts: string[] = [];
+    if (sofaRecover > 0) parts.push(`休息區 −${sofaRecover}`);
+    if (lampBonus > 0) parts.push(`暖光吊燈 −${lampBonus}`);
+    s = pushLog(s, `${parts.join('、')}，全員疲勞共 −${totalRecover}。`);
   }
 
   // === Phase 4: 推天數 + 重算 tierBudget ===
@@ -717,39 +738,39 @@ export const useGameStore = create<GameStore>((set, get) => ({
     };
     switch (id) {
       case 'desk':
-        buffs.categorySpeed.tech += 1;
-        next = pushLog(next, '新辦公桌到了，工程師案件速度 +1。');
+        buffs.speedBoost += 1;
+        next = pushLog(next, '新辦公桌到了，全 team 案件速度 +1。');
         break;
       case 'policy':
         buffs.categoryQuality.tech += 1;
-        next = pushLog(next, '流程手冊上線，工程師案件品質 +1。');
+        buffs.categorySpeed.tech += 1;
+        next = pushLog(next, '流程手冊上線，工程師專業 +1、速度 +1。');
         break;
       case 'artwall':
+        buffs.categoryQuality.design += 1;
         buffs.categorySpeed.design += 1;
-        buffs.decor += 2;
-        next = pushLog(next, '品牌展示牆完成，設計案件速度 +1（稀有度預算 +8）。');
+        next = pushLog(next, '品牌展示牆完成，美術專業 +1、速度 +1。');
         break;
       case 'lamp':
-        buffs.categoryQuality.design += 1;
-        buffs.decor += 1;
-        next = pushLog(next, '暖光吊燈裝上，設計案件品質 +1。');
+        buffs.fatigueRecoveryBonus += 1;
+        next = pushLog(next, '暖光吊燈裝上，每日疲勞恢復 +1。');
         break;
       case 'coffee':
-        buffs.categorySpeed.marketing += 1;
-        next = pushLog(next, '精品咖啡機上線，行銷案件速度 +1。');
+        buffs.categoryQuality.service += 1;
+        buffs.categorySpeed.service += 1;
+        next = pushLog(next, '精品咖啡機上線，客服專業 +1、速度 +1。');
         break;
       case 'snack':
         buffs.categoryQuality.marketing += 1;
-        next = pushLog(next, '高級零食備好，行銷案件品質 +1。');
+        buffs.categorySpeed.marketing += 1;
+        next = pushLog(next, '高級零食備好，行銷專業 +1、速度 +1。');
         break;
       case 'toy':
-        buffs.categorySpeed.service += 1;
-        buffs.decor += 1;
-        next = pushLog(next, '狗狗玩具區啟用，客服案件速度 +1。');
+        next = pushLog(next, '狗狗玩具區啟用，狗狗們很開心。');
         break;
       case 'gym':
-        buffs.categoryQuality.service += 1;
-        next = pushLog(next, '狗狗健身區開放，客服案件品質 +1。');
+        buffs.patienceBoost += 1;
+        next = pushLog(next, '狗狗健身區開放，全員耐心 +1。');
         break;
       case 'sofa': {
         const lv = currentLevel + 1;

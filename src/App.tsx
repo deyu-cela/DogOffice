@@ -11,6 +11,7 @@ import { Tutorial } from '@/features/tutorial/Tutorial';
 import { ConflictModal } from '@/features/save/ConflictModal';
 import { OfficeScene } from '@/features/office/OfficeScene';
 import { BuildingDrawer } from '@/features/office/BuildingDrawer';
+import { FacilityInfoPopup } from '@/features/office/FacilityInfoPopup';
 import { MoneyDayCluster } from '@/features/hud/MoneyDayCluster';
 import { TopRightButtons } from '@/features/hud/TopRightButtons';
 import { StatBars } from '@/features/hud/StatBars';
@@ -93,10 +94,10 @@ export default function App() {
 
   return (
     <>
-      {/* 主容器：iso 視野 + 100px 邊距，封頂 1200 */}
+      {/* 主容器：iso 視野（26:21）+ 100px 邊距，封頂 1600；不超過視窗寬 */}
       <div
         className="relative mx-auto h-screen overflow-hidden"
-        style={{ width: 'min(calc(100vh * 22 / 18 + 100px), 1200px)' }}
+        style={{ width: 'min(100vw, calc(100vh * 26 / 21 + 100px), 1600px)' }}
       >
         {/* 工作室背景 */}
         <div className="absolute inset-0 overflow-hidden">
@@ -123,6 +124,7 @@ export default function App() {
       {teamModalOpen && <TeamEditModal onClose={closeTeamModal} />}
       <GachaModal />
       <ShopModal />
+      <FacilityInfoPopup />
       {projectDetailId && (
         <ProjectDetailModal projectId={projectDetailId} onClose={closeProjectDetail} />
       )}

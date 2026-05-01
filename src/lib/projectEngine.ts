@@ -80,7 +80,7 @@ function bargainMulFor(assignedDogs: Dog[]): number {
 
 // === 每日疲勞變化（納入 patience）===
 // 基礎 +10/天，patience 每 1 點減 0.5 累積；patience 10 → +5/天，patience 0 → +10/天
-function applyDailyFatigue(staff: Dog[]): Dog[] {
+function applyDailyFatigue(staff: Dog[], patienceBoost: number = 0): Dog[] {
   return staff.map((d) => {
     const wasAssigned = !!d.assignedProjectId;
     let nextFatigue = d.fatigue;
@@ -90,7 +90,8 @@ function applyDailyFatigue(staff: Dog[]): Dog[] {
       } else {
         const gradeMul = d.grade === 'S' ? 0.7 : d.grade === 'A' ? 0.85 : 1.0;
         const traitMul = getDogFatigueAccumMul(d);
-        const patienceFactor = Math.max(2, 10 - d.stats.patience * 0.5);
+        const effPatience = d.stats.patience + patienceBoost;
+        const patienceFactor = Math.max(2, 10 - effPatience * 0.5);
         nextFatigue = clamp(
           Math.round(d.fatigue + patienceFactor * gradeMul * traitMul),
           0,
@@ -245,7 +246,8 @@ export function simulateProjectDays(
       } else {
         const gradeMul = d.grade === 'S' ? 0.7 : d.grade === 'A' ? 0.85 : 1.0;
         const traitMul = getDogFatigueAccumMul(d);
-        const patienceFactor = Math.max(2, 10 - d.stats.patience * 0.5);
+        const effPatience = d.stats.patience + (buffs.patienceBoost ?? 0);
+        const patienceFactor = Math.max(2, 10 - effPatience * 0.5);
         nextFatigue = clamp(d.fatigue + patienceFactor * gradeMul * traitMul, 0, 100);
       }
       return { ...d, fatigue: nextFatigue };
@@ -311,7 +313,7 @@ export function runProjectsDay(state: GameState): DayResult {
   };
 
   // 1. 每日 fatigue / loyalty
-  s.staff = applyDailyFatigue(s.staff);
+  s.staff = applyDailyFatigue(s.staff, s.companyBuffs.patienceBoost ?? 0);
   s.staff = applyDailyLoyalty(s.staff);
   s.staff = s.staff.map((d) =>
     d.onLeaveDay != null && d.onLeaveDay < s.day ? { ...d, onLeaveDay: null } : d,

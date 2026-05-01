@@ -16,7 +16,7 @@ function upgradeBenefits(curLv: number): string[] {
   if (nextBonus > curBonus) benefits.push(`稀有度 +${nextBonus - curBonus}`);
   const curCap = OFFICE_TIER_CAP[curLv] ?? 3;
   const nextCap = OFFICE_TIER_CAP[next] ?? 3;
-  if (nextCap > curCap) benefits.push(`解鎖 tier${nextCap} 案件`);
+  if (nextCap > curCap) benefits.push(`解鎖 ${nextCap} 級案件`);
   if (next === 3) benefits.push('達成 IPO 條件之一');
   return benefits;
 }
@@ -39,10 +39,10 @@ export function ConstructionPanel() {
       >
         <div className="flex items-center gap-2 text-sm font-bold" style={{ color: '#173b78' }}>
           <SvgIcon name="office" size={20} />
-          <span>目前辦公室：{curLv.name}（Lv.{officeLevel + 1}）</span>
+          <span>目前辦公室：{curLv.name}（等級 {officeLevel + 1}）</span>
         </div>
         <div className="text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
-          員工上限 {curLv.maxStaff}・稀有度加成 +{OFFICE_TIER_BONUS[officeLevel] ?? 0}・最高 tier{OFFICE_TIER_CAP[officeLevel] ?? 3} 案件
+          員工上限 {curLv.maxStaff}・稀有度加成 +{OFFICE_TIER_BONUS[officeLevel] ?? 0}・最高 {OFFICE_TIER_CAP[officeLevel] ?? 3} 級案件
         </div>
       </div>
 

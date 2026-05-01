@@ -229,10 +229,10 @@ function ResponsiveCameraZoom({ containerRef }: { containerRef: React.RefObject<
     const update = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
-      // 房間 17 units、iso 視角實際對角約 22 寬 × 18 高，留一點 margin
-      const fitW = w / 22;
-      const fitH = h / 18;
-      const next = Math.min(46, Math.max(14, Math.min(fitW, fitH)));
+      // 房間 17 units + 周邊建築，iso 視角實際對角約 26 寬 × 21 高
+      const fitW = w / 26;
+      const fitH = h / 21;
+      const next = Math.min(70, Math.max(14, Math.min(fitW, fitH)));
       // 任一型 camera 都有 zoom（perspective 也支援）
       const cam = camera as unknown as { zoom: number; updateProjectionMatrix: () => void };
       if (Math.abs(cam.zoom - next) > 0.5) {
@@ -450,6 +450,7 @@ export function ThreeRoom() {
 
 function PurchaseArea3D() {
   const purchases = useGameStore((s) => s.purchases);
+  const openFacilityInfo = useUiStore((s) => s.openFacilityInfo);
 
   return (
     <>
@@ -466,6 +467,10 @@ function PurchaseArea3D() {
             h={item.h}
             yOffset={item.yOffset ?? 0}
             shadow={false}
+            onClick={(e) => {
+              e.stopPropagation();
+              openFacilityInfo(item.id);
+            }}
           />
         );
       })}
@@ -562,6 +567,7 @@ function CeilingBars() {
 
 function WallPolicy3D() {
   const count = useGameStore((s) => s.purchases.policy ?? 0);
+  const openFacilityInfo = useUiStore((s) => s.openFacilityInfo);
   const texture = usePixelTexture(JP_ASSETS.policyWall);
   if (count === 0) return null;
   // 貼在左牆（normal +X），放在背後區（z=-3），高度約一人半
@@ -569,6 +575,17 @@ function WallPolicy3D() {
     <mesh
       position={[-HALF + 0.04, WALL_H * 0.55, -3]}
       rotation={[0, Math.PI / 2, 0]}
+      onClick={(e) => {
+        e.stopPropagation();
+        openFacilityInfo('policy');
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto';
+      }}
     >
       <planeGeometry args={[1.3, 1.8]} />
       <meshBasicMaterial map={texture} transparent alphaTest={0.1} side={DoubleSide} />
@@ -1617,6 +1634,7 @@ function FurnitureSprite({
   h,
   yOffset = 0,
   shadow = true,
+  onClick,
 }: {
   src: string;
   gx: number;
@@ -1625,9 +1643,21 @@ function FurnitureSprite({
   h: number;
   yOffset?: number;
   shadow?: boolean;
+  onClick?: (e: ThreeEvent<MouseEvent>) => void;
 }) {
   const texture = usePixelTexture(src);
   const [x, , z] = gridToWorld(gx, gy);
+  const handlePointerOver = onClick
+    ? (e: ThreeEvent<PointerEvent>) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }
+    : undefined;
+  const handlePointerOut = onClick
+    ? () => {
+        document.body.style.cursor = 'auto';
+      }
+    : undefined;
   return (
     <>
       {/* 陰影暫時關閉 */}
@@ -1637,6 +1667,9 @@ function FurnitureSprite({
       <mesh
         position={[x, h / 2 + yOffset - SPRITE_Y_COMPENSATION, z]}
         rotation={[0, FACING_Y, 0]}
+        onClick={onClick}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
       >
         <planeGeometry args={[w, h]} />
         <meshBasicMaterial map={texture} transparent alphaTest={0.1} side={DoubleSide} />
@@ -1773,12 +1806,6 @@ const SRC_MAP: Record<TileBuildingKind, string> = {
   hr: JP_ASSETS.hrOffice,
 };
 
-const BUILDING_LABEL: Record<TileBuildingKind, string> = {
-  shop: '商店',
-  dorm: '員工',
-  hr: '招募',
-};
-
 function Building3D({
   kind,
   gx,
@@ -1859,22 +1886,6 @@ function Building3D({
           </mesh>
         </Billboard>
       )}
-      <Html position={[0, -0.05 + yOffset, 0]} center zIndexRange={[10, 0]}>
-        <div
-          onClick={triggerOpen}
-          className="px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap select-none"
-          style={{
-            cursor: 'pointer',
-            pointerEvents: 'auto',
-            background: 'rgba(255,255,255,0.95)',
-            border: '1px solid #cfe1f7',
-            color: '#1c63c8',
-            boxShadow: '0 2px 6px rgba(46,104,180,0.18)',
-          }}
-        >
-          {BUILDING_LABEL[kind]}
-        </div>
-      </Html>
     </group>
   );
 }

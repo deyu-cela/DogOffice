@@ -16,6 +16,7 @@ const ICON_BTN_STYLE: React.CSSProperties = {
 export function TopRightButtons() {
   const authedUser = useAuthStore((s) => s.user);
   const openSkinModal = useUiStore((s) => s.openSkinModal);
+  const openAchievements = useUiStore((s) => s.openAchievements);
   const [lbOpen, setLbOpen] = useState(false);
 
   return (
@@ -30,6 +31,17 @@ export function TopRightButtons() {
           aria-label="排行榜"
         >
           <SvgIcon name="trophy" size={24} />
+        </button>
+
+        <button
+          type="button"
+          onClick={openAchievements}
+          className="bx-chip bx-shine bx-fade-up pointer-events-auto grid place-items-center rounded-xl"
+          style={{ ...ICON_BTN_STYLE, animationDelay: '30ms', fontSize: 22, lineHeight: 1 }}
+          title="成就 CG 收藏"
+          aria-label="成就 CG 收藏"
+        >
+          <span aria-hidden="true">🖼️</span>
         </button>
 
         <button

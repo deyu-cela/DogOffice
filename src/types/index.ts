@@ -299,6 +299,8 @@ export type CompanyBuffs = {
   decor: number;
   categorySpeed: Record<ProjectCategory, number>;
   categoryQuality: Record<ProjectCategory, number>;
+  patienceBoost: number;
+  fatigueRecoveryBonus: number;
 };
 
 export const ZERO_CATEGORY_MAP: Record<ProjectCategory, number> = {

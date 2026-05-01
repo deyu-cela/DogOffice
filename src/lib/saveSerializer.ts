@@ -12,6 +12,8 @@ const defaultCompanyBuffs: CompanyBuffs = {
   decor: 1,
   categorySpeed: { tech: 0, design: 0, marketing: 0, service: 0 },
   categoryQuality: { tech: 0, design: 0, marketing: 0, service: 0 },
+  patienceBoost: 0,
+  fatigueRecoveryBonus: 0,
 };
 
 function normalizeCompanyBuffs(raw: unknown): CompanyBuffs {
@@ -37,6 +39,8 @@ function normalizeCompanyBuffs(raw: unknown): CompanyBuffs {
       marketing: num(cq.marketing, 0),
       service: num(cq.service, 0),
     },
+    patienceBoost: num(r.patienceBoost, 0),
+    fatigueRecoveryBonus: num(r.fatigueRecoveryBonus, 0),
   };
 }
 
