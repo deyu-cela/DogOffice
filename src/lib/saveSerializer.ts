@@ -100,6 +100,7 @@ export function serialize(state: GameState): GameSaveData {
     unlockedAchievementIds: [...state.unlockedAchievementIds],
     teams: state.teams,
     claimedStarterPack: state.claimedStarterPack,
+    specialTasks: state.specialTasks,
   };
 }
 
@@ -193,6 +194,7 @@ export function deserialize(raw: unknown): GameSaveData | null {
       : [],
     teams: d.teams,
     claimedStarterPack: d.claimedStarterPack === true,
+    specialTasks: d.specialTasks && typeof d.specialTasks === 'object' ? d.specialTasks : undefined,
   };
 }
 

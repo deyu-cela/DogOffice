@@ -5,6 +5,7 @@ import type {
   Project,
   ProjectCategory,
   ShopItemEffectKey,
+  SpecialTask,
   Team,
 } from './index';
 
@@ -51,6 +52,9 @@ export type GameSaveData = {
 
   // 新手禮包：本局是否已領
   claimedStarterPack?: boolean;
+
+  // 特殊任務進度（v5+；舊存檔載入時依 officeLevel 重建）
+  specialTasks?: Record<number, SpecialTask>;
 };
 
 export type SavePayload = {
