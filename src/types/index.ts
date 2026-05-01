@@ -239,30 +239,7 @@ export type MemoryGameState = {
   timeLeft: number;
 };
 
-export type CrisisHitFx = {
-  id: number;
-  side: 'monster' | 'ceo';
-  damage: number;
-  bornAt: number;
-};
-
-export type CrisisGameState = {
-  type: 'crisis';
-  ceoHp: number;
-  ceoMaxHp: number;
-  ceoAtk: number;
-  ceoInterval: number;
-  monsterAtk: number;
-  monsterInterval: number;
-  ceoTimer: number;
-  monsterTimer: number;
-  totalDamage: number;
-  teamSize: number;
-  ended: boolean;
-  hitFx: CrisisHitFx[];
-};
-
-export type MiniGameState = FrisbeeGameState | MemoryGameState | CrisisGameState;
+export type MiniGameState = FrisbeeGameState | MemoryGameState;
 
 export type TrainingSession = {
   question: TrainingQuestion;
@@ -399,19 +376,38 @@ export type GameState = {
 
   // 新手禮包：本局是否已領（重新開局會重置）
   claimedStarterPack: boolean;
+
+  // 辦公室升級特殊任務（key = targetLevel 1..4）
+  specialTasks: Record<number, SpecialTask>;
+
+  // 達到最高等級辦公室時觸發排行榜上傳 modal（純 UI，不持久化）
+  leaderboardSubmitModal: LeaderboardSubmitModal | null;
+};
+
+// === 辦公室升級特殊任務 ===
+export type SpecialTaskStatus = 'locked' | 'available' | 'inProgress' | 'completed';
+
+export type SpecialTask = {
+  targetLevel: number;        // 1..4 (升到此等級)
+  name: string;
+  baseDays: number;           // 10 / 20 / 40 / 80（基準員工等級下需要的天數）
+  workRequired: number;       // 啟動時計算後鎖定 = baseDays × baseline_per_dog × maxStaff
+  workDone: number;           // 累積工時，每日 += 當前 team 綜合能力
+  status: SpecialTaskStatus;
 };
 
 export type LeaderboardEntry = {
-  damage: number;       // 對金融海嘯造成的總傷害（分數）
-  teamSize: number;     // 戰鬥時隊伍裡狗狗的數量
+  days: number;        // 達到最高等級辦公室時的天數（主排序，少→前）
+  money: number;       // 達成當下的現金
+  staffCount: number;  // 達成當下的員工數
   date: string;
   nickname?: string;
-  days?: number;
-  money?: number;
-  goal?: number;
-  officeLevel?: number;
-  staffCount?: number;
-  projectsCompleted?: number;
+};
+
+export type LeaderboardSubmitModal = {
+  days: number;
+  money: number;
+  staffCount: number;
 };
 
 // === 化學反應快取記錄（保留結構給 UI 顯示用，不是觸發狀態）===

@@ -2,19 +2,13 @@ import type { LeaderboardEntry } from '@/types';
 import { apiFetch, ApiError, NetworkError, TimeoutError } from './api';
 
 // ---- 後端資料模型 ----
-// 後端尚未 migrate 到新 schema，欄位都標 optional 防 undefined 噴
 type ServerEntry = {
   id?: number;
   user_id?: number;
   nickname?: string;
-  damage?: number;
-  team_size?: number;
   days?: number;
   money?: number;
-  goal?: number;
-  office_level?: number;
   staff_count?: number;
-  projects_completed?: number;
   submitted_at?: string;
 };
 
@@ -31,8 +25,10 @@ type ListResponse = {
 type SubmitResponse = { id: number; rank: number; total: number };
 
 export type SubmitPayload = {
-  damage: number;
-  team_size: number;
+  days: number;
+  money: number;
+  staff_count: number;
+  nickname?: string;
 };
 
 export type MyBestResult = {
@@ -42,22 +38,17 @@ export type MyBestResult = {
 
 function toClient(e: ServerEntry): LeaderboardEntry {
   return {
-    damage: typeof e.damage === 'number' ? e.damage : 0,
-    teamSize: typeof e.team_size === 'number' ? e.team_size : 0,
-    days: typeof e.days === 'number' ? e.days : undefined,
-    money: typeof e.money === 'number' ? e.money : undefined,
-    goal: typeof e.goal === 'number' ? e.goal : undefined,
-    officeLevel: typeof e.office_level === 'number' ? e.office_level : undefined,
-    staffCount: typeof e.staff_count === 'number' ? e.staff_count : undefined,
-    projectsCompleted: typeof e.projects_completed === 'number' ? e.projects_completed : undefined,
+    days: typeof e.days === 'number' ? e.days : 0,
+    money: typeof e.money === 'number' ? e.money : 0,
+    staffCount: typeof e.staff_count === 'number' ? e.staff_count : 0,
     date: e.submitted_at ?? new Date().toISOString(),
     nickname: e.nickname,
   };
 }
 
 function isValidEntry(e: LeaderboardEntry): boolean {
-  // 過濾掉舊 schema 殘留：沒有 damage 的條目不顯示
-  return e.damage > 0;
+  // 過濾掉舊 schema 殘留：沒有 days 的條目不顯示
+  return e.days > 0;
 }
 
 export async function fetchLeaderboard(
@@ -66,7 +57,7 @@ export async function fetchLeaderboard(
 ): Promise<{ entries: LeaderboardEntry[]; myBest: MyBestResult | null }> {
   const qs = new URLSearchParams({ limit: String(limit) }).toString();
   const res = await apiFetch<ListResponse>(`/leaderboard?${qs}`, { auth: withAuth });
-  const entries = (res.entries ?? []).map(toClient).filter(isValidEntry);
+  const entries = (res.entries ?? []).map(toClient).filter(isValidEntry).sort(compareEntries);
   const myBestEntry = res.me ? toClient(res.me.entry) : null;
   const myBest = myBestEntry && isValidEntry(myBestEntry)
     ? { rank: res.me!.rank, entry: myBestEntry }
@@ -85,7 +76,7 @@ export function isIgnorableApiError(err: unknown): boolean {
 }
 
 // ---- 本機紀錄 ----
-const LB_KEY = 'dogoffice_crisis_v1';
+const LB_KEY = 'dogoffice_office_v1';
 const LB_KEEP_TOP = 20;
 
 export function loadLocal(): LeaderboardEntry[] {
@@ -94,7 +85,7 @@ export function loadLocal(): LeaderboardEntry[] {
     const raw = localStorage.getItem(LB_KEY);
     if (!raw) return [];
     const arr = JSON.parse(raw) as LeaderboardEntry[];
-    return Array.isArray(arr) ? arr : [];
+    return Array.isArray(arr) ? arr.filter(isValidEntry) : [];
   } catch {
     return [];
   }
@@ -124,5 +115,7 @@ export function bestLocal(entries: LeaderboardEntry[]): LeaderboardEntry | null 
 }
 
 function compareEntries(a: LeaderboardEntry, b: LeaderboardEntry): number {
-  return b.damage - a.damage || b.teamSize - a.teamSize;
+  return a.days - b.days
+    || b.money - a.money
+    || a.staffCount - b.staffCount;
 }

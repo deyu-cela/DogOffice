@@ -12,19 +12,20 @@ import type {
   TrainingSession,
 } from '@/types';
 import {
-  saveLocalEntry as saveCrisisEntryLocal,
+  saveLocalEntry,
   submitLeaderboard,
   isIgnorableApiError,
 } from '@/lib/leaderboardApi';
-import {
-  computeCeoStats,
-  MONSTER_ATK,
-  MONSTER_INTERVAL,
-} from '@/features/leaderboard/crisisFormulas';
 import type { GameSaveData } from '@/types/save';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { TRAINING_QUESTIONS } from '@/constants/questions';
 import { SHOP_ITEMS } from '@/constants/shopItems';
+import {
+  SPECIAL_TASK_NAMES,
+  createInitialSpecialTasks,
+  specialTaskWorkRequired,
+} from '@/constants/specialTasks';
+import type { SpecialTask } from '@/types';
 import { pickTraitChoices } from '@/constants/dogTraits';
 import { clamp, nextDogId, nextTreatId, rand } from '@/lib/utils';
 import { ensureQueueLength, generateCandidate } from '@/lib/candidateGen';
@@ -205,10 +206,8 @@ type Actions = {
   flipMemoryCard: (id: number) => void;
   finishMemory: () => void;
 
-  openCrisisBattle: () => void;
-  crisisTick: (dt: number) => void;
-  finishCrisis: (nickname?: string) => Promise<LeaderboardEntry | null>;
-  closeCrisis: () => void;
+  submitOfficeRecord: (nickname?: string) => Promise<LeaderboardEntry | null>;
+  closeLeaderboardSubmit: () => void;
 
   openTraining: () => void;
   answerTraining: (optionIndex: number) => void;
@@ -257,6 +256,9 @@ type Actions = {
 
   // === 新手禮包 ===
   claimStarterPack: () => void;
+
+  // === 特殊任務 ===
+  startSpecialTask: (targetLevel: number) => void;
 };
 
 export type GameStore = GameState & Actions;
@@ -372,7 +374,85 @@ const initialState: GameState = {
   pendingCoinBursts: [],
 
   claimedStarterPack: false,
+  specialTasks: createInitialSpecialTasks(0),
+  leaderboardSubmitModal: null,
 };
+
+// === 員工綜合能力（特殊任務用）===
+export function dogAbility(d: Dog): number {
+  const s = d.stats ?? { speed: 0, quality: 0, patience: 0 };
+  const speed = Number.isFinite(s.speed) ? s.speed : 0;
+  const quality = Number.isFinite(s.quality) ? s.quality : 0;
+  const patience = Number.isFinite(s.patience) ? s.patience : 0;
+  const lv = Number.isFinite(d.level) ? d.level : 1;
+  return speed * 0.4 + quality * 0.4 + patience * 0.2 + (lv - 1) * 0.5;
+}
+
+// 所有放在 team 裡的員工，綜合能力總和（不論 team open/close）
+export function teamTotalAbility(state: GameState): number {
+  const ids = new Set<string>();
+  for (const team of Object.values(state.teams)) {
+    for (const id of team.memberIds) ids.add(id);
+  }
+  let sum = 0;
+  for (const dog of state.staff) {
+    if (ids.has(dog.id)) sum += dogAbility(dog);
+  }
+  return sum;
+}
+
+// 載入存檔時把 specialTasks 整理成新欄位（workRequired/workDone）
+// 舊存檔可能有 requiredDays/daysElapsed，或欄位 undefined → 一律補 0 並依 officeLevel 校正狀態
+export function sanitizeSpecialTasks(
+  raw: unknown,
+  officeLevel: number,
+): Record<number, SpecialTask> {
+  const tasks = createInitialSpecialTasks(officeLevel);
+  if (!raw || typeof raw !== 'object') return tasks;
+  const src = raw as Record<string, unknown>;
+  for (const key of Object.keys(tasks)) {
+    const lv = Number(key);
+    const t = src[key] as Partial<SpecialTask> | undefined;
+    if (!t || typeof t !== 'object') continue;
+    const num = (v: unknown): number =>
+      typeof v === 'number' && Number.isFinite(v) ? v : 0;
+    const status: SpecialTask['status'] =
+      t.status === 'completed' || t.status === 'inProgress' || t.status === 'available' || t.status === 'locked'
+        ? t.status
+        : tasks[lv].status;
+    let normalizedStatus = status;
+    const wr = num(t.workRequired);
+    // inProgress 但 workRequired 缺失（舊存檔或損毀）→ 退回 available 讓玩家重啟
+    if (normalizedStatus === 'inProgress' && wr <= 0) normalizedStatus = 'available';
+    tasks[lv] = {
+      ...tasks[lv],
+      workRequired: wr,
+      workDone: num(t.workDone),
+      status: normalizedStatus,
+    };
+    // 已升過該等級 → 強制視為已完成
+    if (lv <= officeLevel) tasks[lv].status = 'completed';
+  }
+  return tasks;
+}
+
+// 預估剩餘天數（純顯示用，不影響完成判定）
+export function estimateSpecialTaskRemainingDays(
+  state: GameState,
+  targetLevel: number,
+): number {
+  const t = state.specialTasks?.[targetLevel];
+  if (!t) return 0;
+  const required = Number.isFinite(t.workRequired) ? t.workRequired : 0;
+  const done = Number.isFinite(t.workDone) ? t.workDone : 0;
+  if (required <= 0) return 0;
+  const remain = Math.max(0, required - done);
+  if (remain === 0) return 0;
+  const rawAbility = teamTotalAbility(state);
+  const ability = Number.isFinite(rawAbility) ? rawAbility : 0;
+  if (ability <= 0) return Infinity;
+  return Math.max(1, Math.ceil(remain / ability));
+}
 
 // === 排行榜（金融海嘯傷害榜）localStorage 邏輯放 src/lib/leaderboardApi.ts ===
 
@@ -510,6 +590,31 @@ function runAdvanceDay(prev: GameState): GameState {
   }
   if (dayResult.toast && !s.toast) s.toast = dayResult.toast;
   const projSummary = dayResult.summary;
+
+  // === Phase 1.5: 推進進行中的特殊任務（每日累積當前 team 綜合能力） ===
+  {
+    const tasks = { ...s.specialTasks };
+    let changed = false;
+    const rawAbility = teamTotalAbility(s);
+    const ability = Number.isFinite(rawAbility) ? Math.max(0, rawAbility) : 0;
+    for (const key of Object.keys(tasks)) {
+      const lv = Number(key);
+      const t = tasks[lv];
+      if (!t || t.status !== 'inProgress') continue;
+      const required = Number.isFinite(t.workRequired) && t.workRequired > 0 ? t.workRequired : 0;
+      const prevDone = Number.isFinite(t.workDone) ? t.workDone : 0;
+      if (required <= 0) continue;
+      const workDone = prevDone + ability;
+      if (workDone >= required) {
+        tasks[lv] = { ...t, workRequired: required, workDone: required, status: 'completed' };
+        s = pushLog(s, `✨ 特殊任務完成：${t.name}！可前往商店升級辦公室。`);
+      } else {
+        tasks[lv] = { ...t, workRequired: required, workDone };
+      }
+      changed = true;
+    }
+    if (changed) s.specialTasks = tasks;
+  }
 
   // === Phase 2: 員工底薪 + 辦公室固定費 ===
   // 只付有在工作（指派到案件）的狗的薪水；沒接案的不算成本
@@ -787,17 +892,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const s = get();
     const nextLevel = s.officeLevel + 1;
     if (nextLevel >= OFFICE_LEVELS.length) return;
+    const task = s.specialTasks[nextLevel];
+    if (!task || task.status !== 'completed') return;  // 必須先完成特殊任務
     const cost = OFFICE_LEVELS[nextLevel].upgradeCost;
     if (s.money < cost) return;
+    // 升級後解鎖下一級任務（從 locked → available）
+    const newSpecialTasks = { ...s.specialTasks };
+    const followUp = newSpecialTasks[nextLevel + 1];
+    if (followUp && followUp.status === 'locked') {
+      newSpecialTasks[nextLevel + 1] = { ...followUp, status: 'available' };
+    }
     // 升級後自動切到新造型（玩家可在「換造型」面板切回舊的）
     let next: GameState = {
       ...s,
       officeLevel: nextLevel,
       officeSkin: nextLevel,
       money: s.money - cost,
+      specialTasks: newSpecialTasks,
     };
     next = pushLog(next, `辦公室升級為「${OFFICE_LEVELS[nextLevel].name}」！`);
     next.tierBudget = recomputeTierBudget(next);
+    // 達到最高等級辦公室 → 觸發排行榜上傳 modal
+    if (nextLevel === OFFICE_LEVELS.length - 1) {
+      next.leaderboardSubmitModal = {
+        days: next.day,
+        money: next.money,
+        staffCount: next.staff.length,
+      };
+    }
     set(next as Partial<GameStore>);
     get().checkAchievements('office_upgrade');
   },
@@ -1189,86 +1311,35 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set(next as Partial<GameStore>);
   },
 
-  openCrisisBattle: () => {
+  submitOfficeRecord: async (nickname) => {
     const s = get();
-    if (s.miniGame || s.trainingSession) return;
-    const stats = computeCeoStats(s.staff, s.teams);
-    if (stats.hp <= 0) return;
-    set({
-      miniGame: {
-        type: 'crisis',
-        ceoHp: stats.hp,
-        ceoMaxHp: stats.hp,
-        ceoAtk: stats.atk,
-        ceoInterval: stats.interval,
-        monsterAtk: MONSTER_ATK,
-        monsterInterval: MONSTER_INTERVAL,
-        ceoTimer: 0,
-        monsterTimer: 0,
-        totalDamage: 0,
-        teamSize: stats.teamSize,
-        ended: false,
-        hitFx: [],
-      },
-    });
-  },
-
-  crisisTick: (dt) => {
-    const s = get();
-    if (!s.miniGame || s.miniGame.type !== 'crisis' || s.miniGame.ended) return;
-    const mg = { ...s.miniGame };
-    const now = performance.now();
-
-    let hitFx = mg.hitFx.filter((fx) => now - fx.bornAt < 700);
-
-    mg.ceoTimer += dt;
-    if (mg.ceoTimer >= mg.ceoInterval) {
-      mg.ceoTimer -= mg.ceoInterval;
-      mg.totalDamage += mg.ceoAtk;
-      hitFx = [...hitFx, { id: nextTreatId(), side: 'monster', damage: mg.ceoAtk, bornAt: now }];
-    }
-
-    mg.monsterTimer += dt;
-    if (mg.monsterTimer >= mg.monsterInterval) {
-      mg.monsterTimer -= mg.monsterInterval;
-      mg.ceoHp = Math.max(0, mg.ceoHp - mg.monsterAtk);
-      hitFx = [...hitFx, { id: nextTreatId(), side: 'ceo', damage: mg.monsterAtk, bornAt: now }];
-      if (mg.ceoHp <= 0) mg.ended = true;
-    }
-
-    mg.hitFx = hitFx;
-    set({ miniGame: mg });
-  },
-
-  finishCrisis: async (nickname) => {
-    const s = get();
-    if (!s.miniGame || s.miniGame.type !== 'crisis') return null;
-    const mg = s.miniGame;
+    const snap = s.leaderboardSubmitModal;
+    if (!snap) return null;
     const entry: LeaderboardEntry = {
-      damage: Math.floor(mg.totalDamage),
-      teamSize: mg.teamSize,
+      days: snap.days,
+      money: snap.money,
+      staffCount: snap.staffCount,
       date: new Date().toISOString(),
       nickname: nickname || undefined,
     };
-    saveCrisisEntryLocal(entry);
+    saveLocalEntry(entry);
+    set({ leaderboardSubmitModal: null });
     try {
       await submitLeaderboard({
-        damage: entry.damage,
-        team_size: entry.teamSize,
+        days: entry.days,
+        money: entry.money,
+        staff_count: entry.staffCount,
+        nickname: entry.nickname,
       });
     } catch (err) {
       if (!isIgnorableApiError(err)) {
-        console.warn('[crisis-leaderboard] submit failed:', err);
+        console.warn('[office-leaderboard] submit failed:', err);
       }
     }
     return entry;
   },
 
-  closeCrisis: () => {
-    const s = get();
-    if (!s.miniGame || s.miniGame.type !== 'crisis') return;
-    set({ miniGame: null });
-  },
+  closeLeaderboardSubmit: () => set({ leaderboardSubmitModal: null }),
 
   openTraining: () => {
     const s = get();
@@ -1357,6 +1428,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       candidatePatience: first?.patience ?? 0,
       log: [{ day: 1, msg: '公司剛開張，先去人資招員工，才能接案賺錢！' }],
       showSplash: s.showSplash,
+      specialTasks: createInitialSpecialTasks(0),
     }));
   },
 
@@ -1413,6 +1485,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       unlockedAchievementIds: data.unlockedAchievementIds ?? [],
       pendingAchievementToasts: [],
       claimedStarterPack: data.claimedStarterPack ?? false,
+      specialTasks: sanitizeSpecialTasks(data.specialTasks, data.officeLevel ?? 0),
+      leaderboardSubmitModal: null,
     });
     // 舊存檔（沒有 unlockedAchievementIds 欄位）載入後，
     // 對已達條件的成就靜默補頒，不噴 toast。
@@ -1438,6 +1512,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       log: [{ day: 1, msg: '公司剛開張，先去人資招員工，才能接案賺錢！' }],
       showSplash: false,
       tutorialStep: 7,
+      specialTasks: createInitialSpecialTasks(0),
     }));
   },
 
@@ -1815,6 +1890,30 @@ export const useGameStore = create<GameStore>((set, get) => ({
     };
     next = pushLog(next, ` 開局禮包到貨：${dog.name}（CEO）加入了！0 元薪水、永不抱怨。`);
     next.tierBudget = recomputeTierBudget(next);
+    set(next as Partial<GameStore>);
+  },
+
+  startSpecialTask: (targetLevel) => {
+    const s = get();
+    const task = s.specialTasks[targetLevel];
+    if (!task || task.status !== 'available') return;
+    if (targetLevel !== s.officeLevel + 1) return;
+    const maxStaff = OFFICE_LEVELS[s.officeLevel].maxStaff;
+    const workRequired = specialTaskWorkRequired(targetLevel, maxStaff);
+    const updated: SpecialTask = {
+      ...task,
+      workRequired,
+      workDone: 0,
+      status: 'inProgress',
+    };
+    let next: GameState = {
+      ...s,
+      specialTasks: { ...s.specialTasks, [targetLevel]: updated },
+    };
+    next = pushLog(
+      next,
+      `📋 啟動特殊任務「${SPECIAL_TASK_NAMES[targetLevel] ?? task.name}」，每日依 team 綜合能力推進。`,
+    );
     set(next as Partial<GameStore>);
   },
 }));

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SvgIcon } from '@/components/SvgIcon';
 import type { LeaderboardEntry } from '@/types';
 import {
@@ -9,22 +9,9 @@ import {
   type MyBestResult,
 } from '@/lib/leaderboardApi';
 import { useAuthStore } from '@/store/authStore';
-import { useGameStore } from '@/store/gameStore';
-import {
-  computeCeoStats,
-  MONSTER_ATK,
-  MONSTER_INTERVAL,
-} from './crisisFormulas';
 
 export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
   const authedUser = useAuthStore((s) => s.user);
-  const staff = useGameStore((s) => s.staff);
-  const teams = useGameStore((s) => s.teams);
-  const miniGame = useGameStore((s) => s.miniGame);
-  const openCrisisBattle = useGameStore((s) => s.openCrisisBattle);
-
-  const ceoStats = useMemo(() => computeCeoStats(staff, teams), [staff, teams]);
-  const canChallenge = ceoStats.teamSize > 0 && !miniGame;
 
   const [global, setGlobal] = useState<LeaderboardEntry[]>([]);
   const [myBest, setMyBest] = useState<MyBestResult | null>(null);
@@ -65,12 +52,6 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
     };
   }, [authedUser]);
 
-  const handleChallenge = () => {
-    if (!canChallenge) return;
-    openCrisisBattle();
-    onClose();
-  };
-
   return (
     <div
       className="fixed inset-0 z-[820] flex items-center justify-center bg-[#08204d]/45 backdrop-blur-sm p-4"
@@ -92,7 +73,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h2 className="text-lg font-extrabold">排行榜</h2>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>挑戰怪物，比誰造成的傷害最高</p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>最先達成豪華總部的紀錄</p>
             </div>
           </div>
           <button
@@ -102,43 +83,6 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             style={{ backgroundColor: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
           >
             關閉
-          </button>
-        </div>
-
-        <div
-          className="mb-3 p-3 rounded-lg"
-          style={{ backgroundImage: 'linear-gradient(180deg, #fff7ec, #fffbf3)', border: '1px solid #f0c97a' }}
-        >
-          <div className="text-[11px] font-bold mb-2" style={{ color: '#9a6a1a' }}>
-            CEO 戰力預估
-          </div>
-          {ceoStats.teamSize > 0 ? (
-            <div className="grid grid-cols-3 gap-2 text-center text-xs mb-3">
-              <PreviewStat label="HP" value={ceoStats.hp} />
-              <PreviewStat label="ATK" value={ceoStats.atk} />
-              <PreviewStat label="間隔" value={`${ceoStats.interval.toFixed(2)}s`} />
-            </div>
-          ) : (
-            <div className="text-xs mb-3" style={{ color: '#9a6a1a' }}>
-              目前沒有可出戰隊伍，先安排員工到隊伍再挑戰。
-            </div>
-          )}
-          <div className="text-[10px] mb-2" style={{ color: '#9a6a1a' }}>
-            怪物每 {MONSTER_INTERVAL}s 攻擊一次，傷害 {MONSTER_ATK}。
-          </div>
-          <button
-            type="button"
-            onClick={handleChallenge}
-            disabled={!canChallenge}
-            className="w-full py-2.5 rounded-lg font-extrabold text-sm disabled:opacity-50"
-            style={{
-              backgroundImage: canChallenge ? 'linear-gradient(180deg, #ff7a3d, #d24722)' : 'none',
-              backgroundColor: canChallenge ? 'transparent' : '#d8d8d8',
-              color: 'white',
-              boxShadow: canChallenge ? '0 6px 18px rgba(210,71,34,0.32)' : 'none',
-            }}
-          >
-            挑戰怪物
           </button>
         </div>
 
@@ -174,7 +118,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
                   key={`${entry.date}-${i}`}
                   rank={i + 1}
                   entry={entry}
-                  highlight={!!authedUser && !!myBest && entry.date === myBest.entry.date && entry.damage === myBest.entry.damage}
+                  highlight={!!authedUser && !!myBest && entry.date === myBest.entry.date && entry.days === myBest.entry.days}
                   showNickname
                 />
               ))}
@@ -184,19 +128,10 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
 
         {!loading && authedUser && !myBest && global.length > 0 && (
           <div className="mt-3 text-center py-2 rounded-lg text-xs" style={{ backgroundColor: '#f7fbff', color: 'var(--muted)', border: '1px solid var(--line)' }}>
-            你還沒有挑戰紀錄，打一場就能提交傷害排名。
+            你還沒有上榜，把辦公室升級到豪華總部就能登榜！
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function PreviewStat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-lg px-2 py-1.5" style={{ backgroundColor: '#ffffff', border: '1px solid #f0c97a' }}>
-      <div className="text-[10px]" style={{ color: '#9a6a1a' }}>{label}</div>
-      <div className="text-sm font-extrabold tabular-nums">{value}</div>
     </div>
   );
 }
@@ -215,8 +150,8 @@ function EntryRow({
   compact?: boolean;
 }) {
   const isFirst = rank === 1;
-  const primary = `${entry.damage.toLocaleString()} 傷害`;
-  const detail = `隊伍 ${entry.teamSize} 位`;
+  const primary = `第 ${entry.days} 天達成`;
+  const detail = `現金 $${entry.money.toLocaleString()} · 員工 ${entry.staffCount} 位`;
 
   return (
     <div

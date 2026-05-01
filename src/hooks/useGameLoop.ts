@@ -10,7 +10,6 @@ export function useGameLoop() {
   const tick = useGameStore((s) => s.tick);
   const frisbeeTick = useGameStore((s) => s.frisbeeTick);
   const memoryTick = useGameStore((s) => s.memoryTick);
-  const crisisTick = useGameStore((s) => s.crisisTick);
   const walkerTick = useWalkerStore((s) => s.tick);
   const lastRef = useRef(performance.now());
   const slowAccum = useRef(0);
@@ -25,7 +24,6 @@ export function useGameLoop() {
       // 小遊戲走 60fps（操作要靈敏）
       if (s.miniGame?.type === 'frisbee' && s.miniGame.running) frisbeeTick(dt / 1000);
       if (s.miniGame?.type === 'memory' && s.miniGame.running) memoryTick(dt / 1000);
-      if (s.miniGame?.type === 'crisis' && !s.miniGame.ended) crisisTick(dt / 1000);
 
       // 主場景的 walker / 日結算 tick：用累積方式 → 每 SLOW_TICK_MS 跑一次
       // page 隱藏時不跑（document.hidden 期間累積也歸零）
@@ -47,5 +45,5 @@ export function useGameLoop() {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [tick, frisbeeTick, memoryTick, crisisTick, walkerTick]);
+  }, [tick, frisbeeTick, memoryTick, walkerTick]);
 }

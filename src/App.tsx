@@ -25,7 +25,7 @@ import { VictoryModal } from '@/features/victory/VictoryModal';
 import { FrisbeeGame } from '@/features/minigames/FrisbeeGame';
 import { MemoryGame } from '@/features/minigames/MemoryGame';
 import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
-import { CrisisBattleScreen } from '@/features/leaderboard/CrisisBattleScreen';
+import { SubmitRecordModal } from '@/features/leaderboard/SubmitRecordModal';
 import { BankLoanModal } from '@/features/loan/BankLoanModal';
 import { AchievementsScreen } from '@/features/achievements/AchievementsScreen';
 import { AchievementToast } from '@/features/achievements/AchievementToast';
@@ -118,7 +118,7 @@ export default function App() {
       <BuildingDrawer />
       {miniGame?.type === 'frisbee' && <FrisbeeGame />}
       {miniGame?.type === 'memory' && <MemoryGame />}
-      {miniGame?.type === 'crisis' && <CrisisBattleScreen />}
+      <SubmitRecordModal />
       {trainingSession && <TrainingQuiz />}
       {staffModal && <StaffActionModal />}
       {teamModalOpen && <TeamEditModal onClose={closeTeamModal} />}
