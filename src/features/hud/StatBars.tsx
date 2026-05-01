@@ -1,7 +1,6 @@
 import { useGameStore } from '@/store/gameStore';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 
-const IPO_PROJECTS = 80;
 
 function clampPct(value: number): number {
   return Math.max(0, Math.min(100, value));
@@ -29,9 +28,9 @@ export function StatBars() {
       <Chip
         index={2}
         icon="trophy"
-        label="案件"
-        value={`${projectsCompleted}/${IPO_PROJECTS}`}
-        progress={(projectsCompleted / IPO_PROJECTS) * 100}
+        label="完成案件"
+        value={`${projectsCompleted}`}
+        progress={100}
         color="#f0a818"
       />
       <Chip index={3} icon="coffee" label="疲勞" value={fatigueText} progress={avgFatigue} color="#ef7a45" />

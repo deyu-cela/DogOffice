@@ -64,6 +64,14 @@ function chemistryBonus(testRoles: Set<string>, category: ProjectCategory): numb
   return bonus;
 }
 
+function hasNegativeChemistry(testRoles: Set<string>, category: ProjectCategory): boolean {
+  return CHEMISTRY_COMBOS.some((combo) => {
+    if (combo.type !== 'negative') return false;
+    if (combo.category && combo.category !== 'any' && combo.category !== category) return false;
+    return combo.roles.every((r) => testRoles.has(r));
+  });
+}
+
 // 自動配對隊伍：貪心填滿到 capacity，純看 base + trait + chemistry 分數，沒有 project 模擬
 // 用在 TeamEditModal 的「自動配對」按鈕
 export function pickBestTeamForIndustry(
@@ -83,6 +91,7 @@ export function pickBestTeamForIndustry(
       const baseScore = dogScoreFor(d, category);
       const traitScore = traitScoreFor(d, category, result);
       const newRoles = new Set([...result.map((r) => r.role), d.role]);
+      if (hasNegativeChemistry(newRoles, category)) continue;
       const oldRoles = new Set(result.map((r) => r.role));
       const chemDelta = chemistryBonus(newRoles, category) - chemistryBonus(oldRoles, category);
       const total = baseScore + traitScore + chemDelta;
@@ -140,6 +149,7 @@ export function pickAutoAssign(
       const baseScore = dogScoreFor(d, category);
       const traitScore = traitScoreFor(d, category, result);
       const newRoles = new Set([...result.map((r) => r.role), d.role]);
+      if (hasNegativeChemistry(newRoles, category)) continue;
       const oldRoles = new Set(result.map((r) => r.role));
       const chemDelta = chemistryBonus(newRoles, category) - chemistryBonus(oldRoles, category);
       const total = baseScore + traitScore + chemDelta;

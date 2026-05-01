@@ -9,6 +9,12 @@ type ServerEntry = {
   nickname?: string;
   damage?: number;
   team_size?: number;
+  days?: number;
+  money?: number;
+  goal?: number;
+  office_level?: number;
+  staff_count?: number;
+  projects_completed?: number;
   submitted_at?: string;
 };
 
@@ -38,6 +44,12 @@ function toClient(e: ServerEntry): LeaderboardEntry {
   return {
     damage: typeof e.damage === 'number' ? e.damage : 0,
     teamSize: typeof e.team_size === 'number' ? e.team_size : 0,
+    days: typeof e.days === 'number' ? e.days : undefined,
+    money: typeof e.money === 'number' ? e.money : undefined,
+    goal: typeof e.goal === 'number' ? e.goal : undefined,
+    officeLevel: typeof e.office_level === 'number' ? e.office_level : undefined,
+    staffCount: typeof e.staff_count === 'number' ? e.staff_count : undefined,
+    projectsCompleted: typeof e.projects_completed === 'number' ? e.projects_completed : undefined,
     date: e.submitted_at ?? new Date().toISOString(),
     nickname: e.nickname,
   };
@@ -100,7 +112,7 @@ function saveLocal(list: LeaderboardEntry[]): void {
 export function saveLocalEntry(entry: LeaderboardEntry): LeaderboardEntry[] {
   const list = loadLocal();
   list.push(entry);
-  list.sort((a, b) => b.damage - a.damage || b.teamSize - a.teamSize);
+  list.sort(compareEntries);
   const top = list.slice(0, LB_KEEP_TOP);
   saveLocal(top);
   return top;
@@ -108,5 +120,9 @@ export function saveLocalEntry(entry: LeaderboardEntry): LeaderboardEntry[] {
 
 export function bestLocal(entries: LeaderboardEntry[]): LeaderboardEntry | null {
   if (entries.length === 0) return null;
-  return [...entries].sort((a, b) => b.damage - a.damage || b.teamSize - a.teamSize)[0];
+  return [...entries].sort(compareEntries)[0];
+}
+
+function compareEntries(a: LeaderboardEntry, b: LeaderboardEntry): number {
+  return b.damage - a.damage || b.teamSize - a.teamSize;
 }

@@ -159,11 +159,12 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
       if (gs.showSplash) return;
 
       const data = serialize(gs);
+      const revision = get().revision;
       const payload: SavePayload = {
         version: SAVE_VERSION,
-        revision: get().revision ?? 0,
         data,
       };
+      if (revision !== null) payload.revision = revision;
       set({ status: 'saving', error: null });
       try {
         const resp = mockMode ? await mockPost(payload) : await apiPostSave(payload);

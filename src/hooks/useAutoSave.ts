@@ -77,8 +77,8 @@ export function useAutoSave() {
       const save = useSaveStore.getState();
       const payload = {
         version: SAVE_VERSION,
-        revision: save.revision ?? 0,
         data: serialize(gs),
+        ...(save.revision !== null ? { revision: save.revision } : {}),
       };
       try {
         fetch(`${API_BASE}/saves`, {

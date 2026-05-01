@@ -395,11 +395,34 @@ function pushLog(state: GameState, msg: string): GameState {
   return { ...state, log: next };
 }
 
+function openTeamMemberIds(state: GameState, industry: ProjectCategory): Set<string> {
+  const team = state.teams[industry];
+  return new Set(team?.open ? team.memberIds : []);
+}
+
+function sanitizeProjectAssignments(state: GameState): GameState {
+  const validAssignedIds = new Map<string, string>();
+  const clients = state.clients.map((project) => {
+    if (project.status !== 'active') return project;
+    const allowed = openTeamMemberIds(state, project.category);
+    const assignedStaffIds = project.assignedStaffIds.filter((id) => allowed.has(id));
+    for (const id of assignedStaffIds) validAssignedIds.set(id, project.id);
+    return assignedStaffIds.length === project.assignedStaffIds.length
+      ? project
+      : { ...project, assignedStaffIds };
+  });
+  const staff = state.staff.map((dog) => {
+    const assignedProjectId = validAssignedIds.get(dog.id) ?? null;
+    return dog.assignedProjectId === assignedProjectId ? dog : { ...dog, assignedProjectId };
+  });
+  return { ...state, clients, staff };
+}
+
 // Team-based 自動接案
 // 對每個 open team：若該 team 沒人在做案 → 接該產業 inbox 最前面的 offered，team 成員全上工
 // 在抽卡、team 開關、結算後呼叫
 function applyAutoAccept(state: GameState): GameState {
-  let s = state;
+  let s = sanitizeProjectAssignments(state);
   for (const industry of INDUSTRIES) {
     const team = s.teams[industry];
     if (!team.open || team.memberIds.length === 0) continue;
@@ -838,11 +861,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const s = get();
     const project = s.clients.find((c) => c.id === projectId);
     if (!project || project.status !== 'offered') return;
+    const allowed = openTeamMemberIds(s, project.category);
     // 過濾掉非待命的員工（不允許強佔別案的人）
     const validIds = (staffIds ?? []).filter((id) => {
       const d = s.staff.find((dog) => dog.id === id);
-      return d && (!d.assignedProjectId || d.assignedProjectId === projectId);
+      return d && allowed.has(id) && (!d.assignedProjectId || d.assignedProjectId === projectId);
     });
+    if (validIds.length === 0) return;
     const updated: GameState = {
       ...s,
       clients: s.clients.map((c) =>
@@ -855,7 +880,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ),
     };
     const staffMsg = validIds.length > 0 ? `（${validIds.length} 人已上工）` : '（待命）';
-    const next = pushLog(updated, ` 接案：${project.title}（tier${project.clientTier}）${staffMsg}`);
+    const next = pushLog(sanitizeProjectAssignments(updated), ` 接案：${project.title}（tier${project.clientTier}）${staffMsg}`);
     set(next as Partial<GameStore>);
   },
 
@@ -905,6 +930,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const s = get();
     const project = s.clients.find((c) => c.id === projectId);
     if (!project || project.status !== 'active') return;
+    const allowed = openTeamMemberIds(s, project.category);
+    if (!allowed.has(dogId)) return;
     const dog = s.staff.find((d) => d.id === dogId);
     if (!dog) return;
     if (project.assignedStaffIds.includes(dogId)) return; // 已指派
@@ -919,7 +946,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ),
       staff: s.staff.map((d) => (d.id === dogId ? { ...d, assignedProjectId: projectId } : d)),
     };
-    set(next as Partial<GameStore>);
+    set(sanitizeProjectAssignments(next) as Partial<GameStore>);
   },
 
   unassignStaff: (projectId, dogId) => {
@@ -1659,6 +1686,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...s,
       teams: { ...s.teams, [industry]: { ...team, open: !team.open } },
     };
+    next = sanitizeProjectAssignments(next);
     const openInds = INDUSTRIES.filter((ind) => next.teams[ind].open);
     next.clients = fillInbox(next.clients, next.tierBudget, next.day, next.officeLevel, false, openInds);
     next = applyAutoAccept(next);
@@ -1675,12 +1703,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // 員工不能同時在多個 team
     const inOther = INDUSTRIES.some((ind) => ind !== industry && s.teams[ind].memberIds.includes(dogId));
     if (inOther) return;
-    set({
+    const next = sanitizeProjectAssignments({
+      ...s,
       teams: {
         ...s.teams,
         [industry]: { ...team, memberIds: [...team.memberIds, dogId] },
       },
     });
+    set(next as Partial<GameStore>);
   },
 
   autoFillTeam: (industry) => {
@@ -1694,12 +1724,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
     const picks = pickBestTeamForIndustry(candidates, industry, capacity);
     const newIds = picks.map((d) => d.id);
-    set({
+    const next = sanitizeProjectAssignments({
+      ...s,
       teams: {
         ...s.teams,
         [industry]: { ...team, memberIds: newIds },
       },
     });
+    set(next as Partial<GameStore>);
   },
 
   removeDogFromTeam: (industry, dogId) => {
@@ -1717,6 +1749,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         [industry]: { ...team, memberIds: newIds, open },
       },
     };
+    next = sanitizeProjectAssignments(next);
     // 若關閉了 team → 該產業 offered 應清掉
     if (!open && team.open) {
       const openInds = INDUSTRIES.filter((ind) => next.teams[ind].open);

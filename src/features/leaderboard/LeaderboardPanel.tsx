@@ -46,12 +46,12 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
         if (cancelled) return;
         if (isIgnorableApiError(err)) {
           const local = loadLocal();
-          setError('連不上伺服器，先顯示本機紀錄');
+          setError('連線暫時失敗，先顯示本機紀錄。');
           setGlobal(local);
           const best = bestLocal(local);
           setMyBest(best ? { rank: 1, entry: best } : null);
         } else {
-          setError('排行榜載入失敗');
+          setError('排行榜載入失敗。');
           setGlobal([]);
           setMyBest(null);
         }
@@ -92,7 +92,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h2 className="text-lg font-extrabold">排行榜</h2>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>挑戰金融海嘯，比誰打得最痛</p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>挑戰怪物，比誰造成的傷害最高</p>
             </div>
           </div>
           <button
@@ -105,13 +105,12 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {/* 戰前預估 + 入口 */}
         <div
           className="mb-3 p-3 rounded-lg"
           style={{ backgroundImage: 'linear-gradient(180deg, #fff7ec, #fffbf3)', border: '1px solid #f0c97a' }}
         >
           <div className="text-[11px] font-bold mb-2" style={{ color: '#9a6a1a' }}>
-            CEO 戰力預估（依目前隊伍成員）
+            CEO 戰力預估
           </div>
           {ceoStats.teamSize > 0 ? (
             <div className="grid grid-cols-3 gap-2 text-center text-xs mb-3">
@@ -121,11 +120,11 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <div className="text-xs mb-3" style={{ color: '#9a6a1a' }}>
-              還沒有狗狗加入隊伍。把員工配置到隊伍後才能挑戰。
+              目前沒有可出戰隊伍，先安排員工到隊伍再挑戰。
             </div>
           )}
           <div className="text-[10px] mb-2" style={{ color: '#9a6a1a' }}>
-            金融海嘯：每 {MONSTER_INTERVAL}s 攻擊一次，每次 {MONSTER_ATK} 傷害
+            怪物每 {MONSTER_INTERVAL}s 攻擊一次，傷害 {MONSTER_ATK}。
           </div>
           <button
             type="button"
@@ -139,7 +138,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
               boxShadow: canChallenge ? '0 6px 18px rgba(210,71,34,0.32)' : 'none',
             }}
           >
-            挑戰金融海嘯
+            挑戰怪物
           </button>
         </div>
 
@@ -149,7 +148,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             style={{ backgroundImage: 'linear-gradient(180deg, #eef6ff, #f7fbff)', border: '1px solid #7fb2ef' }}
           >
             <div className="text-[11px] font-bold mb-1" style={{ color: 'var(--blue)' }}>
-              你的最佳成績（全球排名 #{myBest.rank}）
+              你的最佳成績 #{myBest.rank}
             </div>
             <EntryRow rank={myBest.rank} entry={myBest.entry} highlight compact showNickname={false} />
           </div>
@@ -162,11 +161,11 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        <div className="text-[11px] font-bold mb-1.5" style={{ color: 'var(--muted)' }}>全球前 10</div>
+        <div className="text-[11px] font-bold mb-1.5" style={{ color: 'var(--muted)' }}>Top 10</div>
         <div className="flex-1 overflow-y-auto">
           {global.length === 0 ? (
             <div className="text-center py-10 text-sm" style={{ color: 'var(--muted)' }}>
-              全球榜還沒有紀錄，成為第一人吧！
+              還沒有排行榜紀錄。
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
@@ -185,7 +184,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
 
         {!loading && authedUser && !myBest && global.length > 0 && (
           <div className="mt-3 text-center py-2 rounded-lg text-xs" style={{ backgroundColor: '#f7fbff', color: 'var(--muted)', border: '1px solid var(--line)' }}>
-            你還沒挑戰過金融海嘯，去打一場進榜吧！
+            你還沒有挑戰紀錄，打一場就能提交傷害排名。
           </div>
         )}
       </div>
@@ -216,6 +215,9 @@ function EntryRow({
   compact?: boolean;
 }) {
   const isFirst = rank === 1;
+  const primary = `${entry.damage.toLocaleString()} 傷害`;
+  const detail = `隊伍 ${entry.teamSize} 位`;
+
   return (
     <div
       className="flex items-center gap-3 p-2.5 rounded-lg"
@@ -230,13 +232,13 @@ function EntryRow({
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-bold flex items-center gap-2 flex-wrap">
-          <span className="tabular-nums">{entry.damage.toLocaleString()} 傷害</span>
+          <span className="tabular-nums">{primary}</span>
           {showNickname && entry.nickname && (
             <span className="text-[11px] font-normal" style={{ color: 'var(--muted)' }}>@{entry.nickname}</span>
           )}
         </div>
         <div className="text-xs" style={{ color: 'var(--muted)' }}>
-          隊伍 {entry.teamSize} 隻
+          {detail}
         </div>
       </div>
       <div className="text-[10px] text-right whitespace-nowrap" style={{ color: 'var(--muted)' }}>

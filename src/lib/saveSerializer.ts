@@ -7,6 +7,8 @@ const LOG_TAIL_LIMIT = 10;
 const defaultCompanyBuffs: CompanyBuffs = {
   speedBoost: 0,
   qualityBoost: 0,
+  teamworkBoost: 0,
+  charismaBoost: 0,
   decor: 1,
   categorySpeed: { tech: 0, design: 0, marketing: 0, service: 0 },
   categoryQuality: { tech: 0, design: 0, marketing: 0, service: 0 },
@@ -20,6 +22,8 @@ function normalizeCompanyBuffs(raw: unknown): CompanyBuffs {
   return {
     speedBoost: num(r.speedBoost, 0),
     qualityBoost: num(r.qualityBoost, 0),
+    teamworkBoost: num(r.teamworkBoost, 0),
+    charismaBoost: num(r.charismaBoost, 0),
     decor: num(r.decor, 1),
     categorySpeed: {
       tech: num(cs.tech, 0),
@@ -36,12 +40,40 @@ function normalizeCompanyBuffs(raw: unknown): CompanyBuffs {
   };
 }
 
+function clampInt(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(v)));
+}
+
+function estimateReputation(state: GameState): number {
+  const staff = state.staff;
+  const avgLoyalty = staff.length
+    ? staff.reduce((sum, dog) => sum + dog.loyalty, 0) / staff.length
+    : 55;
+  const avgFatigue = staff.length
+    ? staff.reduce((sum, dog) => sum + dog.fatigue, 0) / staff.length
+    : 20;
+  const projectScore = clampInt(50 + state.projectsCompleted * 2 - state.projectsFailed * 5, 0, 100);
+  return clampInt(avgLoyalty * 0.45 + (100 - avgFatigue) * 0.25 + projectScore * 0.3, 0, 100);
+}
+
+function serializeStaff(state: GameState): GameSaveData['staff'] {
+  return state.staff.map((dog) => ({
+    ...dog,
+    stats: {
+      ...dog.stats,
+      teamwork: dog.stats.teamwork ?? dog.stats.patience,
+      charisma: dog.stats.charisma ?? clampInt(dog.loyalty / 14, 1, 10),
+    },
+  })) as GameSaveData['staff'];
+}
+
 export function serialize(state: GameState): GameSaveData {
   return {
     day: state.day,
     money: state.money,
+    reputation: estimateReputation(state),
     tierBudget: state.tierBudget,
-    companyBuffs: state.companyBuffs,
+    companyBuffs: normalizeCompanyBuffs(state.companyBuffs),
     officeLevel: state.officeLevel,
     officeSkin: state.officeSkin ?? state.officeLevel,
     purchases: state.purchases,
@@ -55,7 +87,7 @@ export function serialize(state: GameState): GameSaveData {
     bankruptCountdown: state.bankruptCountdown,
     tutorialStep: Math.max(0, Math.min(state.tutorialStep, 7)),
     recruitmentClosed: state.recruitmentClosed,
-    staff: state.staff,
+    staff: serializeStaff(state),
     log: state.log.slice(-LOG_TAIL_LIMIT),
     ipoAchievedAt: state.ipoAchievedAt,
     ipoDismissed: state.ipoDismissed,
@@ -92,6 +124,8 @@ function roundDogFields(dog: Record<string, unknown>): Record<string, unknown> {
       speed: asInt(stats.speed, 1),
       quality: asInt(stats.quality, 1),
       patience,
+      teamwork: asInt(stats.teamwork ?? patience, patience),
+      charisma: asInt(stats.charisma, 1),
     },
   };
 }
@@ -128,6 +162,7 @@ export function deserialize(raw: unknown): GameSaveData | null {
   return {
     day: asNum(d.day, 1),
     money: asNum(d.money, 800),
+    reputation: asNum(d.reputation, 55),
     tierBudget: asNum(d.tierBudget, 0),
     companyBuffs: normalizeCompanyBuffs(d.companyBuffs),
     officeLevel: asNum(d.officeLevel, 0),

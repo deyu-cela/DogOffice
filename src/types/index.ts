@@ -4,6 +4,8 @@ export type Stats = {
   speed: number;
   quality: number;
   patience: number;
+  teamwork?: number;
+  charisma?: number;
 };
 
 export type DogRole = {
@@ -292,6 +294,8 @@ export type TutorialStep = {
 export type CompanyBuffs = {
   speedBoost: number;
   qualityBoost: number;
+  teamworkBoost?: number;
+  charismaBoost?: number;
   decor: number;
   categorySpeed: Record<ProjectCategory, number>;
   categoryQuality: Record<ProjectCategory, number>;
@@ -400,6 +404,12 @@ export type LeaderboardEntry = {
   teamSize: number;     // 戰鬥時隊伍裡狗狗的數量
   date: string;
   nickname?: string;
+  days?: number;
+  money?: number;
+  goal?: number;
+  officeLevel?: number;
+  staffCount?: number;
+  projectsCompleted?: number;
 };
 
 // === 化學反應快取記錄（保留結構給 UI 顯示用，不是觸發狀態）===

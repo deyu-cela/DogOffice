@@ -1,296 +1,424 @@
-﻿import { useState } from 'react';
-import { useGameStore, dogLevelUpCost, dogLevelUpFragmentCost, DOG_LEVEL_MAX, dogPrimaryIndustry } from '@/store/gameStore';
-import { RadarChart } from '@/components/RadarChart';
-import { DOG_TRAITS_MAP, type DogTraitId } from '@/constants/dogTraits';
-import type { Dog, ProjectCategory } from '@/types';
+import { useMemo, useState } from 'react';
 import { DogAvatar } from '@/components/DogAvatar';
+import { dogPrimaryIndustry } from '@/store/gameStore';
+import { useGameStore } from '@/store/gameStore';
+import type { Dog, ProjectCategory } from '@/types';
+import { dogGrade, dogPower, dogPowerStars, type DogGradeUI } from '@/lib/utils';
 import { TeamEditModal } from './TeamEditModal';
 
-const INDUSTRY_LABEL: Record<ProjectCategory, string> = {
-  tech: '工程', design: '美術', marketing: '行銷', service: '客服',
-};
-const INDUSTRY_COLOR: Record<ProjectCategory, string> = {
-  tech: '#5a8ce6', design: '#e88aaa', marketing: '#e8a85a', service: '#5fb38f',
-};
-const TRAIT_UNLOCK_LEVELS = new Set([3, 6, 9]);
+type FilterKey = 'all' | 'I' | 'II' | 'III';
+type SortKey = 'power' | 'level' | 'grade' | 'loyalty' | 'fatigue';
 
+const FILTERS: Array<{ key: FilterKey; label: string }> = [
+  { key: 'all', label: 'ALL' },
+  { key: 'I', label: 'I' },
+  { key: 'II', label: 'II' },
+  { key: 'III', label: 'III' },
+];
+
+const SORT_LABEL: Record<SortKey, string> = {
+  power: '戰鬥力',
+  level: '等級',
+  grade: '稀有度',
+  loyalty: '忠誠',
+  fatigue: '疲勞低',
+};
+
+const GRADE_ORDER: Record<DogGradeUI, number> = { U: 0, S: 1, A: 2, B: 3, C: 4, D: 5 };
+
+const INDUSTRY_LABEL: Record<ProjectCategory, string> = {
+  tech: '工程',
+  design: '美術',
+  marketing: '行銷',
+  service: '客服',
+};
+
+const INDUSTRY_COLOR: Record<ProjectCategory, string> = {
+  tech: '#2f72d6',
+  design: '#d84f9b',
+  marketing: '#d98919',
+  service: '#1d9b64',
+};
+
+const CARD_ACCENT: Record<DogGradeUI, string> = {
+  U: '#ff77d9',
+  S: '#f7bd22',
+  A: '#b066e8',
+  B: '#2fbf72',
+  C: '#3d80e8',
+  D: '#8d96a6',
+};
+
+const FRAME_BG: Record<DogGradeUI, string> = {
+  U: 'linear-gradient(145deg, #ff83dd, #ffe56f 34%, #78dbff 68%, #b875ff)',
+  S: 'linear-gradient(145deg, #fff1a8, #f7b71f 42%, #9d5b09)',
+  A: 'linear-gradient(145deg, #ecd1ff, #ad5ce2 48%, #4c196f)',
+  B: 'linear-gradient(145deg, #d9ffe8, #38bf71 48%, #145b34)',
+  C: 'linear-gradient(145deg, #d8ebff, #3b78de 48%, #122d62)',
+  D: 'linear-gradient(145deg, #f0f2f5, #9aa2b0 48%, #343b49)',
+};
+
+function rankClass(dog: Dog): Exclude<FilterKey, 'all'> {
+  const grade = dogGrade(dog);
+  if (grade === 'U' || grade === 'S' || grade === 'A') return 'I';
+  if (grade === 'B' || grade === 'C') return 'II';
+  return 'III';
+}
+
+function compareStaff(a: StaffRow, b: StaffRow, sortKey: SortKey, desc: boolean) {
+  let result = 0;
+  switch (sortKey) {
+    case 'power':
+      result = a.power - b.power;
+      break;
+    case 'level':
+      result = a.dog.level - b.dog.level;
+      break;
+    case 'grade':
+      result = GRADE_ORDER[b.grade] - GRADE_ORDER[a.grade];
+      break;
+    case 'loyalty':
+      result = a.dog.loyalty - b.dog.loyalty;
+      break;
+    case 'fatigue':
+      result = b.dog.fatigue - a.dog.fatigue;
+      break;
+  }
+  if (result === 0) result = a.dog.name.localeCompare(b.dog.name);
+  return desc ? -result : result;
+}
+
+type StaffRow = {
+  dog: Dog;
+  index: number;
+  grade: DogGradeUI;
+  rank: Exclude<FilterKey, 'all'>;
+  power: number;
+};
 
 export function StaffList() {
   const staff = useGameStore((s) => s.staff);
-  const money = useGameStore((s) => s.money);
-  const clients = useGameStore((s) => s.clients);
   const playMini = useGameStore((s) => s.openPlayMiniGame);
   const openTraining = useGameStore((s) => s.openTraining);
-  const openTraitChoice = useGameStore((s) => s.openTraitChoiceModal);
-  const upgradeDog = useGameStore((s) => s.upgradeDogLevel);
-  const upgradeDogFragments = useGameStore((s) => s.upgradeDogWithFragments);
+  const openStaffAction = useGameStore((s) => s.openStaffAction);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
+  const [filter, setFilter] = useState<FilterKey>('all');
+  const [sortKey, setSortKey] = useState<SortKey>('power');
+  const [desc, setDesc] = useState(true);
+
+  const rows = useMemo<StaffRow[]>(() => {
+    return staff.map((dog, index) => ({
+      dog,
+      index,
+      grade: dogGrade(dog),
+      rank: rankClass(dog),
+      power: dogPower(dog),
+    }));
+  }, [staff]);
+
+  const visibleRows = useMemo(() => {
+    return rows
+      .filter((row) => filter === 'all' || row.rank === filter)
+      .sort((a, b) => compareStaff(a, b, sortKey, desc));
+  }, [rows, filter, sortKey, desc]);
 
   if (staff.length === 0) {
     return (
-      <div className="flex flex-col gap-3">
-        <div className="text-center p-4 text-sm" style={{ color: 'var(--muted)' }}>
-          還沒有員工，去抽卡招募吧。
-        </div>
+      <div className="text-center p-4 text-sm" style={{ color: 'var(--muted)' }}>
+        還沒有員工，去抽卡招募吧。
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={() => setTeamModalOpen(true)}
-        className="rounded-xl py-2.5 font-extrabold"
+    <section
+      className="relative overflow-hidden rounded-xl"
+      style={{
+        background: 'linear-gradient(180deg, #f6f8fb 0%, #ffffff 42%, #edf2f7 100%)',
+        border: '1px solid rgba(64,74,92,0.16)',
+      }}
+    >
+      <div
+        className="flex items-center justify-between gap-2 px-3 py-2"
         style={{
-          background: 'linear-gradient(180deg, #ffffff, #eef6ff)',
-          color: '#446da8',
-          border: '1.5px solid #7fb2ef',
-          boxShadow: '0 4px 10px rgba(127,178,239,0.2)',
+          background: 'linear-gradient(180deg, #303235 0%, #222426 100%)',
+          borderBottom: '3px solid #22b9e8',
         }}
       >
-        🐾 管理隊伍
-      </button>
-      {teamModalOpen && <TeamEditModal onClose={() => setTeamModalOpen(false)} />}
+        <div className="flex items-center gap-2 min-w-0">
+          <div
+            className="h-8 w-8 grid place-items-center font-black text-sm"
+            style={{
+              color: '#20bae8',
+              background: '#f7fbff',
+              clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+            }}
+          >
+            N
+          </div>
+          <div className="min-w-0">
+            <div className="font-black text-white text-sm leading-tight">員工</div>
+            <div className="text-[10px] text-slate-300">可查看同伴狀態</div>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
-        <button
-          type="button"
-          disabled={staff.length < 3}
-          onClick={playMini}
-          className="py-2 rounded-full font-bold"
-          style={{
-            background: staff.length < 3 ? '#e9f1ff' : 'linear-gradient(180deg, #ffffff, #edf5ff)',
-            fontSize: 13,
-            color: staff.length < 3 ? '#999' : '#2b5a8a',
-            cursor: staff.length < 3 ? 'not-allowed' : 'pointer',
-          }}
-          title={staff.length < 3 ? '需要至少 3 位員工' : '陪玩，花 $10。Crunch Sprint 模式：分數 → active 案 +分數×2 工作量'}
-        >
-          陪玩{staff.length < 3 ? `（需 ${3 - staff.length} 位員工）` : ''}
-        </button>
-        <button
-          type="button"
-          disabled={staff.length < 2}
-          onClick={openTraining}
-          className="py-2 rounded-full font-bold"
-          style={{
-            background: staff.length < 2 ? '#e9f1ff' : 'linear-gradient(180deg, #ffffff, #edf5ff)',
-            fontSize: 13,
-            color: staff.length < 2 ? '#999' : '#2b5a8a',
-            cursor: staff.length < 2 ? 'not-allowed' : 'pointer',
-          }}
-          title={staff.length < 2 ? '需要至少 2 位員工' : '培訓問答，花 $18。答對 ≥ 4 題 → 可選 1 員工 +1 能力'}
-        >
-          培訓{staff.length < 2 ? `（需 ${2 - staff.length} 位員工）` : ''}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <HeaderButton onClick={openTraining} disabled={staff.length < 2}>
+            培訓
+          </HeaderButton>
+          <HeaderButton onClick={playMini} disabled={staff.length < 3}>
+            陪玩
+          </HeaderButton>
+          <HeaderButton onClick={() => setTeamModalOpen(true)}>隊伍</HeaderButton>
+        </div>
       </div>
 
-      {staff.map((dog) => {
-        const project = dog.assignedProjectId
-          ? clients.find((c) => c.id === dog.assignedProjectId)
-          : null;
-
-        return (
-          <div
-            key={dog.id}
-            className="p-3 rounded-2xl cursor-pointer"
-            style={{
-              background: dog.status === 'pip' ? '#fff7f7' : '#ffffff',
-              border: dog.status === 'pip' ? '1px solid rgba(255,112,112,0.24)' : '1px solid var(--line)',
-            }}
-            onClick={() => setTeamModalOpen(true)}
-          >
-            <div className="flex items-center gap-3">
-              <div className="rounded-full overflow-hidden flex items-center justify-center" style={{ width: 48, height: 48, border: '2px solid white', background: '#eef6ff' }}>
-                {dog.image ? (
-                  <img
-                    src={dog.image}
-                    alt={`${dog.breed} ${dog.role}`}
-                    className="block h-full w-full object-contain"
-                    draggable={false}
-                  />
-                ) : (
-                  <DogAvatar role={dog.role} breed={dog.breed} size={48} />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-bold">{dog.name}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: 'linear-gradient(180deg, #ffd95a, #f0a818)', color: '#6a3d05', border: '1px solid rgba(176,107,15,0.4)' }}>
-                    Lv.{dog.level}
-                  </span>
-                  <span
-                    className="text-[10px] px-1.5 py-0.5 rounded-md"
-                    style={{
-                      background: INDUSTRY_COLOR[dogPrimaryIndustry(dog.role)],
-                      color: 'white',
-                    }}
-                  >
-                    {INDUSTRY_LABEL[dogPrimaryIndustry(dog.role)]}
-                  </span>
-                  {dog.status === 'pip' && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: '#fff0f0', color: '#d34a4a' }}>
-                      PIP {dog.pipDaysLeft}天
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs" style={{ color: 'var(--muted)' }}>
-                  {dog.role}・日薪 ${dog.expectedSalary}
-                </div>
-                {/* 指派 chip */}
-                <div className="text-[11px] mt-0.5">
-                  {project ? (
-                    <span style={{ color: '#2b7abd' }}>{project.title}</span>
-                  ) : (
-                    <span style={{ color: 'var(--muted)' }}>待命中</span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <RadarChart stats={dog.stats} size={120} />
-              </div>
-            </div>
-
-            {/* 兩條進度：疲勞 / 忠誠 */}
-            <div className="grid grid-cols-2 gap-1.5 mt-2 text-[10px]">
-              <MeterMini label="疲勞" value={dog.fatigue} color="#ffc35c" inverted />
-              <MeterMini label="忠誠" value={dog.loyalty} color="#2f8df4" />
-            </div>
-
-            {/* 已習得特性徽章 */}
-            {(dog.learnedTraits ?? []).length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                {(dog.learnedTraits as DogTraitId[]).map((tid) => {
-                  const def = DOG_TRAITS_MAP[tid];
-                  if (!def) return null;
-                  return (
-                    <span
-                      key={tid}
-                      className="text-[10px] px-1.5 py-0.5 rounded-full"
-                      style={{
-                        background: '#eef6ff',
-                        border: '1px solid var(--line)',
-                        color: 'var(--blue)',
-                      }}
-                      title={def.desc}
-                    >
-                      {def.name}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* 升級待選特性按鈕 */}
-            {dog.pendingTraitChoice && (
+      <div className="px-3 py-3">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+          {FILTERS.map((item) => {
+            const active = filter === item.key;
+            return (
               <button
+                key={item.key}
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openTraitChoice(dog.id);
-                }}
-                className="w-full mt-2 py-1.5 rounded-full font-bold text-xs"
+                onClick={() => setFilter(item.key)}
+                className="h-10 min-w-10 px-3 rounded-md font-black text-sm"
                 style={{
-                  background: 'linear-gradient(180deg, #ffffff, #edf5ff)',
-                  border: '1px solid var(--line)',
-                  color: 'var(--blue)',
+                  color: active ? '#ffffff' : '#f1f5f9',
+                  background: active
+                    ? 'linear-gradient(180deg, #2cc7ff, #1594d0)'
+                    : 'linear-gradient(180deg, #3d4045, #24262b)',
+                  border: active ? '1px solid #66ddff' : '1px solid rgba(255,255,255,0.18)',
+                  boxShadow: active ? '0 0 0 1px rgba(255,255,255,0.28) inset' : 'none',
                 }}
               >
-                升級待選特性
+                {item.label}
               </button>
-            )}
+            );
+          })}
 
+          <button
+            type="button"
+            aria-label="切換排序方向"
+            onClick={() => setDesc((value) => !value)}
+            className="h-10 w-10 rounded-md font-black text-lg"
+            style={{
+              color: '#f8fafc',
+              background: 'linear-gradient(180deg, #3d4045, #24262b)',
+              border: '1px solid rgba(255,255,255,0.18)',
+            }}
+          >
+            {desc ? '↻' : '↺'}
+          </button>
 
-            {/* 強化（Lv 3/6/9 解鎖特性）：兩種升級方式並列 */}
-            {dog.level < DOG_LEVEL_MAX && (() => {
-              const cost = dogLevelUpCost(dog.level);
-              const fragNeed = dogLevelUpFragmentCost(dog.level);
-              const nextLevel = dog.level + 1;
-              const unlocksTrait = TRAIT_UNLOCK_LEVELS.has(nextLevel);
-              const moneyOK = money >= cost;
-              const fragOK = dog.fragments >= fragNeed;
-              return (
-                <div className="mt-2 flex flex-col gap-1.5">
-                  {unlocksTrait && (
-                    <div className="text-[10px] text-center font-extrabold" style={{ color: '#c0610a' }}>
-                      ✦ 升 Lv.{nextLevel} 解鎖新特性
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); upgradeDog(dog.id); }}
-                      disabled={!moneyOK}
-                      className="py-1.5 rounded-full font-bold text-[11px]"
-                      style={{
-                        background: moneyOK
-                          ? 'linear-gradient(180deg, #ffd95a, #f0a818)'
-                          : '#e9f1ff',
-                        color: moneyOK ? '#6a3d05' : '#8aa2c8',
-                        border: '1px solid rgba(176,107,15,0.4)',
-                        cursor: moneyOK ? 'pointer' : 'not-allowed',
-                      }}
-                      title={moneyOK ? `花 $${cost} 升級` : `需要 $${cost}`}
-                    >
-                      ${cost}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); upgradeDogFragments(dog.id); }}
-                      disabled={!fragOK}
-                      className="py-1.5 rounded-full font-bold text-[11px]"
-                      style={{
-                        background: fragOK
-                          ? 'linear-gradient(180deg, #c9e4ff, #6da8e8)'
-                          : '#e9f1ff',
-                        color: fragOK ? '#1c4f8a' : '#8aa2c8',
-                        border: '1px solid #5fa0e8',
-                        cursor: fragOK ? 'pointer' : 'not-allowed',
-                      }}
-                      title={fragOK ? `用 ${fragNeed} 碎片升級（剩 ${dog.fragments - fragNeed}）` : `碎片不足（${dog.fragments}/${fragNeed}）`}
-                    >
-                      碎片 {dog.fragments}/{fragNeed}
-                    </button>
-                  </div>
-                </div>
-              );
-            })()}
+          <label
+            className="h-10 rounded-md flex items-center px-2"
+            style={{
+              background: 'linear-gradient(180deg, #3d4045, #24262b)',
+              border: '1px solid rgba(255,255,255,0.18)',
+            }}
+          >
+            <select
+              value={sortKey}
+              onChange={(event) => setSortKey(event.target.value as SortKey)}
+              className="bg-transparent text-sm font-black outline-none"
+              style={{ color: '#f8fafc' }}
+            >
+              {(Object.keys(SORT_LABEL) as SortKey[]).map((key) => (
+                <option key={key} value={key} style={{ color: '#1f2937' }}>
+                  {SORT_LABEL[key]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="text-[11px] mb-2 text-center font-bold" style={{ color: '#687386' }}>
+          {visibleRows.length} / {staff.length} 名員工
+        </div>
+
+        {visibleRows.length === 0 ? (
+          <div className="text-center text-sm py-8" style={{ color: 'var(--muted)' }}>
+            這個篩選沒有員工
           </div>
-        );
-      })}
-    </div>
+        ) : (
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: 'repeat(auto-fill, minmax(86px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {visibleRows.map((row) => (
+              <StaffCard key={row.dog.id} row={row} onClick={() => openStaffAction(row.index)} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {teamModalOpen && <TeamEditModal onClose={() => setTeamModalOpen(false)} />}
+    </section>
   );
 }
 
-function MeterMini({
-  label,
-  value,
-  color,
-  inverted = false,
+function HeaderButton({
+  children,
+  disabled = false,
+  onClick,
 }: {
-  label: string;
-  value: number;
-  color: string;
-  inverted?: boolean;
+  children: string;
+  disabled?: boolean;
+  onClick: () => void;
 }) {
-  const display = Math.round(value);
-  const widthVal = inverted ? value : value;
   return (
-    <div>
-      <div className="flex justify-between mb-0.5">
-        <span style={{ color: 'var(--muted)' }}>{label}</span>
-        <span style={{ color: 'var(--muted)' }}>{display}</span>
-      </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="h-9 px-3 rounded-sm text-xs font-black"
+      style={{
+        color: disabled ? '#8a9099' : '#f8fafc',
+        background: disabled
+          ? 'linear-gradient(180deg, #32363b, #24272c)'
+          : 'linear-gradient(180deg, #464a50, #25282d)',
+        border: '1px solid rgba(255,255,255,0.18)',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StaffCard({ row, onClick }: { row: StaffRow; onClick: () => void }) {
+  const { dog, grade, rank, power } = row;
+  const industry = dogPrimaryIndustry(dog.role);
+  const accent = CARD_ACCENT[grade];
+  const stars = dogPowerStars(power);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative w-full overflow-hidden text-left"
+      style={{
+        aspectRatio: '0.68',
+        minHeight: 136,
+        padding: 3,
+        background: FRAME_BG[grade],
+        border: `1px solid ${accent}`,
+        boxShadow: `0 8px 16px rgba(15,23,42,0.16), inset 0 0 0 1px rgba(255,255,255,0.35)`,
+      }}
+      title={`${dog.name} ${dog.role} 戰鬥力 ${power}`}
+    >
+      <div
+        className="relative h-full overflow-hidden"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(226,232,240,0.7) 42%, rgba(25,28,34,0.68) 100%)',
+          border: '1px solid rgba(255,255,255,0.7)',
+        }}
+      >
         <div
-          className="h-full"
+          className="absolute inset-x-0 top-0 h-[72%]"
           style={{
-            width: `${Math.max(0, Math.min(100, widthVal))}%`,
-            background: color,
+            background: `radial-gradient(circle at 50% 22%, ${accent}33, transparent 52%)`,
           }}
         />
+
+        <div className="absolute left-1 top-1 z-10 flex flex-col gap-1">
+          <Badge color={INDUSTRY_COLOR[industry]}>{INDUSTRY_LABEL[industry].slice(0, 1)}</Badge>
+          <Badge color="#f8fafc" textColor="#2b3440">
+            {rank}
+          </Badge>
+          <Badge color={accent}>{grade}</Badge>
+        </div>
+
+        {dog.status === 'pip' && (
+          <div
+            className="absolute right-1 top-1 z-10 px-1.5 py-0.5 text-[10px] font-black"
+            style={{ background: '#ef4444', color: '#fff' }}
+          >
+            PIP
+          </div>
+        )}
+
+        {dog.pendingTraitChoice && (
+          <div
+            className="absolute right-1 top-1 z-10 h-5 w-5 grid place-items-center rounded-full text-[10px] font-black"
+            style={{
+              transform: dog.status === 'pip' ? 'translateY(24px)' : undefined,
+              background: '#a855f7',
+              color: '#fff',
+              boxShadow: '0 2px 6px rgba(88,28,135,0.35)',
+            }}
+          >
+            !
+          </div>
+        )}
+
+        <div className="absolute inset-x-0 top-3 bottom-8 flex items-center justify-center px-2">
+          {dog.image ? (
+            <img
+              src={dog.image}
+              alt={`${dog.name} ${dog.role}`}
+              className="h-full w-full object-contain drop-shadow-lg transition-transform group-hover:scale-[1.04]"
+              draggable={false}
+            />
+          ) : (
+            <DogAvatar role={dog.role} breed={dog.breed} size={74} />
+          )}
+        </div>
+
+        <div
+          className="absolute inset-x-0 bottom-0 px-1.5 pb-1 pt-4"
+          style={{
+            background: 'linear-gradient(180deg, transparent 0%, rgba(20,22,27,0.9) 34%, rgba(20,22,27,0.98) 100%)',
+          }}
+        >
+          <div className="flex items-end justify-between gap-1">
+            <div className="text-[10px] font-black leading-none" style={{ color: '#f7d35b' }}>
+              Lv.{dog.level}
+            </div>
+            <div className="text-[10px] leading-none" style={{ color: '#ffd34e' }}>
+              {'★'.repeat(stars)}
+            </div>
+          </div>
+          <div className="mt-0.5 truncate text-[11px] font-black leading-tight" style={{ color: '#ffffff' }}>
+            {dog.name}
+          </div>
+          <div className="truncate text-[9px] font-bold leading-tight" style={{ color: '#cbd5e1' }}>
+            {dog.role} · {power}
+          </div>
+        </div>
       </div>
-    </div>
+    </button>
+  );
+}
+
+function Badge({
+  children,
+  color,
+  textColor = '#ffffff',
+}: {
+  children: string;
+  color: string;
+  textColor?: string;
+}) {
+  return (
+    <span
+      className="grid place-items-center text-[10px] font-black"
+      style={{
+        width: 18,
+        minHeight: 18,
+        padding: '1px 2px',
+        color: textColor,
+        background: color,
+        border: '1px solid rgba(15,23,42,0.3)',
+        boxShadow: '0 1px 3px rgba(15,23,42,0.25)',
+      }}
+    >
+      {children}
+    </span>
   );
 }

@@ -5,6 +5,7 @@ import { DogAvatar } from '@/components/DogAvatar';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 import { dogPower, dogPowerStars, dogGrade, type DogGradeUI } from '@/lib/utils';
 import type { Dog, Project, ProjectCategory } from '@/types';
+import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 
 const INDUSTRIES: ProjectCategory[] = ['tech', 'design', 'marketing', 'service'];
 
@@ -112,6 +113,15 @@ const SORT_LABEL: Record<SortKey, string> = {
   name: '名字 A-Z',
 };
 
+function activeChemistryForTeam(dogs: Dog[], category: ProjectCategory) {
+  if (dogs.length < 2) return [];
+  const roles = new Set(dogs.map((d) => d.role));
+  return CHEMISTRY_COMBOS.filter((combo) => {
+    if (combo.category && combo.category !== 'any' && combo.category !== category) return false;
+    return combo.roles.every((role) => roles.has(role));
+  });
+}
+
 export function TeamEditModal({ onClose }: { onClose: () => void }) {
   const teams = useGameStore((s) => s.teams);
   const staff = useGameStore((s) => s.staff);
@@ -195,6 +205,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
   const teamMembers = team.memberIds
     .map((id) => staffById.get(id))
     .filter((d): d is Dog => !!d);
+  const activeChemistry = activeChemistryForTeam(teamMembers, activeIndustry);
   const teamTotalPower = teamMembers.reduce((n, d) => n + dogPower(d), 0);
   const teamAvgLevel = teamMembers.length
     ? teamMembers.reduce((n, d) => n + d.level, 0) / teamMembers.length
@@ -212,11 +223,11 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
       <div
         className="rounded-xl flex flex-col w-full"
         style={{
-          maxWidth: 820,
-          height: 'min(86vh, 760px)',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
-          border: '1px solid var(--line)',
-          boxShadow: '0 24px 70px rgba(30,90,180,0.3)',
+          maxWidth: 1440,
+          height: 'min(92vh, 860px)',
+          background: 'linear-gradient(180deg, #fbfcfe 0%, #ffffff 48%, #f4f6f9 100%)',
+          border: '1px solid rgba(52,64,84,0.18)',
+          boxShadow: '0 24px 70px rgba(15,23,42,0.24)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -321,20 +332,63 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
 
-          {/* 4 slots */}
-          <div className="grid grid-cols-4 gap-2">
+          
+
+          <div
+            className="mt-2 px-3 py-2 rounded-lg"
+            style={{
+              background: activeChemistry.length > 0 ? '#ffffff' : '#f7fbff',
+              border: `1px solid ${activeChemistry.length > 0 ? `${headerColor}55` : 'var(--line)'}`,
+            }}
+          >
+            <div className="text-[11px] font-black mb-1" style={{ color: '#173b78' }}>
+              化學反應
+            </div>
+            {activeChemistry.length === 0 ? (
+              <div className="text-[11px]" style={{ color: 'var(--muted)' }}>
+                目前沒有觸發化學反應
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {activeChemistry.map((combo) => (
+                  <span
+                    key={`${combo.roles.join('-')}-${combo.category ?? 'any'}`}
+                    className="text-[11px] px-2 py-1 rounded-md font-bold"
+                    style={{
+                      background: combo.type === 'positive' ? '#eefaf7' : '#fff1f1',
+                      color: combo.type === 'positive' ? '#16845f' : '#c44242',
+                      border: `1px solid ${combo.type === 'positive' ? 'rgba(51,194,154,0.28)' : 'rgba(239,68,68,0.24)'}`,
+                    }}
+                    title={combo.msg}
+                  >
+                    {combo.type === 'positive' ? '正向' : '負面'}：{combo.roles.join(' + ')}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+{/* Team slots */}
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: 'repeat(10, minmax(0, 1fr))',
+              gap: 10,
+            }}
+          >
             {Array.from({ length: maxMembers }, (_, i) => {
               const memberId = team.memberIds[i];
               const dog = memberId ? staffById.get(memberId) : null;
+              const startColumn = i === 0 ? Math.max(1, Math.floor((10 - maxMembers) / 2) + 1) : undefined;
               return (
-                <SlotCell
-                  key={i}
-                  dog={dog ?? null}
-                  color={headerColor}
-                  editMode={editMode}
-                  onShowDetails={() => dog && showDetails(dog.id)}
-                  onRemove={() => dog && removeDog(activeIndustry, dog.id)}
-                />
+                <div key={i} style={{ gridColumnStart: startColumn }}>
+                  <SlotCell
+                    dog={dog ?? null}
+                    color={headerColor}
+                    editMode={editMode}
+                    onShowDetails={() => dog && showDetails(dog.id)}
+                    onRemove={() => dog && removeDog(activeIndustry, dog.id)}
+                  />
+                </div>
               );
             })}
           </div>
@@ -431,14 +485,20 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Staff grid (5 per row) */}
+        {/* Staff grid */}
         <div className="px-4 pb-4 overflow-y-auto" style={{ flex: 1 }}>
           {filteredStaff.length === 0 ? (
             <div className="text-center text-sm py-6" style={{ color: 'var(--muted)' }}>
               這個篩選沒有員工
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: 'repeat(10, minmax(0, 1fr))',
+                gap: 10,
+              }}
+            >
               {filteredStaff.map((d) => {
                 const assignedTeam = dogTeamMap.get(d.id) ?? null;
                 const inCurrent = assignedTeam === activeIndustry;
@@ -550,10 +610,11 @@ function SlotCell({
   if (!dog) {
     return (
       <div
-        className="rounded-lg flex items-center justify-center"
+        className="relative rounded-sm flex items-center justify-center overflow-hidden"
         style={{
-          height: 130,
-          background: 'rgba(255,255,255,0.6)',
+          aspectRatio: '0.68',
+          minHeight: 132,
+          background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 58%, #eef2f7 100%)',
           border: `2px dashed ${color}55`,
           color: '#9aacc5',
           fontSize: 12,
@@ -561,9 +622,14 @@ function SlotCell({
         }}
       >
         空位
+        <div
+          className="absolute inset-x-0 bottom-0"
+          style={{ height: 4, background: color }}
+        />
       </div>
     );
   }
+
   const grade = dogGrade(dog);
   const power = dogPower(dog);
   const stars = dogPowerStars(power);
@@ -571,73 +637,129 @@ function SlotCell({
   const isU = grade === 'U';
   const handleClick = editMode ? onRemove : onShowDetails;
   const ringColor = GRADE_RING_COLOR[grade];
+  const bottomRankBg = isU
+    ? GRADE_BORDER[grade]
+    : `linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 28%), ${GRADE_BORDER[grade]}`;
+
   return (
     <div
       onClick={handleClick}
-      className={`relative rounded-lg flex flex-col items-center cursor-pointer overflow-hidden ${isU ? 'grade-u-frame' : ''}`}
+      className="relative rounded-sm overflow-hidden transition"
       style={{
-        height: 130,
-        padding: '8px 6px',
-        gap: 2,
-        backgroundImage: isU
-          ? industryGlassBg(industry)
-          : `${industryGlassBg(industry)}, ${GRADE_BORDER[grade]}`,
-        backgroundOrigin: 'border-box',
-        backgroundClip: isU
-          ? 'padding-box, padding-box'
-          : 'padding-box, padding-box, border-box',
-        border: '4px solid transparent',
-        boxShadow: `0 0 0 2px ${ringColor}33, 0 4px 10px ${ringColor}55`,
-        backdropFilter: 'blur(14px) saturate(1.3)',
+        aspectRatio: '0.68',
+        minHeight: 132,
+        cursor: 'pointer',
+        background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 56%, #eef2f7 100%)',
+        border: `1px solid ${ringColor}88`,
+        boxShadow: editMode
+          ? `0 0 0 2px ${color}, 0 4px 10px ${color}66`
+          : '0 4px 10px rgba(15,23,42,0.14)',
+        outline: editMode ? `2px dashed ${color}77` : 'none',
+        outlineOffset: editMode ? '-2px' : '0',
       }}
-      title={editMode ? `點擊移出 ${dog.name}` : `點擊查看 ${dog.name} 詳情`}
+      title={editMode ? `移出 ${dog.name}` : `查看 ${dog.name}`}
     >
-      <div className="absolute top-1 left-1 z-10">
-        <GradeBadge grade={grade} size={18} />
-      </div>
-      {!editMode && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="absolute top-1 right-1 rounded-full flex items-center justify-center font-extrabold z-10"
-          style={{
-            width: 18,
-            height: 18,
-            fontSize: 11,
-            lineHeight: 1,
-            background: '#ffffff',
-            color: '#d34a4a',
-            border: '1px solid rgba(255,112,112,0.4)',
-          }}
-          title={`移出 ${dog.name}`}
-        >
-          ×
-        </button>
-      )}
       <div
-        className="rounded-full overflow-hidden flex items-center justify-center mt-2"
-        style={{ width: 44, height: 44, border: '1.5px solid white', background: '#eef6ff' }}
-      >
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'linear-gradient(90deg, rgba(255,255,255,0.85) 0%, transparent 16%, transparent 84%, rgba(15,23,42,0.08) 100%)',
+        }}
+      />
+
+      <div className="absolute" style={{ inset: '2px -14% 36px -14%' }}>
         {dog.image ? (
-          <img src={dog.image} alt={dog.name} className="block h-full w-full object-contain" draggable={false} />
+          <img
+            src={dog.image}
+            alt={dog.name}
+            className="block w-full h-full"
+            style={{ objectFit: 'contain', objectPosition: 'center top' }}
+            draggable={false}
+          />
         ) : (
-          <DogAvatar role={dog.role} breed={dog.breed} size={44} />
+          <div className="w-full h-full flex items-start justify-center pt-2">
+            <DogAvatar role={dog.role} breed={dog.breed} size={90} />
+          </div>
         )}
       </div>
-      <div className="flex items-center gap-1 mt-0.5">
-        <span className="text-[12px] font-extrabold leading-none truncate max-w-full" style={{ color: '#173b78' }}>{dog.name}</span>
-        <span className="text-[9px] px-1 rounded-sm font-extrabold" style={{ background: 'linear-gradient(180deg,#ffe066,#f0a818)', color: '#6a3d05' }}>
-          Lv{dog.level}
-        </span>
+
+      <div
+        className="absolute inset-x-0 bottom-0 pointer-events-none"
+        style={{
+          height: 48,
+          background:
+            'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.78) 42%, rgba(255,255,255,0.96) 100%)',
+        }}
+      />
+
+      {isU && <SparkleOverlay />}
+
+      <div className="absolute top-1.5 left-1.5 z-10">
+        <GradeGem grade={grade} size={22} />
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[12px] font-black" style={{ color: '#7a4a1c' }}>💼{power}</span>
-        <PowerStars count={stars} size={10} />
+
+      <span
+        className="absolute top-1.5 right-1.5 z-10 text-[9px] font-extrabold rounded-sm"
+        style={{
+          padding: '1px 4px',
+          background: 'linear-gradient(180deg,#ffe066,#f0a818)',
+          color: '#6a3d05',
+          border: '1px solid rgba(255,255,255,0.6)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+        }}
+      >
+        Lv.{dog.level}
+      </span>
+
+      <div
+        className="absolute z-10 rounded-full flex items-center justify-center"
+        style={{
+          right: 8,
+          bottom: 44,
+          width: 20,
+          height: 20,
+          background: INDUSTRY_COLOR[industry],
+          border: '2px solid white',
+          boxShadow: `0 2px 6px ${INDUSTRY_COLOR[industry]}99`,
+        }}
+        title={INDUSTRY_LABEL[industry]}
+      >
+        <SvgIcon name={INDUSTRY_ICON[industry]} size={11} />
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 z-10 px-1.5 py-1.5">
+        <div
+          className="absolute inset-x-0 bottom-0"
+          style={{
+            height: 4,
+            background: bottomRankBg,
+            boxShadow: `0 -1px 5px ${ringColor}55`,
+          }}
+        />
+        <div className="flex items-baseline justify-between gap-1">
+          <span
+            className="text-[11px] font-extrabold truncate"
+            style={{ color: '#1f2937', textShadow: '0 1px 0 rgba(255,255,255,0.85)' }}
+          >
+            {dog.name}
+          </span>
+          <span className="text-[8px] font-bold whitespace-nowrap" style={{ color: '#64748b' }}>
+            {dog.role}
+          </span>
+        </div>
+        <div className="flex items-center justify-between mt-0.5">
+          <span
+            className="text-[13px] font-black leading-none"
+            style={{ color: '#7a4a1c', textShadow: '0 1px 0 rgba(255,255,255,0.7)' }}
+          >
+            工作能力 {power}
+          </span>
+          <PowerStars count={stars} size={9} />
+        </div>
       </div>
     </div>
   );
 }
-
 function GradeGem({ grade, size = 28 }: { grade: DogGradeUI; size?: number }) {
   const ringColor = GRADE_RING_COLOR[grade];
   return (
@@ -731,29 +853,24 @@ function StaffCell({
   const opacity = editModeDisabled ? 0.4 : 1;
 
   // 卡片背景：稀有度 radial + 產業色微染（疊加），加上稀有度 border
-  const backgroundImage = isU
-    ? `${RARITY_BG[grade]}, ${industryTint(industry)}`
-    : `${RARITY_BG[grade]}, ${industryTint(industry)}, ${GRADE_BORDER[grade]}`;
-  const backgroundClip = isU
-    ? 'padding-box, padding-box'
-    : 'padding-box, padding-box, border-box';
+  const bottomRankBg = isU
+    ? GRADE_BORDER[grade]
+    : `linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 28%), ${GRADE_BORDER[grade]}`;
 
   return (
     <div
       onClick={handleClick}
-      className={`relative rounded-xl overflow-hidden transition ${isU ? 'grade-u-frame' : ''}`}
+      className="relative rounded-sm overflow-hidden transition"
       style={{
-        aspectRatio: '5 / 6',
-        minHeight: 220,
+        aspectRatio: '0.68',
+        minHeight: 132,
         cursor,
         opacity,
-        backgroundImage,
-        backgroundOrigin: 'border-box',
-        backgroundClip,
-        border: '4px solid transparent',
+        background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 56%, #eef2f7 100%)',
+        border: `1px solid ${ringColor}88`,
         boxShadow: editMode && inTeam
-          ? `0 0 0 2px ${activeIndustryColor}, 0 6px 18px ${activeIndustryColor}99`
-          : `0 0 0 2px ${ringColor}44, 0 6px 18px ${ringColor}66`,
+          ? `0 0 0 2px ${activeIndustryColor}, 0 4px 10px ${activeIndustryColor}66`
+          : '0 4px 10px rgba(15,23,42,0.14)',
         outline: editMode ? `2px dashed ${activeIndustryColor}77` : 'none',
         outlineOffset: editMode ? '-2px' : '0',
       }}
@@ -770,13 +887,12 @@ function StaffCell({
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse at 30% 22%, rgba(255,255,255,0.38) 0%, transparent 45%)',
-          mixBlendMode: 'soft-light',
+            'linear-gradient(90deg, rgba(255,255,255,0.85) 0%, transparent 16%, transparent 84%, rgba(15,23,42,0.08) 100%)',
         }}
       />
 
       {/* 角色圖：放大 + bleed 出邊界 */}
-      <div className="absolute" style={{ inset: '-6% -18% 64px -18%' }}>
+      <div className="absolute" style={{ inset: '2px -14% 36px -14%' }}>
         {dog.image ? (
           <img
             src={dog.image}
@@ -787,7 +903,7 @@ function StaffCell({
           />
         ) : (
           <div className="w-full h-full flex items-start justify-center pt-2">
-            <DogAvatar role={dog.role} breed={dog.breed} size={140} />
+            <DogAvatar role={dog.role} breed={dog.breed} size={90} />
           </div>
         )}
       </div>
@@ -796,9 +912,9 @@ function StaffCell({
       <div
         className="absolute inset-x-0 bottom-0 pointer-events-none"
         style={{
-          height: '60%',
+          height: 48,
           background:
-            'linear-gradient(180deg, transparent 0%, rgba(8,16,40,0.35) 50%, rgba(8,16,40,0.78) 100%)',
+            'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.78) 42%, rgba(255,255,255,0.96) 100%)',
         }}
       />
 
@@ -807,14 +923,14 @@ function StaffCell({
 
       {/* 左上稀有度寶石 */}
       <div className="absolute top-1.5 left-1.5 z-10">
-        <GradeGem grade={grade} size={28} />
+        <GradeGem grade={grade} size={22} />
       </div>
 
       {/* 右上 Lv chip */}
       <span
-        className="absolute top-1.5 right-1.5 z-10 text-[11px] font-extrabold rounded-md"
+        className="absolute top-1.5 right-1.5 z-10 text-[9px] font-extrabold rounded-sm"
         style={{
-          padding: '2px 6px',
+          padding: '1px 4px',
           background: 'linear-gradient(180deg,#ffe066,#f0a818)',
           color: '#6a3d05',
           border: '1px solid rgba(255,255,255,0.6)',
@@ -829,16 +945,16 @@ function StaffCell({
         className="absolute z-10 rounded-full flex items-center justify-center"
         style={{
           right: 8,
-          bottom: 60,
-          width: 24,
-          height: 24,
+          bottom: 44,
+          width: 20,
+          height: 20,
           background: INDUSTRY_COLOR[industry],
           border: '2px solid white',
           boxShadow: `0 2px 6px ${INDUSTRY_COLOR[industry]}99`,
         }}
         title={INDUSTRY_LABEL[industry]}
       >
-        <SvgIcon name={INDUSTRY_ICON[industry]} size={13} />
+        <SvgIcon name={INDUSTRY_ICON[industry]} size={11} />
       </div>
 
       {/* 已加入 chip（左下、姓名條上） */}
@@ -847,8 +963,8 @@ function StaffCell({
           className="absolute z-10 px-2 rounded-full text-[10px] font-extrabold leading-none flex items-center"
           style={{
             left: 8,
-            bottom: 60,
-            height: 18,
+            bottom: 44,
+            height: 16,
             background: activeIndustryColor,
             color: 'white',
             border: '1px solid rgba(255,255,255,0.5)',
@@ -865,8 +981,8 @@ function StaffCell({
           className="absolute z-10 px-2 rounded-full text-[10px] font-extrabold leading-none flex items-center gap-1"
           style={{
             left: 8,
-            bottom: 60,
-            height: 18,
+            bottom: 44,
+            height: 16,
             background: INDUSTRY_COLOR[inOtherTeam],
             color: 'white',
             border: '1px solid rgba(255,255,255,0.5)',
@@ -888,26 +1004,34 @@ function StaffCell({
       )}
 
       {/* 底部姓名條 */}
-      <div className="absolute inset-x-0 bottom-0 z-10 px-2.5 py-2">
+      <div className="absolute inset-x-0 bottom-0 z-10 px-1.5 py-1.5">
+        <div
+          className="absolute inset-x-0 bottom-0"
+          style={{
+            height: 4,
+            background: bottomRankBg,
+            boxShadow: `0 -1px 5px ${ringColor}55`,
+          }}
+        />
         <div className="flex items-baseline justify-between gap-1">
           <span
-            className="text-[14px] font-extrabold truncate"
-            style={{ color: 'white', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}
+            className="text-[11px] font-extrabold truncate"
+            style={{ color: '#1f2937', textShadow: '0 1px 0 rgba(255,255,255,0.85)' }}
           >
             {dog.name}
           </span>
-          <span className="text-[10px] font-bold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.75)' }}>
+          <span className="text-[8px] font-bold whitespace-nowrap" style={{ color: '#64748b' }}>
             {dog.role}
           </span>
         </div>
         <div className="flex items-center justify-between mt-0.5">
           <span
-            className="text-[18px] font-black leading-none"
-            style={{ color: '#ffe066', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
+            className="text-[13px] font-black leading-none"
+            style={{ color: '#7a4a1c', textShadow: '0 1px 0 rgba(255,255,255,0.7)' }}
           >
             💼 {power}
           </span>
-          <PowerStars count={stars} size={12} />
+          <PowerStars count={stars} size={9} />
         </div>
       </div>
     </div>
