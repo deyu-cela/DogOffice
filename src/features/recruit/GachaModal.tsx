@@ -1,295 +1,694 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useGameStore, GACHA_COST, dogPrimaryIndustry, type GachaResult } from '@/store/gameStore';
-import { DogAvatar } from '@/components/DogAvatar';
-import { RadarChart } from '@/components/RadarChart';
-import type { Dog, ProjectCategory } from '@/types';
+import { useGameStore, GACHA_COST, type GachaResult } from '@/store/gameStore';
+import { useUiStore } from '@/store/uiStore';
+import { OFFICE_LEVELS } from '@/constants/officeLevels';
+import { GachaCard } from './GachaCard';
+import { BA_LIGHT, BA_DARK, dogStarStyle } from './gachaStyles';
 
-const INDUSTRY_LABEL: Record<ProjectCategory, string> = {
-  tech: '工程',
-  design: '美術',
-  marketing: '行銷',
-  service: '客服',
-};
+type Phase = 'home' | 'pulling' | 'results';
 
-const INDUSTRY_COLOR: Record<ProjectCategory, string> = {
-  tech: '#5a8ce6',
-  design: '#e88aaa',
-  marketing: '#e8a85a',
-  service: '#5fb38f',
-};
+export function GachaModal() {
+  const open = useUiStore((s) => s.recruitModalOpen);
+  const close = useUiStore((s) => s.closeRecruitModal);
 
-type Machine = {
-  id: string;
-  name: string;
-  description: string;
-  costPerPull: number;
-  flavor: string;
-};
-
-const MACHINES: Machine[] = [
-  {
-    id: 'aoaooo',
-    name: '嗷嗷嗷嗷',
-    description: '基本抽卡台',
-    costPerPull: GACHA_COST,
-    flavor: '隨機抽，全圖鑑均勻分布',
-  },
-];
-
-export function GachaModal({ onClose }: { onClose: () => void }) {
   const money = useGameStore((s) => s.money);
+  const officeLevel = useGameStore((s) => s.officeLevel);
+  const staffCount = useGameStore((s) => s.staff.length);
   const recruit = useGameStore((s) => s.recruitFromGacha);
   const recruitTen = useGameStore((s) => s.recruitFromGachaTen);
 
-  const [machineId, setMachineId] = useState<string>(MACHINES[0].id);
+  const [phase, setPhase] = useState<Phase>('home');
   const [results, setResults] = useState<GachaResult[]>([]);
+  const [revealed, setRevealed] = useState<Set<number>>(new Set());
 
-  const machine = MACHINES.find((m) => m.id === machineId) ?? MACHINES[0];
-  const onePullCost = machine.costPerPull;
-  const tenPullCost = machine.costPerPull * 10;
+  const maxStaff = OFFICE_LEVELS[officeLevel].maxStaff;
+  const onePullCost = GACHA_COST;
+  const tenPullCost = GACHA_COST * 10;
+
+  // 重置 state（modal 關閉或從 results 重新開）
+  const reset = () => {
+    setPhase('home');
+    setResults([]);
+    setRevealed(new Set());
+  };
+
+  // 關閉行為
+  const handleClose = () => {
+    if (phase === 'pulling') return; // 動畫中不關
+    reset();
+    close();
+  };
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, phase]);
+
+  // 進 pulling phase 後，全部翻開後等用戶按下一步
+  const allRevealed = results.length > 0 && revealed.size === results.length;
 
   const handleOne = () => {
     const r = recruit();
-    if (r) setResults([r]);
+    if (!r) return;
+    setResults([r]);
+    setRevealed(new Set());
+    setPhase('pulling');
   };
   const handleTen = () => {
     const arr = recruitTen();
-    if (arr.length > 0) setResults(arr);
+    if (arr.length === 0) return;
+    setResults(arr);
+    setRevealed(new Set());
+    setPhase('pulling');
   };
 
-  const modal = (
+  const revealAt = (i: number) => {
+    setRevealed((prev) => {
+      const next = new Set(prev);
+      next.add(i);
+      return next;
+    });
+  };
+  const revealAll = () => {
+    setRevealed(new Set(results.map((_, i) => i)));
+  };
+  const goToResults = () => setPhase('results');
+
+  const handleAgain = () => {
+    setResults([]);
+    setRevealed(new Set());
+    setPhase('home');
+  };
+
+  if (!open) return null;
+
+  const ceoImage = `${import.meta.env.BASE_URL}assets/dog-profiles/ceo.png`;
+
+  return createPortal(
+    <>
+      <style>{KEYFRAMES}</style>
+      <div
+        className="fixed inset-0 z-[860] flex items-center justify-center p-4"
+        style={{
+          background: 'rgba(8,32,77,0.62)',
+          backdropFilter: 'blur(10px) saturate(1.1)',
+          WebkitBackdropFilter: 'blur(10px) saturate(1.1)',
+          animation: 'gachaBackdropFade 0.25s ease-out',
+        }}
+        onClick={handleClose}
+      >
+        <div
+          className="bx-stripe relative rounded-2xl flex flex-col w-full overflow-hidden"
+          style={{
+            maxWidth: 820,
+            maxHeight: '92vh',
+            background: BA_LIGHT.bg,
+            border: `1px solid ${BA_LIGHT.border}`,
+            boxShadow: `${BA_LIGHT.glow}, inset 0 0 0 1px rgba(255,255,255,0.55)`,
+            animation: 'gachaModalIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {phase === 'home' && (
+            <HomeView
+              money={money}
+              staffCount={staffCount}
+              maxStaff={maxStaff}
+              onePullCost={onePullCost}
+              tenPullCost={tenPullCost}
+              ceoImage={ceoImage}
+              onClose={handleClose}
+              onOne={handleOne}
+              onTen={handleTen}
+            />
+          )}
+          {phase === 'results' && (
+            <ResultsView
+              results={results}
+              money={money}
+              tenPullCost={tenPullCost}
+              onePullCost={onePullCost}
+              onAgain={handleAgain}
+              onClose={handleClose}
+            />
+          )}
+          {phase === 'pulling' && (
+            <PullingView
+              results={results}
+              revealed={revealed}
+              onReveal={revealAt}
+              onSkip={revealAll}
+              onNext={goToResults}
+              allRevealed={allRevealed}
+            />
+          )}
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
+// ============ Home Phase ============
+
+function HomeView({
+  money, staffCount, maxStaff, onePullCost, tenPullCost, ceoImage,
+  onClose, onOne, onTen,
+}: {
+  money: number; staffCount: number; maxStaff: number;
+  onePullCost: number; tenPullCost: number; ceoImage: string;
+  onClose: () => void; onOne: () => void; onTen: () => void;
+}) {
+  const canOne = money >= onePullCost;
+  const canTen = money >= tenPullCost;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="關閉"
+        className="absolute top-3 right-3 rounded-full font-extrabold flex items-center justify-center"
+        style={{
+          width: 32, height: 32,
+          background: 'rgba(255,255,255,0.9)',
+          color: BA_LIGHT.accent,
+          border: `1.5px solid ${BA_LIGHT.border}`,
+          fontSize: 14,
+          zIndex: 5,
+        }}
+      >
+        ✕
+      </button>
+
+      {/* Banner */}
+      <div
+        className="relative flex items-center justify-center"
+        style={{
+          background: BA_LIGHT.bannerBg,
+          height: 280,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          className="gacha-sparkle"
+          style={{
+            position: 'absolute', inset: 0,
+            background:
+              'radial-gradient(circle at 30% 40%, rgba(255,255,255,0.25) 0%, transparent 40%), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.18) 0%, transparent 35%)',
+            pointerEvents: 'none',
+          }}
+        />
+        <img
+          src={ceoImage}
+          alt="CEO"
+          draggable={false}
+          style={{
+            height: '85%',
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 12px 28px rgba(0,0,0,0.35))',
+            zIndex: 2,
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: 18,
+            left: 24,
+            color: 'white',
+            fontSize: 28,
+            fontWeight: 900,
+            letterSpacing: 2,
+            textShadow:
+              '0 2px 0 #1a4d99, 0 4px 12px rgba(0,0,0,0.4), 0 0 18px rgba(255,217,90,0.6)',
+            zIndex: 3,
+          }}
+        >
+          狗狗招募中！
+        </div>
+        <div
+          style={{
+            position: 'absolute',
+            top: 56,
+            left: 24,
+            color: 'rgba(255,255,255,0.92)',
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            zIndex: 3,
+          }}
+        >
+          DogOffice ・ Recruit Banner
+        </div>
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 14,
+            right: 18,
+            color: 'rgba(255,255,255,0.85)',
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: 1.2,
+            zIndex: 3,
+          }}
+        >
+          ★★★ 機率 UP！
+        </div>
+      </div>
+
+      {/* 資源 chip 條 */}
+      <div
+        className="flex items-center gap-2 px-4 py-3"
+        style={{
+          background: 'rgba(255,255,255,0.7)',
+          borderBottom: `1px solid ${BA_LIGHT.borderSoft}`,
+          backdropFilter: 'blur(4px)',
+        }}
+      >
+        <Chip label="資金" value={`$${money.toLocaleString()}`} />
+        <Chip label="員工" value={`${staffCount} / ${maxStaff}`} />
+        <div className="ml-auto text-[11px] font-bold" style={{ color: BA_LIGHT.muted }}>
+          抽到新狗 → 入隊；重複 → 碎片
+        </div>
+      </div>
+
+      {/* 按鈕區 */}
+      <div className="p-5 flex flex-col gap-3" style={{ flex: 1 }}>
+        <button
+          type="button"
+          disabled={!canOne}
+          onClick={onOne}
+          className="rounded-2xl py-4 font-extrabold transition-transform"
+          style={{
+            background: canOne
+              ? 'linear-gradient(180deg, #ffffff 0%, #eaf4ff 100%)'
+              : '#f4f7fb',
+            color: canOne ? BA_LIGHT.accent : '#aab8ce',
+            border: `2px solid ${canOne ? BA_LIGHT.border : '#d4dfee'}`,
+            boxShadow: canOne ? '0 6px 16px rgba(95,179,255,0.25)' : 'none',
+            cursor: canOne ? 'pointer' : 'not-allowed',
+            fontSize: 16,
+            letterSpacing: 1,
+          }}
+        >
+          招募 1 次　・　${onePullCost}
+        </button>
+        <button
+          type="button"
+          disabled={!canTen}
+          onClick={onTen}
+          className="rounded-2xl py-5 font-extrabold transition-transform"
+          style={{
+            background: canTen
+              ? 'linear-gradient(180deg, #5fb3ff 0%, #2080d6 100%)'
+              : '#d4dfee',
+            color: canTen ? 'white' : '#7a8aa8',
+            border: `2px solid ${canTen ? '#ffd95a' : '#bcc8dd'}`,
+            boxShadow: canTen
+              ? '0 8px 24px rgba(32,128,214,0.4), 0 0 18px rgba(255,217,90,0.35)'
+              : 'none',
+            cursor: canTen ? 'pointer' : 'not-allowed',
+            fontSize: 18,
+            letterSpacing: 1,
+            textShadow: canTen ? '0 2px 4px rgba(0,0,0,0.2)' : 'none',
+          }}
+        >
+          招募 10 次　・　${tenPullCost}
+        </button>
+        <div
+          className="text-[11px] text-center"
+          style={{ color: BA_LIGHT.muted, marginTop: 2 }}
+        >
+          連抽十發保證 5 張 NEW（含碎片補償）
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Chip({ label, value }: { label: string; value: string }) {
+  return (
     <div
-      className="fixed inset-0 z-[860] flex items-center justify-center p-4"
-      style={{ background: 'rgba(8,32,77,0.55)', backdropFilter: 'blur(4px)' }}
-      onClick={onClose}
+      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+      style={{
+        background: 'linear-gradient(180deg, #ffffff 0%, #e8f3ff 100%)',
+        border: `1px solid ${BA_LIGHT.borderSoft}`,
+        fontSize: 11,
+      }}
+    >
+      <span style={{ color: BA_LIGHT.muted, fontWeight: 700 }}>{label}</span>
+      <span style={{ color: BA_LIGHT.text, fontWeight: 900 }}>{value}</span>
+    </div>
+  );
+}
+
+// ============ Pulling Phase ============
+
+function PullingView({
+  results, revealed, onReveal, onSkip, onNext, allRevealed,
+}: {
+  results: GachaResult[]; revealed: Set<number>;
+  onReveal: (i: number) => void; onSkip: () => void; onNext: () => void;
+  allRevealed: boolean;
+}) {
+  const isTen = results.length > 1;
+  const cardSize = isTen ? 110 : 180;
+
+  return (
+    <div
+      className="relative flex flex-col items-center justify-center"
+      style={{
+        background: BA_DARK.bg,
+        minHeight: 520,
+        padding: '40px 20px',
+        animation: 'gachaPhaseIn 0.4s ease-out',
+      }}
     >
       <div
-        className="rounded-xl flex flex-col w-full"
         style={{
-          maxWidth: 780,
-          maxHeight: '92vh',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
-          border: '1px solid var(--line)',
-          boxShadow: '0 24px 70px rgba(30,90,180,0.32)',
+          position: 'absolute',
+          inset: 0,
+          background: BA_DARK.centerGlow,
+          pointerEvents: 'none',
         }}
-        onClick={(e) => e.stopPropagation()}
+      />
+
+      <div
+        style={{
+          color: BA_DARK.text,
+          fontSize: 14,
+          fontWeight: 800,
+          letterSpacing: 4,
+          opacity: allRevealed ? 0 : 1,
+          transition: 'opacity 0.3s',
+          marginBottom: 24,
+          textShadow: '0 0 12px rgba(95,179,255,0.6)',
+        }}
       >
-        {/* Machine selector tabs */}
-        <div className="p-3 flex items-center gap-2 flex-wrap" style={{ borderBottom: '1px solid var(--line)' }}>
-          {MACHINES.map((m) => {
-            const active = m.id === machineId;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setMachineId(m.id)}
-                className="text-sm px-3 py-1.5 rounded-lg font-extrabold"
-                style={{
-                  background: active ? 'linear-gradient(180deg, #ffd95a, #f0a818)' : '#ffffff',
-                  color: active ? '#6a3d05' : '#446da8',
-                  border: active ? '1.5px solid rgba(176,107,15,0.5)' : '1.5px solid var(--line)',
-                  boxShadow: active ? '0 4px 12px rgba(240,168,24,0.35)' : 'none',
-                }}
-              >
-                {m.name}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            onClick={onClose}
-            className="ml-auto text-sm px-2.5 py-1 rounded-full"
-            style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
-          >
-            X
-          </button>
-        </div>
-
-        {/* Machine info banner */}
-        <div className="px-4 py-3" style={{ background: 'linear-gradient(180deg, #fff7e0, #ffe9b8)', borderBottom: '1px solid #e0c280' }}>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xl font-extrabold" style={{ color: '#6a3d05' }}>{machine.name}</div>
-              <div className="text-[11px] mt-0.5" style={{ color: '#8a5e1c' }}>{machine.flavor}</div>
-            </div>
-            <div className="text-[11px] text-right" style={{ color: '#8a5e1c' }}>
-              <div>單抽 ${onePullCost}</div>
-              <div>十抽 ${tenPullCost}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Results / placeholder */}
-        <div className="flex-1 overflow-y-auto px-4 py-3" style={{ minHeight: 200 }}>
-          {results.length === 0 ? (
-            <div
-              className="rounded-xl py-12 text-center"
-              style={{ background: '#f7fbff', border: '1px dashed var(--line)', color: 'var(--muted)' }}
-            >
-              <div className="text-3xl mb-1">🎲</div>
-              <div className="text-sm font-bold">按下方按鈕開始抽卡</div>
-            </div>
-          ) : results.length === 1 ? (
-            <ResultBig result={results[0]} />
-          ) : (
-            <div className="grid grid-cols-5 gap-2">
-              {results.map((r, i) => <ResultSmall key={i} result={r} />)}
-            </div>
-          )}
-        </div>
-
-        {/* Action bar */}
-        <div className="p-4" style={{ borderTop: '1px solid var(--line)' }}>
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={handleOne}
-              disabled={money < onePullCost}
-              className="rounded-xl py-3 font-extrabold"
-              style={{
-                background: money >= onePullCost ? 'linear-gradient(180deg, #ffd95a, #f0a818)' : '#e9f1ff',
-                color: money >= onePullCost ? '#6a3d05' : '#8aa2c8',
-                border: '1px solid rgba(176,107,15,0.45)',
-                cursor: money >= onePullCost ? 'pointer' : 'not-allowed',
-              }}
-            >
-              一抽 ${onePullCost}
-            </button>
-            <button
-              type="button"
-              onClick={handleTen}
-              disabled={money < tenPullCost}
-              className="rounded-xl py-3 font-extrabold"
-              style={{
-                background: money >= tenPullCost ? 'linear-gradient(180deg, #ff9f4d, #e8632a)' : '#e9f1ff',
-                color: money >= tenPullCost ? 'white' : '#8aa2c8',
-                border: '1px solid rgba(232,99,42,0.5)',
-                boxShadow: money >= tenPullCost ? '0 8px 18px rgba(232,99,42,0.32)' : 'none',
-                cursor: money >= tenPullCost ? 'pointer' : 'not-allowed',
-              }}
-            >
-              連抽十發 ${tenPullCost}
-            </button>
-          </div>
-        </div>
+        TAP TO REVEAL ・ 點擊卡片揭曉
       </div>
-    </div>
-  );
 
-  return createPortal(modal, document.body);
-}
+      <div
+        className={isTen ? 'grid' : 'flex justify-center'}
+        style={
+          isTen
+            ? {
+                gridTemplateColumns: 'repeat(5, auto)',
+                gap: 14,
+                rowGap: 18,
+                zIndex: 2,
+              }
+            : { zIndex: 2 }
+        }
+      >
+        {results.map((r, i) => (
+          <GachaCard
+            key={i}
+            result={r}
+            revealed={revealed.has(i)}
+            flyDelay={0.05 * i}
+            size={cardSize}
+            onReveal={() => onReveal(i)}
+          />
+        ))}
+      </div>
 
-function ResultBig({ result }: { result: GachaResult }) {
-  const dog = result.dog;
-  const industry = dogPrimaryIndustry(dog.role);
-  return (
-    <div
-      className="rounded-xl p-4"
-      style={{
-        background: 'linear-gradient(180deg, #ffffff, #f4f9ff)',
-        border: `2px solid ${INDUSTRY_COLOR[industry]}`,
-        boxShadow: '0 12px 28px rgba(46,104,180,0.18)',
-      }}
-    >
-      {result.duplicate && (
-        <DupRibbon result={result} />
+      {/* 全部開啟 skip */}
+      {!allRevealed && (
+        <button
+          type="button"
+          onClick={onSkip}
+          className="absolute top-4 right-4 rounded-full px-4 py-1.5 font-extrabold"
+          style={{
+            background: 'rgba(255,255,255,0.08)',
+            color: 'white',
+            border: '1.5px solid rgba(255,255,255,0.5)',
+            fontSize: 12,
+            letterSpacing: 1,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          全部開啟 ▶
+        </button>
       )}
-      <div className="flex items-center gap-3">
-        <DogPortrait dog={dog} size={64} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-extrabold text-base">{dog.name}</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: 'linear-gradient(180deg, #ffd95a, #f0a818)', color: '#6a3d05', border: '1px solid rgba(176,107,15,0.4)' }}>
-              Lv.{dog.level}
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: INDUSTRY_COLOR[industry], color: 'white' }}>
-              {INDUSTRY_LABEL[industry]}
-            </span>
-          </div>
-          <div className="text-xs" style={{ color: 'var(--muted)' }}>
-            {dog.breed}・{dog.role}・日薪 ${dog.expectedSalary}
-          </div>
-          {dog.motto && (
-            <div className="text-[11px] mt-1 italic" style={{ color: '#7c95bc' }}>「{dog.motto}」</div>
-          )}
-        </div>
-      </div>
-      <div className="mt-3 flex items-center justify-center">
-        <RadarChart stats={dog.stats} size={140} />
-      </div>
-    </div>
-  );
-}
 
-function ResultSmall({ result }: { result: GachaResult }) {
-  const dog = result.dog;
-  const industry = dogPrimaryIndustry(dog.role);
-  const color = INDUSTRY_COLOR[industry];
-  const isDup = result.duplicate;
-  return (
-    <div
-      className="rounded-lg p-2 flex flex-col items-center gap-1"
-      style={{
-        background: '#ffffff',
-        border: isDup ? '1.5px solid #6da8e8' : `1.5px solid ${color}`,
-        boxShadow: '0 4px 10px rgba(46,104,180,0.1)',
-      }}
-    >
-      <DogPortrait dog={dog} size={40} />
-      <div className="text-[11px] font-extrabold leading-none truncate w-full text-center" style={{ color: '#173b78' }}>
-        {dog.name}
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="text-[9px] px-1 rounded-sm" style={{ background: 'linear-gradient(180deg, #ffd95a, #f0a818)', color: '#6a3d05' }}>Lv{dog.level}</span>
-        <span className="text-[9px] px-1 rounded-sm" style={{ background: color, color: 'white' }}>{INDUSTRY_LABEL[industry]}</span>
-      </div>
-      <div className="text-[9px] font-bold" style={{ color: isDup ? '#1c4f8a' : '#5a8a6a' }}>
-        {isDup
-          ? result.fragmentGained > 0
-            ? `+${result.fragmentGained} 碎片`
-            : `+$${result.refunded}`
-          : 'NEW'}
-      </div>
-    </div>
-  );
-}
-
-function DupRibbon({ result }: { result: GachaResult }) {
-  const showFragments = result.fragmentGained > 0;
-  return (
-    <div
-      className="text-[11px] text-center px-2 py-1 mb-2 rounded-full font-extrabold"
-      style={{
-        background: showFragments ? 'linear-gradient(180deg, #c9e4ff, #87c0ff)' : '#fff7e0',
-        color: showFragments ? '#1c4f8a' : '#a36a3a',
-        border: showFragments ? '1px solid #5fa0e8' : '1px solid #e0c280',
-      }}
-    >
-      {showFragments
-        ? `✦ 圖鑑重複 → +${result.fragmentGained} 碎片（共 ${result.dog.fragments} 個）`
-        : `✦ Lv.10 重複 → 碎片轉成 $${result.refunded}`}
-    </div>
-  );
-}
-
-function DogPortrait({ dog, size }: { dog: Dog; size: number }) {
-  return (
-    <div
-      className="rounded-full overflow-hidden flex items-center justify-center"
-      style={{ width: size, height: size, border: '2px solid white', background: '#eef6ff' }}
-    >
-      {dog.image ? (
-        <img src={dog.image} alt={dog.name} className="block h-full w-full object-contain" draggable={false} />
-      ) : (
-        <DogAvatar role={dog.role} breed={dog.breed} size={size} />
+      {/* 下一步 */}
+      {allRevealed && (
+        <button
+          type="button"
+          onClick={onNext}
+          className="rounded-2xl px-8 py-3 font-extrabold"
+          style={{
+            marginTop: 28,
+            background: 'linear-gradient(180deg, #ffd95a 0%, #f0a818 100%)',
+            color: '#6a3d05',
+            border: '2px solid rgba(255,255,255,0.7)',
+            fontSize: 16,
+            letterSpacing: 2,
+            boxShadow:
+              '0 0 24px rgba(255,217,90,0.6), 0 8px 18px rgba(0,0,0,0.3)',
+            animation: 'gachaPulse 1.5s ease-in-out infinite',
+            zIndex: 2,
+          }}
+        >
+          下一步 ▶
+        </button>
       )}
     </div>
   );
 }
+
+// ============ Results Phase ============
+
+function ResultsView({
+  results, money, tenPullCost, onePullCost, onAgain, onClose,
+}: {
+  results: GachaResult[]; money: number;
+  tenPullCost: number; onePullCost: number;
+  onAgain: () => void; onClose: () => void;
+}) {
+  const summary = useMemo(() => {
+    let neu = 0, dup = 0, frags = 0, refunded = 0;
+    let topTier = 1;
+    results.forEach((r) => {
+      if (r.duplicate) dup++; else neu++;
+      frags += r.fragmentGained;
+      refunded += r.refunded;
+      const t = dogStarStyle(r.dog).tier;
+      if (t > topTier) topTier = t;
+    });
+    return { neu, dup, frags, refunded, topTier };
+  }, [results]);
+
+  const isTen = results.length > 1;
+  const cardSize = isTen ? 110 : 200;
+
+  const canAgainTen = money >= tenPullCost;
+  const canAgainOne = money >= onePullCost;
+  const canAgain = isTen ? canAgainTen : canAgainOne;
+
+  return (
+    <>
+      <div
+        className="px-5 pt-5 pb-3"
+        style={{
+          background: BA_LIGHT.bannerBg,
+          color: 'white',
+        }}
+      >
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 900,
+            letterSpacing: 3,
+            textShadow:
+              summary.topTier === 3
+                ? '0 0 18px rgba(255,217,90,0.7), 0 2px 4px rgba(0,0,0,0.35)'
+                : '0 2px 4px rgba(0,0,0,0.35)',
+          }}
+        >
+          招募成功！
+        </div>
+        <div className="flex gap-2 mt-2 flex-wrap">
+          <SummaryChip label="NEW" value={summary.neu} color="#29b98f" />
+          <SummaryChip label="重複" value={summary.dup} color="#5fb3ff" />
+          {summary.frags > 0 && (
+            <SummaryChip label="+碎片" value={summary.frags} color="#c79bff" />
+          )}
+          {summary.refunded > 0 && (
+            <SummaryChip label="+$" value={summary.refunded} color="#ffd95a" />
+          )}
+        </div>
+      </div>
+
+      <div
+        className="overflow-y-auto px-5 py-4"
+        style={{ flex: 1, minHeight: 0 }}
+      >
+        <div
+          className={isTen ? 'grid' : 'flex justify-center'}
+          style={
+            isTen
+              ? { gridTemplateColumns: 'repeat(5, auto)', gap: 12, rowGap: 16 }
+              : {}
+          }
+        >
+          {results.map((r, i) => (
+            <GachaCard
+              key={i}
+              result={r}
+              revealed={true}
+              flyDelay={0}
+              size={cardSize}
+              onReveal={() => {}}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div
+        className="p-4 grid grid-cols-2 gap-3"
+        style={{ borderTop: `1px solid ${BA_LIGHT.borderSoft}` }}
+      >
+        <button
+          type="button"
+          disabled={!canAgain}
+          onClick={onAgain}
+          className="rounded-xl py-3 font-extrabold"
+          style={{
+            background: canAgain ? 'white' : '#f4f7fb',
+            color: canAgain ? BA_LIGHT.accent : '#aab8ce',
+            border: `2px solid ${canAgain ? BA_LIGHT.border : '#d4dfee'}`,
+            cursor: canAgain ? 'pointer' : 'not-allowed',
+            fontSize: 14,
+          }}
+        >
+          再抽一次
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl py-3 font-extrabold"
+          style={{
+            background: 'linear-gradient(180deg, #5fb3ff 0%, #2080d6 100%)',
+            color: 'white',
+            border: '2px solid rgba(255,217,90,0.6)',
+            fontSize: 14,
+            boxShadow: '0 6px 14px rgba(32,128,214,0.32)',
+          }}
+        >
+          結束
+        </button>
+      </div>
+    </>
+  );
+}
+
+function SummaryChip({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div
+      className="px-2.5 py-1 rounded-full text-[11px] font-extrabold"
+      style={{
+        background: 'rgba(255,255,255,0.92)',
+        color,
+        border: `1.5px solid ${color}`,
+      }}
+    >
+      {label} × {value}
+    </div>
+  );
+}
+
+// ============ Keyframes ============
+
+const KEYFRAMES = `
+@keyframes gachaBackdropFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes gachaModalIn {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes gachaPhaseIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes gachaCardFlyIn {
+  0% {
+    opacity: 0;
+    transform: translate(-180%, -120%) rotate(-25deg) scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(8%, 4%) rotate(8deg) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0) scale(1);
+  }
+}
+@keyframes gachaPillarRise {
+  0% { transform: scaleY(0); opacity: 0; }
+  60% { transform: scaleY(1.1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0.85; }
+}
+@keyframes gachaPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.gacha-card-wrap {
+  position: relative;
+  display: inline-block;
+  perspective: 1000px;
+  animation: gachaCardFlyIn 0.55s cubic-bezier(0.2, 0.7, 0.3, 1.05) backwards;
+}
+.gacha-pillar {
+  position: absolute;
+  left: 50%;
+  bottom: -10%;
+  width: 70%;
+  height: 240%;
+  transform: translateX(-50%) scaleY(1);
+  transform-origin: bottom center;
+  filter: blur(2px);
+  animation: gachaPillarRise 0.6s cubic-bezier(0.3, 0.8, 0.2, 1) forwards;
+  pointer-events: none;
+  z-index: 0;
+}
+.gacha-card {
+  position: relative;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-radius: 12px;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.4, 0.05, 0.3, 1);
+  z-index: 1;
+}
+.gacha-card.revealed {
+  transform: rotateY(180deg);
+}
+.gacha-card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.gacha-card-front {
+  transform: rotateY(180deg);
+  padding: 0;
+}
+`;

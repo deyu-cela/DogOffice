@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type BuildingKind = 'shop' | 'dorm' | 'hr' | 'construction';
+export type BuildingKind = 'construction';
 
 type UIState = {
   openBuilding: BuildingKind | null;
@@ -17,6 +17,31 @@ type UIState = {
   showStarterPack: boolean;
   openStarterPack: () => void;
   closeStarterPack: () => void;
+
+  // 管理隊伍 modal（置中）
+  teamModalOpen: boolean;
+  openTeamModal: () => void;
+  closeTeamModal: () => void;
+
+  // 招募抽卡 modal（蔚藍檔案風）
+  recruitModalOpen: boolean;
+  openRecruitModal: () => void;
+  closeRecruitModal: () => void;
+
+  // 商店 modal（置中，從販賣機觸發）
+  shopModalOpen: boolean;
+  openShopModal: () => void;
+  closeShopModal: () => void;
+
+  // 辦公室造型 modal（從右上角圖示鈕觸發）
+  skinModalOpen: boolean;
+  openSkinModal: () => void;
+  closeSkinModal: () => void;
+
+  // 案件詳情 modal（從牆上便利貼觸發）
+  projectDetailId: string | null;
+  openProjectDetail: (id: string) => void;
+  closeProjectDetail: () => void;
 };
 
 export const useUiStore = create<UIState>((set, get) => ({
@@ -32,4 +57,24 @@ export const useUiStore = create<UIState>((set, get) => ({
   showStarterPack: false,
   openStarterPack: () => set({ showStarterPack: true }),
   closeStarterPack: () => set({ showStarterPack: false }),
+
+  teamModalOpen: false,
+  openTeamModal: () => set({ teamModalOpen: true }),
+  closeTeamModal: () => set({ teamModalOpen: false }),
+
+  recruitModalOpen: false,
+  openRecruitModal: () => set({ recruitModalOpen: true }),
+  closeRecruitModal: () => set({ recruitModalOpen: false }),
+
+  shopModalOpen: false,
+  openShopModal: () => set({ shopModalOpen: true }),
+  closeShopModal: () => set({ shopModalOpen: false }),
+
+  skinModalOpen: false,
+  openSkinModal: () => set({ skinModalOpen: true }),
+  closeSkinModal: () => set({ skinModalOpen: false }),
+
+  projectDetailId: null,
+  openProjectDetail: (id) => set({ projectDetailId: id }),
+  closeProjectDetail: () => set({ projectDetailId: null }),
 }));

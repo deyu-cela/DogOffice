@@ -109,16 +109,17 @@ export function ProjectDetailModal({
       `}</style>
       <div
         className="fixed inset-0 z-[820] flex items-center justify-center p-4"
-        style={{ background: 'rgba(8,32,77,0.55)', backdropFilter: 'blur(4px)' }}
+        style={{
+          background: 'rgba(8,32,77,0.55)',
+          backdropFilter: 'blur(10px) saturate(1.1)',
+          WebkitBackdropFilter: 'blur(10px) saturate(1.1)',
+        }}
         onClick={onClose}
       >
         <div
-          className="rounded-xl max-w-md w-full overflow-y-auto"
+          className="bx-panel bx-stripe rounded-xl max-w-md w-full overflow-y-auto"
           style={{
             maxHeight: '90vh',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
-            border: '1px solid var(--line)',
-            boxShadow: '0 24px 70px rgba(30,90,180,0.28)',
             animation: 'detailSlideIn 0.25s ease-out',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -309,7 +310,7 @@ export function ProjectDetailModal({
                     className="text-[11px] text-center mb-2 px-2 py-1.5 rounded-lg"
                     style={{ background: '#fff7f7', color: '#c0392b', border: '1px solid #e8c8c8' }}
                   >
-                    確定放棄？將扣 ${project.penalty}、信譽 {project.reputationDelta.fail}、隊員士氣 -5
+                    確定放棄？將扣 ${project.penalty}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <button

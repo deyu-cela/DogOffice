@@ -23,15 +23,14 @@ function dogScoreFor(dog: Dog, category: ProjectCategory): number {
   const specialistBonus = cats.length === 1 ? 5 : cats.length === 2 ? 2 : 0;
   const matchBonus = cats.includes(category) ? 10 + specialistBonus : 0;
   const fatiguePenalty = dog.fatigue / 10;
-  const moraleAdj = dog.morale < 30 ? -3 : dog.morale >= 80 ? 3 : 0;
   let mainWeight = 0;
   switch (category) {
     case 'tech': mainWeight = dog.stats.quality * 1.3 + dog.stats.speed * 1.2; break;
-    case 'design': mainWeight = dog.stats.quality * 1.4 + dog.stats.charisma * 1.1; break;
-    case 'marketing': mainWeight = dog.stats.charisma * 1.5 + dog.stats.speed * 1.1; break;
-    case 'service': mainWeight = dog.stats.teamwork * 1.4 + dog.stats.quality * 1.1; break;
+    case 'design': mainWeight = dog.stats.quality * 1.4 + dog.stats.speed * 1.15; break;
+    case 'marketing': mainWeight = dog.stats.speed * 1.3 + dog.stats.quality * 1.1; break;
+    case 'service': mainWeight = dog.stats.quality * 1.2 + dog.stats.speed * 1.15; break;
   }
-  return mainWeight + matchBonus - fatiguePenalty + moraleAdj;
+  return mainWeight + matchBonus - fatiguePenalty;
 }
 
 function traitScoreFor(dog: Dog, category: ProjectCategory, alreadyPicked: Dog[]): number {
@@ -45,7 +44,7 @@ function traitScoreFor(dog: Dog, category: ProjectCategory, alreadyPicked: Dog[]
         score += category === 'tech' || category === 'design' || category === 'service' ? 5 : 1; break;
       case 'mentor': score += alreadyPicked.length > 0 ? 4 : 0; break;
       case 'haggler': score += 6; break;
-      case 'ironHeart': score += dog.morale < 50 ? 3 : 1; break;
+      case 'ironHeart': score += 1; break;
       case 'catalyst': score += alreadyPicked.length > 0 ? 5 : 1; break;
       case 'enduring': score += dog.fatigue > 50 ? 5 : 2; break;
       case 'social': score += category === 'marketing' ? 6 : 3; break;
@@ -63,6 +62,42 @@ function chemistryBonus(testRoles: Set<string>, category: ProjectCategory): numb
     bonus += combo.type === 'positive' ? 6 : -6;
   }
   return bonus;
+}
+
+// 自動配對隊伍：貪心填滿到 capacity，純看 base + trait + chemistry 分數，沒有 project 模擬
+// 用在 TeamEditModal 的「自動配對」按鈕
+export function pickBestTeamForIndustry(
+  candidates: Dog[],
+  category: ProjectCategory,
+  capacity: number,
+): Dog[] {
+  if (capacity <= 0 || candidates.length === 0) return [];
+  const result: Dog[] = [];
+  const pool = candidates.slice();
+
+  while (result.length < capacity && pool.length > 0) {
+    let bestIdx = -1;
+    let bestScore = -Infinity;
+    for (let i = 0; i < pool.length; i++) {
+      const d = pool[i];
+      const baseScore = dogScoreFor(d, category);
+      const traitScore = traitScoreFor(d, category, result);
+      const newRoles = new Set([...result.map((r) => r.role), d.role]);
+      const oldRoles = new Set(result.map((r) => r.role));
+      const chemDelta = chemistryBonus(newRoles, category) - chemistryBonus(oldRoles, category);
+      const total = baseScore + traitScore + chemDelta;
+      if (total > bestScore) {
+        bestScore = total;
+        bestIdx = i;
+      }
+    }
+    if (bestIdx === -1) break;
+    // 第一隻保證選；之後若加進去整體分數變負，就停
+    if (result.length >= 1 && bestScore < 0) break;
+    result.push(pool[bestIdx]);
+    pool.splice(bestIdx, 1);
+  }
+  return result;
 }
 
 // 自動指派：貪心挑分數最高的，最多 3 隻；當加人不能再縮短預估天數時停止

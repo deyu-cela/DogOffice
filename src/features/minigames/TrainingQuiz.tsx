@@ -1,11 +1,10 @@
 ﻿import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 
-const STAT_OPTIONS: { id: 'speed' | 'quality' | 'teamwork' | 'charisma'; label: string; color: string }[] = [
+const STAT_OPTIONS: { id: 'speed' | 'quality' | 'patience'; label: string; color: string }[] = [
   { id: 'speed', label: '⚡ 速度', color: '#3a7a3f' },
   { id: 'quality', label: '✨ 專業', color: '#2b7abd' },
-  { id: 'teamwork', label: ' 協作', color: '#7b3a9f' },
-  { id: 'charisma', label: ' 魅力', color: '#d07a1f' },
+  { id: 'patience', label: ' 耐心', color: '#7b3a9f' },
 ];
 
 export function TrainingQuiz() {

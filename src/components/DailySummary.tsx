@@ -22,23 +22,24 @@ export function DailySummary() {
   if (!hasContent) return null;
 
   const cashColor = summary.cashDelta >= 0 ? '#16926f' : '#d34a4a';
-  const repColor = summary.reputationDelta >= 0 ? '#16926f' : '#d34a4a';
 
   return (
     <>
       <style>{`
-        @keyframes summarySlideIn { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        @keyframes summaryFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
       <div
-        className="fixed top-16 left-1/2 z-[480] px-4 py-3 rounded-xl"
+        className="bx-panel bx-stripe px-4 py-3 rounded-xl"
         style={{
-          transform: 'translateX(-50%)',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
-          border: '1px solid var(--line)',
-          boxShadow: '0 14px 34px rgba(30,90,180,0.18)',
-          animation: 'summarySlideIn 0.3s ease-out',
-          minWidth: 280,
-          maxWidth: 360,
+          position: 'fixed',
+          right: 16,
+          bottom: 16,
+          zIndex: 950,
+          width: 'min(360px, calc(100vw - 32px))',
+          animation: 'summaryFadeIn 0.28s cubic-bezier(0.2,0.8,0.2,1)',
         }}
       >
         <div className="flex items-center justify-between mb-1.5">
@@ -78,15 +79,6 @@ export function DailySummary() {
                 失敗 {summary.failedCount}
               </span>
             )}
-          </div>
-        )}
-
-        {summary.reputationDelta !== 0 && (
-          <div className="flex items-center justify-between text-[11px] mb-1">
-            <span style={{ color: 'var(--muted)' }}>信譽</span>
-            <span className="font-bold" style={{ color: repColor }}>
-              {summary.reputationDelta >= 0 ? '+' : ''}{summary.reputationDelta}
-            </span>
           </div>
         )}
 

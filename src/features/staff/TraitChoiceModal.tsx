@@ -17,7 +17,7 @@ export function TraitChoiceModal() {
   const roundsLeft = dog.pendingTraitChoice.roundsLeft ?? 1;
 
   return (
-    <div className="fixed inset-0 z-[850] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[880] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-4">
       <div
         className="p-5 rounded-xl max-w-sm w-full"
         style={{

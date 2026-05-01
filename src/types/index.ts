@@ -1,9 +1,9 @@
-// === 員工 4 維 stats（範圍 1-10）===
+// === 員工 3 維 stats（範圍 1-10）===
+// speed = 推進度速度；quality = 影響獎勵；patience = 影響疲勞累積速度
 export type Stats = {
   speed: number;
   quality: number;
-  teamwork: number;
-  charisma: number;
+  patience: number;
 };
 
 export type DogRole = {
@@ -44,8 +44,7 @@ export type Dog = {
   pipScore?: number;
   pipTasks?: PipTask[];
 
-  // 接案制新欄位
-  morale: number;                // 個人士氣 0-100，初始 70
+  // 接案制欄位
   fatigue: number;               // 疲勞 0-100，初始 0
   loyalty: number;               // 忠誠度 0-100，初始 50
   experience: number;            // 累積經驗，0 起跳
@@ -110,7 +109,6 @@ export type Project = {
   graceDays: number;             // 容忍超期
   assignedStaffIds: string[];
   status: ProjectStatus;
-  reputationDelta: { success: number; fail: number };
   createdDay: number;
   acceptedDay?: number;
   // 中途事件
@@ -130,9 +128,6 @@ export type ChemistryCombo = {
   bonus: {
     speedMul?: number;
     qualityMul?: number;
-    teamworkMul?: number;
-    charismaMul?: number;
-    moraleDelta?: number;       // 隊員士氣變化（每日）
   };
   category?: ProjectCategory | 'any';  // 限定哪類案才觸發
   msg: string;
@@ -188,6 +183,8 @@ export type ShopItem = {
   cost: number;
   desc: string;
   statTags: { label: string; type: 'up' | 'down' }[];
+  // 設施對應的職業類別；'all' 代表全員受惠（如 sofa）
+  category: ProjectCategory | 'all';
 };
 
 export type Walker = {
@@ -240,7 +237,30 @@ export type MemoryGameState = {
   timeLeft: number;
 };
 
-export type MiniGameState = FrisbeeGameState | MemoryGameState;
+export type CrisisHitFx = {
+  id: number;
+  side: 'monster' | 'ceo';
+  damage: number;
+  bornAt: number;
+};
+
+export type CrisisGameState = {
+  type: 'crisis';
+  ceoHp: number;
+  ceoMaxHp: number;
+  ceoAtk: number;
+  ceoInterval: number;
+  monsterAtk: number;
+  monsterInterval: number;
+  ceoTimer: number;
+  monsterTimer: number;
+  totalDamage: number;
+  teamSize: number;
+  ended: boolean;
+  hitFx: CrisisHitFx[];
+};
+
+export type MiniGameState = FrisbeeGameState | MemoryGameState | CrisisGameState;
 
 export type TrainingSession = {
   question: TrainingQuestion;
@@ -272,9 +292,16 @@ export type TutorialStep = {
 export type CompanyBuffs = {
   speedBoost: number;
   qualityBoost: number;
-  teamworkBoost: number;
-  charismaBoost: number;
   decor: number;
+  categorySpeed: Record<ProjectCategory, number>;
+  categoryQuality: Record<ProjectCategory, number>;
+};
+
+export const ZERO_CATEGORY_MAP: Record<ProjectCategory, number> = {
+  tech: 0,
+  design: 0,
+  marketing: 0,
+  service: 0,
 };
 
 // === 升級特性選擇 modal ===
@@ -294,7 +321,6 @@ export type DailySummary = {
   income: number;            // 案件酬勞總和
   expense: number;           // 薪資 + 辦公室
   cashDelta: number;         // income - expense
-  reputationDelta: number;   // 信譽淨變化
   completedCount: number;    // 完成案件
   failedCount: number;       // 失敗案件
   levelUps: { name: string; to: 'S' | 'A' | 'B' | 'C' | 'D' }[];
@@ -304,8 +330,6 @@ export type DailySummary = {
 export type GameState = {
   day: number;
   money: number;
-  // 廢除：morale (全公司)、health；改用 reputation + 員工個人 morale
-  reputation: number;            // 信譽 0-100，初始 30
   tierBudget: number;            // 案件稀有度預算，每天 morning 重算
   companyBuffs: CompanyBuffs;
   officeLevel: number;
@@ -372,12 +396,8 @@ export type GameState = {
 };
 
 export type LeaderboardEntry = {
-  days: number;
-  money: number;
-  goal: number;       // 保留欄位以相容；新版傳固定 50000
-  officeLevel: number;
-  staffCount: number;
-  projectsCompleted: number;  // v2 IPO 條件之一
+  damage: number;       // 對金融海嘯造成的總傷害（分數）
+  teamSize: number;     // 戰鬥時隊伍裡狗狗的數量
   date: string;
   nickname?: string;
 };

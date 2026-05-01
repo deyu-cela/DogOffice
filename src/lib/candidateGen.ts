@@ -41,19 +41,18 @@ export function generateCandidate(opts?: { role?: string }): Dog {
   }
   const { grade, statMul, salaryMul } = rollGrade(isCeoRoll);
 
-  // 新 4 維 stats，1-10 範圍
+  // 3 維 stats，1-10 範圍
   const stats: Stats = {
     speed: clamp(Math.round(template.baseStats.speed * statMul + jitter()), 1, 10),
     quality: clamp(Math.round(template.baseStats.quality * statMul + jitter()), 1, 10),
-    teamwork: clamp(Math.round(template.baseStats.teamwork * statMul + jitter()), 1, 10),
-    charisma: clamp(Math.round(template.baseStats.charisma * statMul + jitter()), 1, 10),
+    patience: clamp(Math.round(template.baseStats.patience * statMul + jitter()), 1, 10),
   };
 
-  const score = stats.speed + stats.quality + stats.teamwork + stats.charisma;
+  const score = stats.speed + stats.quality + stats.patience;
 
-  // 新薪資公式（plan §1.4）
+  // 新薪資公式：speed×1.0 + quality×1.5 + patience×0.5
   const contribution =
-    stats.speed * 0.8 + stats.quality * 1.5 + stats.teamwork * 0.6 + stats.charisma * 0.9;
+    stats.speed * 1.0 + stats.quality * 1.5 + stats.patience * 0.5;
   const baseSalary = isCeoRoll ? 90 : 6 + contribution * salaryMul;
   const expectedSalary = Math.max(5, Math.round(baseSalary + (Math.random() * 6 - 3)));
   const severance = Math.round(expectedSalary * 3);
@@ -79,8 +78,7 @@ export function generateCandidate(opts?: { role?: string }): Dog {
     isCEO: template.isCEO,
     interview: rand(INTERVIEW_QUESTIONS),
     status: 'active',
-    // 接案制新欄位
-    morale: 70,
+    // 接案制欄位
     fatigue: 0,
     loyalty: 50,
     experience: 0,

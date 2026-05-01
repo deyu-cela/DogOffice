@@ -26,7 +26,16 @@ export type SvgIconName =
   | 'warning'
   | 'target'
   | 'wand'
-  | 'growth';
+  | 'growth'
+  | 'shopSnack'
+  | 'shopToy'
+  | 'shopDesk'
+  | 'shopPolicy'
+  | 'shopLamp'
+  | 'shopSofa'
+  | 'shopArtwall'
+  | 'shopCoffee'
+  | 'shopGym';
 
 type Props = {
   name: SvgIconName;
@@ -213,6 +222,91 @@ export function SvgIcon({ name, size = 24, className }: Props) {
           <rect x="20" y="9" width="4" height="15" rx="1" fill={TEAL} stroke={BLUE} strokeWidth="1.8" />
           <path d="M7 12l6-5 4 3 7-6" fill="none" stroke={ORANGE} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M20 4h5v5" fill="none" stroke={ORANGE} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'shopSnack':
+      return (
+        <svg {...common}>
+          <ellipse cx="16" cy="20" rx="10" ry="6" fill="#fff1d9" stroke={ORANGE} strokeWidth="2" />
+          <path d="M9 11c-2 0-3 1.4-3 3 0 1.6 1.4 2.6 2.5 2.6 0 1.2 1.2 2.4 2.6 2.4 1.4 0 2.4-1 2.4-2.4 1.2 0 2.5-1 2.5-2.6 0-1.6-1-3-3-3-1 0-1.6.6-2 1-.4-.4-1-1-2-1Z" fill="#fff" stroke={ORANGE} strokeWidth="1.8" strokeLinejoin="round" />
+          <circle cx="20" cy="22" r="0.9" fill={ORANGE} />
+          <circle cx="14" cy="23" r="0.8" fill={ORANGE} />
+          <circle cx="22" cy="20" r="0.7" fill={GOLD} />
+        </svg>
+      );
+    case 'shopToy':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="20" r="7" fill="#ffd6e0" stroke={RED} strokeWidth="1.8" />
+          <path d="M5 20h14M12 13v14" stroke={RED} strokeWidth="1.6" strokeLinecap="round" />
+          <path d="M22 9l3-2 2 3-2 3-2 1-2-2 1-3Z" fill={GOLD} stroke={ORANGE} strokeWidth="1.6" strokeLinejoin="round" />
+          <circle cx="24" cy="11" r="1.2" fill="#fff" />
+        </svg>
+      );
+    case 'shopDesk':
+      return (
+        <svg {...common}>
+          <rect x="6" y="14" width="20" height="3" rx="1" fill={BLUE} />
+          <path d="M8 17v9M24 17v9" stroke={BLUE} strokeWidth="2" strokeLinecap="round" />
+          <rect x="11" y="6" width="11" height="8" rx="1.5" fill="#eaf4ff" stroke={BLUE} strokeWidth="1.8" />
+          <rect x="13" y="8" width="7" height="4" fill={LIGHT_BLUE} />
+          <path d="M15 14v-1M18 14v-1" stroke={BLUE} strokeWidth="1.4" />
+        </svg>
+      );
+    case 'shopPolicy':
+      return (
+        <svg {...common}>
+          <path d="M9 5h11l4 4v18H9V5Z" fill="#fff" stroke={BLUE} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M20 5v4h4" fill="none" stroke={BLUE} strokeWidth="1.6" />
+          <path d="M12 14h8M12 18h8M12 22h5" stroke={LIGHT_BLUE} strokeWidth="1.6" strokeLinecap="round" />
+          <path d="M19 22l2 2 4-4" fill="none" stroke={TEAL} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'shopLamp':
+      return (
+        <svg {...common}>
+          <path d="M16 4v4" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M9 14l7-7 7 7-3 4H12l-3-4Z" fill={GOLD} stroke={ORANGE} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M14 18h4v3a2 2 0 0 1-4 0v-3Z" fill="#fff" stroke={ORANGE} strokeWidth="1.6" />
+          <path d="M5 20l3-2M27 20l-3-2M16 26v3" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
+    case 'shopSofa':
+      return (
+        <svg {...common}>
+          <rect x="4" y="14" width="24" height="10" rx="3" fill="#d9c8ff" stroke={PURPLE} strokeWidth="1.8" />
+          <rect x="6" y="11" width="6" height="8" rx="2" fill="#fff" stroke={PURPLE} strokeWidth="1.6" />
+          <rect x="20" y="11" width="6" height="8" rx="2" fill="#fff" stroke={PURPLE} strokeWidth="1.6" />
+          <path d="M6 24v3M26 24v3" stroke={PURPLE} strokeWidth="2" strokeLinecap="round" />
+          <path d="M20 7l3-3M22 9l4-1" stroke={PURPLE} strokeWidth="1.6" strokeLinecap="round" />
+          <text x="22" y="9" fontSize="6" fontWeight="bold" fill={PURPLE}>z</text>
+        </svg>
+      );
+    case 'shopArtwall':
+      return (
+        <svg {...common}>
+          <rect x="5" y="6" width="22" height="20" rx="1.5" fill="#fff" stroke={BLUE} strokeWidth="2" />
+          <rect x="8" y="9" width="16" height="14" fill="#eaf4ff" stroke={LIGHT_BLUE} strokeWidth="1.4" />
+          <circle cx="13" cy="14" r="2" fill={GOLD} />
+          <path d="M9 22l5-6 4 4 3-3 4 5" fill="none" stroke={TEAL} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'shopCoffee':
+      return (
+        <svg {...common}>
+          <path d="M7 12h16v9a5 5 0 0 1-5 5h-6a5 5 0 0 1-5-5v-9Z" fill="#fff" stroke={BLUE} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M23 14h3a3 3 0 0 1 0 6h-3" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M11 5c0 2 2 2 2 4M16 4c0 2 2 2 2 4" stroke={ORANGE} strokeWidth="1.8" strokeLinecap="round" fill="none" />
+        </svg>
+      );
+    case 'shopGym':
+      return (
+        <svg {...common}>
+          <rect x="3" y="13" width="3" height="6" rx="1" fill={BLUE} />
+          <rect x="6" y="11" width="3" height="10" rx="1" fill={BLUE} />
+          <rect x="9" y="15" width="14" height="2" rx="1" fill={LIGHT_BLUE} />
+          <rect x="23" y="11" width="3" height="10" rx="1" fill={BLUE} />
+          <rect x="26" y="13" width="3" height="6" rx="1" fill={BLUE} />
         </svg>
       );
     case 'gem':

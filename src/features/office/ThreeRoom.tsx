@@ -4,7 +4,8 @@ import { useTexture, Billboard, Html } from '@react-three/drei';
 import { CanvasTexture, DoubleSide, LinearFilter, LinearMipmapLinearFilter, NearestFilter, Object3D, type InstancedMesh as ThreeInstancedMesh, type Texture } from 'three';
 import { JP_ASSETS } from './assets';
 import { gridToWorld } from './threeIso';
-import { useUiStore, type BuildingKind } from '@/store/uiStore';
+import bgGardenUrl from '@/assets/bg-garden.jpg';
+import { useUiStore } from '@/store/uiStore';
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { ROLE_IMAGE_MAP, ROLE_WAITING_IMAGE_MAP, ROLE_WAITING_SPRITE_FRAMES, ROLE_WAITING_SPRITE_MAP } from '@/constants/dogRoles';
@@ -231,7 +232,7 @@ function ResponsiveCameraZoom({ containerRef }: { containerRef: React.RefObject<
       // 房間 17 units、iso 視角實際對角約 22 寬 × 18 高，留一點 margin
       const fitW = w / 22;
       const fitH = h / 18;
-      const next = Math.min(38, Math.max(14, Math.min(fitW, fitH)));
+      const next = Math.min(46, Math.max(14, Math.min(fitW, fitH)));
       // 任一型 camera 都有 zoom（perspective 也支援）
       const cam = camera as unknown as { zoom: number; updateProjectionMatrix: () => void };
       if (Math.abs(cam.zoom - next) > 0.5) {
@@ -331,7 +332,10 @@ export function ThreeRoom() {
       ref={containerRef}
       className="absolute inset-0"
       style={{
-        background: 'linear-gradient(180deg, #fbf0dc, #fde0cf)',
+        backgroundImage: `linear-gradient(180deg, rgba(220,238,255,0.18) 0%, rgba(220,238,255,0.08) 60%, rgba(255,247,220,0.12) 100%), url(${bgGardenUrl})`,
+        backgroundSize: 'cover, cover',
+        backgroundPosition: 'center, center',
+        backgroundRepeat: 'no-repeat, no-repeat',
         minHeight: 400,
       }}
     >
@@ -345,7 +349,7 @@ export function ThreeRoom() {
         dpr={[1, 1.25]}
         performance={{ min: 0.5 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'default', preserveDrawingBuffer: false, stencil: false, depth: true }}
-        camera={{ position: [20, 18, 20], zoom: 38, near: -30, far: 100 }}
+        camera={{ position: [20, 18, 20], zoom: 58, near: -30, far: 100 }}
         onCreated={({ camera, gl }) => {
           camera.lookAt(0, 4, 0);
           gl.setClearColor(0x000000, 0); // 確保透明背景，避免 context lost 留紫色殘影
@@ -433,10 +437,10 @@ export function ThreeRoom() {
           <Walkers3D />
           {/* 櫻花暫時關閉以減少 GPU 負擔 */}
           {/* <SakuraRain3D /> */}
-          <HrNotice3D />
           <ConstructionDog3D />
           <PurchaseArea3D />
           <WallPolicy3D />
+          <WallStickyNotes3D />
         </Suspense>
       </Canvas>
       </CanvasErrorBoundary>
@@ -473,8 +477,9 @@ function ConstructionDog3D() {
   const openDrawer = useUiStore((s) => s.openDrawer);
   const [hover, setHover] = useState(false);
   const texture = usePixelTexture(JP_ASSETS.constructionDog);
-  const gx = 14.5;
-  const gy = 5.5;
+  // 緊鄰販賣機（shop）右側：shop 中心 (7.4, 1.6) w=4.4，右邊緣 ≈ 9.6
+  const gx = 10.5;
+  const gy = 1.6;
   const height = hover ? 2.22 : 2.05;
   const width = height;
   const [x, , z] = gridToWorld(gx, gy);
@@ -568,6 +573,184 @@ function WallPolicy3D() {
       <planeGeometry args={[1.3, 1.8]} />
       <meshBasicMaterial map={texture} transparent alphaTest={0.1} side={DoubleSide} />
     </mesh>
+  );
+}
+
+// 案件便利貼（貼在右牆 z=-HALF）
+// 顏色依產業：tech 藍 / design 粉 / marketing 橘 / service 綠
+const STICKY_COLOR_BY_CATEGORY: Record<string, { bg: string; tape: string }> = {
+  tech:      { bg: '#d8eeff', tape: '#5fb3ff' },
+  design:    { bg: '#ffe4eb', tape: '#ff9bb5' },
+  marketing: { bg: '#fff0d6', tape: '#ffb56a' },
+  service:   { bg: '#d6f5d6', tape: '#7ed87e' },
+};
+
+const STICKY_TILT = [-3, 2, -1.5, 3, -2, 1.5];
+
+function WallStickyNotes3D() {
+  const clients = useGameStore((s) => s.clients);
+  const openProjectDetail = useUiStore((s) => s.openProjectDetail);
+
+  const visible = useMemo(() => {
+    const active = clients.filter((c) => c.status === 'active');
+    const offered = clients.filter((c) => c.status === 'offered');
+    return [...active, ...offered].slice(0, 4);
+  }, [clients]);
+
+  if (visible.length === 0) return null;
+
+  // 4 張一字排開貼在右牆（z=-HALF）
+  const wallY = WALL_H * 0.65;
+  const positions: Array<[number, number, number]> = [
+    [-4.5, wallY, -HALF + 0.1],
+    [-1.5, wallY, -HALF + 0.1],
+    [1.5,  wallY, -HALF + 0.1],
+    [4.5,  wallY, -HALF + 0.1],
+  ];
+
+  return (
+    <>
+      {visible.map((p, i) => {
+        const pos = positions[i];
+        const color = STICKY_COLOR_BY_CATEGORY[p.category] ?? STICKY_COLOR_BY_CATEGORY.tech;
+        const tilt = STICKY_TILT[i % STICKY_TILT.length];
+        const ratio = p.workRequired > 0
+          ? Math.max(0, Math.min(1, p.workDone / p.workRequired))
+          : 0;
+        const isOffered = p.status === 'offered';
+        return (
+          <Html key={p.id} position={pos} center zIndexRange={[20, 0]}>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                openProjectDetail(p.id);
+              }}
+              style={{
+                width: 110,
+                background: color.bg,
+                border: `1px solid rgba(0,0,0,0.08)`,
+                boxShadow: '0 6px 14px rgba(60,40,20,0.22), 0 2px 4px rgba(60,40,20,0.12)',
+                transform: `rotate(${tilt}deg)`,
+                cursor: 'pointer',
+                padding: '14px 8px 8px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                userSelect: 'none',
+                position: 'relative',
+              }}
+              title={`${p.title} ・ ${isOffered ? '收件匣' : `${Math.round(p.workDone)}/${p.workRequired}`}`}
+            >
+              {/* 上方膠帶 */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: -6,
+                  left: '50%',
+                  transform: 'translateX(-50%) rotate(-2deg)',
+                  width: 50,
+                  height: 14,
+                  background: color.tape,
+                  opacity: 0.78,
+                  borderRadius: 1,
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.18)',
+                }}
+              />
+              {/* 狀態徽章 */}
+              <div
+                style={{
+                  display: 'inline-block',
+                  fontSize: 8,
+                  fontWeight: 900,
+                  letterSpacing: 1,
+                  padding: '1px 4px',
+                  marginBottom: 3,
+                  borderRadius: 3,
+                  background: isOffered ? 'rgba(108,142,191,0.85)' : 'rgba(32,168,140,0.85)',
+                  color: 'white',
+                }}
+              >
+                {isOffered ? 'NEW' : 'WIP'}
+              </div>
+              {/* 標題 */}
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 900,
+                  color: '#3d2f25',
+                  lineHeight: 1.2,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  minHeight: 26,
+                }}
+              >
+                {p.title}
+              </div>
+              {/* 客戶 + tier */}
+              <div
+                style={{
+                  fontSize: 9,
+                  color: '#6f5544',
+                  marginTop: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 4,
+                }}
+              >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {p.clientName}
+                </span>
+                <span
+                  style={{
+                    background: 'rgba(0,0,0,0.18)',
+                    color: 'white',
+                    padding: '0 4px',
+                    borderRadius: 2,
+                    fontWeight: 900,
+                    flexShrink: 0,
+                  }}
+                >
+                  T{p.clientTier}
+                </span>
+              </div>
+              {/* 進度條（active 才畫） */}
+              {!isOffered && (
+                <div
+                  style={{
+                    marginTop: 4,
+                    height: 4,
+                    background: 'rgba(0,0,0,0.12)',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${ratio * 100}%`,
+                      background: '#20a889',
+                      transition: 'width 0.3s',
+                    }}
+                  />
+                </div>
+              )}
+              {/* 報酬 */}
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 900,
+                  color: '#20a889',
+                  marginTop: 3,
+                }}
+              >
+                ${p.reward}
+              </div>
+            </div>
+          </Html>
+        );
+      })}
+    </>
   );
 }
 
@@ -687,7 +870,7 @@ function HrNotice3D() {
   const current = useGameStore((s) => s.current);
   const candidatePatience = useGameStore((s) => s.candidatePatience);
   const vacancy = useGameStore((s) => s.vacancy);
-  const openDrawer = useUiStore((s) => s.openDrawer);
+  const openRecruitModal = useUiStore((s) => s.openRecruitModal);
 
   if (!current && !vacancy) return null;
   // 候選人站在地板最南方（iso 前角外）
@@ -716,7 +899,7 @@ function HrNotice3D() {
       <div
         className="flex flex-col items-center"
         style={{ cursor: current ? 'pointer' : 'default' }}
-        onClick={() => current && openDrawer('hr')}
+        onClick={() => current && openRecruitModal()}
       >
         <div
           className="text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap"
@@ -1582,7 +1765,7 @@ function ZoneFurniture3D() {
   return <>{items}</>;
 }
 
-type TileBuildingKind = Exclude<BuildingKind, 'construction'>;
+type TileBuildingKind = 'shop' | 'dorm' | 'hr';
 
 const SRC_MAP: Record<TileBuildingKind, string> = {
   shop: JP_ASSETS.shopBuilding,
@@ -1609,7 +1792,9 @@ function Building3D({
   w: number;
   h: number;
 }) {
-  const openDrawer = useUiStore((s) => s.openDrawer);
+  const openTeamModal = useUiStore((s) => s.openTeamModal);
+  const openRecruitModal = useUiStore((s) => s.openRecruitModal);
+  const openShopModal = useUiStore((s) => s.openShopModal);
   const hasCurrent = useGameStore((s) => !!s.current);
   const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
@@ -1618,16 +1803,22 @@ function Building3D({
   const texture = usePixelTexture(SRC_MAP[kind]);
   const [x, , z] = gridToWorld(gx, gy);
 
-  // 員工平均士氣（取代全公司 morale）
-  const avgMorale = staff.length > 0
-    ? staff.reduce((n, d) => n + d.morale, 0) / staff.length
-    : 100;
+  // 員工平均疲勞（取代士氣判斷）
+  const avgFatigue = staff.length > 0
+    ? staff.reduce((n, d) => n + d.fatigue, 0) / staff.length
+    : 0;
   const needNotif =
     kind === 'hr' ? hasCurrent
-      : kind === 'dorm' ? avgMorale < 40
+      : kind === 'dorm' ? avgFatigue >= 70
         : money < 50;
   const hoverScale = hover ? 1.08 : 1;
   const yOffset = hover ? 0.15 : 0;
+
+  const triggerOpen = () => {
+    if (kind === 'dorm') openTeamModal();
+    else if (kind === 'hr') openRecruitModal();
+    else if (kind === 'shop') openShopModal();
+  };
 
   const handleOver = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
@@ -1640,7 +1831,7 @@ function Building3D({
   };
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    openDrawer(kind);
+    triggerOpen();
   };
 
   return (
@@ -1670,7 +1861,7 @@ function Building3D({
       )}
       <Html position={[0, -0.05 + yOffset, 0]} center zIndexRange={[10, 0]}>
         <div
-          onClick={() => openDrawer(kind)}
+          onClick={triggerOpen}
           className="px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap select-none"
           style={{
             cursor: 'pointer',

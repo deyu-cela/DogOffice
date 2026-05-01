@@ -20,14 +20,13 @@ export function RadarChart({ stats, size = 160 }: Props) {
     const cx = w / 2;
     const cy = h / 2;
     const r = Math.min(w, h) / 2 - 30;
-    const labels = ['速度', '專業', '協作', '魅力'];
+    const labels = ['速度', '專業', '耐心'];
     const values = [
       clamp(stats.speed / 10, 0, 1),
       clamp(stats.quality / 10, 0, 1),
-      clamp(stats.teamwork / 10, 0, 1),
-      clamp(stats.charisma / 10, 0, 1),
+      clamp(stats.patience / 10, 0, 1),
     ];
-    const N = 4;
+    const N = 3;
     ctx.clearRect(0, 0, w, h);
 
     for (let level = 1; level <= 4; level++) {

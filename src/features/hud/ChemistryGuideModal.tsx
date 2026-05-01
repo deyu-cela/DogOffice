@@ -28,15 +28,6 @@ function effectLines(combo: ChemistryCombo): EffectLine[] {
   const b = combo.bonus;
   if (b.speedMul != null) lines.push({ icon: 'speed', label: '速度', value: `×${b.speedMul}` });
   if (b.qualityMul != null) lines.push({ icon: 'quality', label: '品質', value: `×${b.qualityMul}` });
-  if (b.teamworkMul != null) lines.push({ icon: 'teamwork', label: '協作', value: `×${b.teamworkMul}` });
-  if (b.charismaMul != null) lines.push({ icon: 'marketing', label: '魅力', value: `×${b.charismaMul}` });
-  if (b.moraleDelta != null) {
-    lines.push({
-      icon: 'heart',
-      label: '士氣',
-      value: `${b.moraleDelta >= 0 ? '+' : ''}${b.moraleDelta}/天`,
-    });
-  }
   return lines;
 }
 

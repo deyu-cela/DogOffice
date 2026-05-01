@@ -19,7 +19,6 @@ export function StaffList() {
   const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
   const clients = useGameStore((s) => s.clients);
-  const openAction = useGameStore((s) => s.openStaffAction);
   const playMini = useGameStore((s) => s.openPlayMiniGame);
   const openTraining = useGameStore((s) => s.openTraining);
   const openTraitChoice = useGameStore((s) => s.openTraitChoiceModal);
@@ -87,7 +86,7 @@ export function StaffList() {
         </button>
       </div>
 
-      {staff.map((dog, i) => {
+      {staff.map((dog) => {
         const project = dog.assignedProjectId
           ? clients.find((c) => c.id === dog.assignedProjectId)
           : null;
@@ -100,7 +99,7 @@ export function StaffList() {
               background: dog.status === 'pip' ? '#fff7f7' : '#ffffff',
               border: dog.status === 'pip' ? '1px solid rgba(255,112,112,0.24)' : '1px solid var(--line)',
             }}
-            onClick={() => openAction(i)}
+            onClick={() => setTeamModalOpen(true)}
           >
             <div className="flex items-center gap-3">
               <div className="rounded-full overflow-hidden flex items-center justify-center" style={{ width: 48, height: 48, border: '2px solid white', background: '#eef6ff' }}>
@@ -153,9 +152,8 @@ export function StaffList() {
               </div>
             </div>
 
-            {/* 三條進度：個人士氣 / 疲勞 / 忠誠 */}
-            <div className="grid grid-cols-3 gap-1.5 mt-2 text-[10px]">
-              <MeterMini label="士氣" value={dog.morale} color="#35c59c" />
+            {/* 兩條進度：疲勞 / 忠誠 */}
+            <div className="grid grid-cols-2 gap-1.5 mt-2 text-[10px]">
               <MeterMini label="疲勞" value={dog.fatigue} color="#ffc35c" inverted />
               <MeterMini label="忠誠" value={dog.loyalty} color="#2f8df4" />
             </div>

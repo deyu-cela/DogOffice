@@ -9,7 +9,6 @@ import { LeaderboardPanel } from '@/features/leaderboard/LeaderboardPanel';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 
-const IPO_REPUTATION = 80;
 const IPO_MONEY = 50000;
 const IPO_OFFICE_LEVEL = 4;
 const IPO_PROJECTS = 80;
@@ -18,7 +17,6 @@ export function SplashScreen() {
   const startGame = useGameStore((s) => s.startGame);
   const day = useGameStore((s) => s.day);
   const money = useGameStore((s) => s.money);
-  const reputation = useGameStore((s) => s.reputation);
   const officeLevel = useGameStore((s) => s.officeLevel);
   const staff = useGameStore((s) => s.staff);
   const projectsCompleted = useGameStore((s) => s.projectsCompleted);
@@ -87,10 +85,8 @@ export function SplashScreen() {
           account={user?.account ?? '老闆'}
           day={day}
           money={money}
-          reputation={reputation}
           officeLevel={officeLevel}
           staffCount={staff.length}
-          morale={averageMorale(staff)}
           projectsCompleted={projectsCompleted}
           projectsFailed={projectsFailed}
           activeProjects={clients.filter((c) => c.status === 'active').length}
@@ -184,10 +180,8 @@ type AuthedSplashShellProps = {
   account: string;
   day: number;
   money: number;
-  reputation: number;
   officeLevel: number;
   staffCount: number;
-  morale: number;
   projectsCompleted: number;
   projectsFailed: number;
   activeProjects: number;
@@ -213,10 +207,8 @@ function AuthedSplashShell({
   account,
   day,
   money,
-  reputation,
   officeLevel,
   staffCount,
-  morale,
   projectsCompleted,
   projectsFailed,
   activeProjects,
@@ -242,7 +234,6 @@ function AuthedSplashShell({
     100,
     Math.round(
       Math.min(
-        reputation / IPO_REPUTATION,
         money / IPO_MONEY,
         (officeLevel + 1) / (IPO_OFFICE_LEVEL + 1),
         projectsCompleted / IPO_PROJECTS,
@@ -353,8 +344,6 @@ function AuthedSplashShell({
               </div>
               <div className="dashboard-flow dashboard-flow-4 space-y-4 mb-5">
                 <ProgressRow icon="money" label="資金" value={`$${money.toLocaleString()}`} target={`$${IPO_MONEY.toLocaleString()}`} percent={moneyPercent(money)} accent="#4fb7ff" />
-                <ProgressRow icon="trophy" label="信譽" value={`${Math.round(reputation)}`} target={`${IPO_REPUTATION}`} percent={percent(reputation, IPO_REPUTATION)} accent="#55c7ff" />
-                <ProgressRow icon="heart" label="士氣" value={`${morale}`} target="100" percent={morale} accent="#6ad7bf" />
                 <ProgressRow icon="office" label="辦公室" value={`Lv.${officeLevel + 1}`} target={`Lv.${IPO_OFFICE_LEVEL + 1}`} percent={percent(officeLevel + 1, IPO_OFFICE_LEVEL + 1)} accent="#6aa7ff" />
               </div>
 
@@ -923,11 +912,6 @@ function SharedSplashStyles() {
       }
     `}</style>
   );
-}
-
-function averageMorale(staff: { morale: number }[]): number {
-  if (staff.length === 0) return 0;
-  return Math.round(staff.reduce((sum, dog) => sum + dog.morale, 0) / staff.length);
 }
 
 function percent(current: number, target: number): number {

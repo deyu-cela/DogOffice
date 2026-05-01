@@ -1,38 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
-import { useGameStore } from '@/store/gameStore';
+import { useEffect, useMemo, useRef } from 'react';
+import { useGameStore, INDUSTRIES } from '@/store/gameStore';
+import { useUiStore } from '@/store/uiStore';
 import { useWalkerStore } from '@/store/walkerStore';
-import { OFFICE_LEVELS } from '@/constants/officeLevels';
-import { Badge } from '@/components/Panel';
-import { companyHint, companyStage } from '@/lib/utils';
+import type { Dog } from '@/types';
 import { ThreeRoom } from './ThreeRoom';
 import { OfficeSkinModal } from './OfficeSkinModal';
 import { computeGridObstacles } from './layout';
 import { ROOM_GRID } from './iso';
-import { SvgIcon } from '@/components/SvgIcon';
 
 export function OfficeScene() {
-  const officeLevel = useGameStore((s) => s.officeLevel);
   const staff = useGameStore((s) => s.staff);
-  const money = useGameStore((s) => s.money);
-  const reputation = useGameStore((s) => s.reputation);
-  const projectsCompleted = useGameStore((s) => s.projectsCompleted);
-  const clients = useGameStore((s) => s.clients);
-  const companyBuffs = useGameStore((s) => s.companyBuffs);
+  const teams = useGameStore((s) => s.teams);
   const setBounds = useWalkerStore((s) => s.setBounds);
   const syncWalkers = useWalkerStore((s) => s.syncWithStaff);
   const purchases = useGameStore((s) => s.purchases);
+  const skinModalOpen = useUiStore((s) => s.skinModalOpen);
+  const closeSkinModal = useUiStore((s) => s.closeSkinModal);
   const roomRef = useRef<HTMLDivElement>(null);
-  const [skinModalOpen, setSkinModalOpen] = useState(false);
-
-  const avgMorale = staff.length > 0
-    ? staff.reduce((n, d) => n + d.morale, 0) / staff.length
-    : 70;
-  const hasActive = clients.some((c) => c.status === 'active');
-  const decor = companyBuffs.decor;
-
-  const level = OFFICE_LEVELS[officeLevel];
-  const stage = companyStage(reputation, avgMorale, staff.length, projectsCompleted);
-  const hint = companyHint(money, reputation, avgMorale, hasActive);
 
   useEffect(() => {
     const el = roomRef.current;
@@ -58,83 +42,36 @@ export function OfficeScene() {
     return () => ro.disconnect();
   }, [setBounds, purchases]);
 
+  // 螢幕只顯示有在工作的狗，每隊最多前 2 隻 → 最多 8 隻
+  const visibleStaff = useMemo<Dog[]>(() => {
+    const byId = new Map(staff.map((d) => [d.id, d]));
+    const result: Dog[] = [];
+    for (const ind of INDUSTRIES) {
+      const working = teams[ind].memberIds
+        .map((id) => byId.get(id))
+        .filter((d): d is Dog => !!d && d.assignedProjectId != null)
+        .slice(0, 2);
+      result.push(...working);
+    }
+    return result;
+  }, [staff, teams]);
+
   useEffect(() => {
-    syncWalkers(staff);
-  }, [staff, syncWalkers]);
+    syncWalkers(visibleStaff);
+  }, [visibleStaff, syncWalkers]);
 
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl flex flex-col min-h-[400px] md:min-h-[600px] xl:min-h-[700px]"
-      style={{
-        border: '1px solid var(--line)',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(244,249,255,0.9))',
-        boxShadow: 'var(--shadow), inset 0 1px 0 rgba(255,255,255,0.95)',
-      }}
-    >
-      <div
-        className="flex items-center justify-between px-4 py-3 gap-2"
-        style={{
-          borderBottom: '1px solid var(--line)',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.9), rgba(234,244,255,0.76))',
-        }}
-      >
-        <div>
-          <div className="flex items-center gap-2 font-extrabold text-lg">
-            <SvgIcon name="office" size={24} />
-            <span>{level.name}</span>
-          </div>
-          <div className="text-xs" style={{ color: 'var(--muted)' }}>
-            員工 {staff.length} / {level.maxStaff} · 裝飾 Lv {decor}
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setSkinModalOpen(true)}
-            className="rounded-lg whitespace-nowrap font-extrabold inline-flex items-center gap-1"
-            style={{
-              padding: '6px 10px',
-              fontSize: '12px',
-              lineHeight: 1,
-              background: 'linear-gradient(180deg, #ffffff, #eaf4ff)',
-              color: 'var(--text)',
-              border: '1px solid var(--line)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(46,104,180,0.1)',
-            }}
-            title="更換辦公室造型"
-          >
-            <SvgIcon name="wand" size={14} />
-            換造型
-          </button>
-          <Badge className="inline-flex items-center gap-1" style={{ padding: '6px 10px', fontSize: '12px', lineHeight: 1 }}>
-            <SvgIcon name="growth" size={14} />
-            {stage}
-          </Badge>
-        </div>
-      </div>
-      {skinModalOpen && <OfficeSkinModal onClose={() => setSkinModalOpen(false)} />}
-
+    <>
       <div
         ref={roomRef}
-        className="relative flex-1 min-h-[520px] md:min-h-[780px]"
+        className="absolute inset-0"
         style={{
           background: 'linear-gradient(180deg, #f7fbff 0%, #eaf4ff 100%)',
         }}
       >
         <ThreeRoom />
-
-        <div
-          className="absolute left-3 bottom-3 z-10 max-w-[60%] rounded-full px-3 py-1.5 text-xs"
-          style={{
-            background: 'rgba(255,255,255,0.92)',
-            border: '1px solid var(--line)',
-            color: 'var(--muted)',
-            boxShadow: 'var(--shadow-soft)',
-          }}
-        >
-          {hint}
-        </div>
       </div>
-    </div>
+      {skinModalOpen && <OfficeSkinModal onClose={closeSkinModal} />}
+    </>
   );
 }

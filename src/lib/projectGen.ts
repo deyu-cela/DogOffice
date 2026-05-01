@@ -44,16 +44,14 @@ type TierStats = {
   workMax: number;
   deadlineDays: number;
   expectedQuality: number;
-  repSuccess: number;
-  repFail: number;
 };
 
 const TIER_TABLE: Record<ClientTier, TierStats> = {
-  1: { rewardMin: 80, rewardMax: 130, workMin: 12, workMax: 18, deadlineDays: 4, expectedQuality: 1.5, repSuccess: 2, repFail: -3 },
-  2: { rewardMin: 200, rewardMax: 300, workMin: 50, workMax: 70, deadlineDays: 5, expectedQuality: 3.0, repSuccess: 3, repFail: -5 },
-  3: { rewardMin: 450, rewardMax: 650, workMin: 90, workMax: 120, deadlineDays: 6, expectedQuality: 4.5, repSuccess: 5, repFail: -8 },
-  4: { rewardMin: 950, rewardMax: 1300, workMin: 160, workMax: 200, deadlineDays: 7, expectedQuality: 6.0, repSuccess: 8, repFail: -12 },
-  5: { rewardMin: 1900, rewardMax: 2600, workMin: 250, workMax: 320, deadlineDays: 8, expectedQuality: 7.5, repSuccess: 12, repFail: -18 },
+  1: { rewardMin: 80, rewardMax: 130, workMin: 12, workMax: 18, deadlineDays: 4, expectedQuality: 2 },
+  2: { rewardMin: 200, rewardMax: 300, workMin: 50, workMax: 70, deadlineDays: 5, expectedQuality: 3 },
+  3: { rewardMin: 450, rewardMax: 650, workMin: 90, workMax: 120, deadlineDays: 6, expectedQuality: 5 },
+  4: { rewardMin: 950, rewardMax: 1300, workMin: 160, workMax: 200, deadlineDays: 7, expectedQuality: 6 },
+  5: { rewardMin: 1900, rewardMax: 2600, workMin: 250, workMax: 320, deadlineDays: 8, expectedQuality: 8 },
 };
 
 // 辦公室加成（plan §3.5）
@@ -62,15 +60,14 @@ const OFFICE_TIER_BONUS = [0, 5, 12, 22, 35];
 // 辦公室解鎖最高 tier（plan §3.5）
 const OFFICE_TIER_CAP: ClientTier[] = [3, 3, 4, 4, 5];
 
-// ---- tierBudget 計算 ----
-export function computeTierBudget(state: Pick<GameState, 'staff' | 'reputation' | 'officeLevel'>): number {
-  const totalCharisma = state.staff.reduce((n, d) => n + d.stats.charisma, 0);
+// ---- tierBudget 計算（員工總 quality + officeBonus） ----
+export function computeTierBudget(state: Pick<GameState, 'staff' | 'officeLevel'>): number {
+  const totalQuality = state.staff.reduce((n, d) => n + d.stats.quality, 0);
   const officeBonus = OFFICE_TIER_BONUS[state.officeLevel] ?? 0;
-  // CEO 在隊上 → 全公司 tierBudget × 1.5
   const hasCEO = state.staff.some((d) => d.isCEO);
-  // 員工不足 4 人時，tierBudget 線性壓縮（早期接不了高 tier 案，先讓 tier 1 主場）
+  // 員工不足 4 人時線性壓縮，早期讓 tier 1 主場
   const staffFactor = state.staff.length >= 4 ? 1 : state.staff.length / 4;
-  const baseBudget = (totalCharisma + state.reputation / 2 + officeBonus) * staffFactor;
+  const baseBudget = (totalQuality + officeBonus) * staffFactor;
   return Math.round(hasCEO ? baseBudget * 1.5 : baseBudget);
 }
 
@@ -141,7 +138,6 @@ export function generateProject(
     graceDays: 2,
     assignedStaffIds: [],
     status: 'offered',
-    reputationDelta: { success: stats.repSuccess, fail: stats.repFail },
     createdDay: currentDay,
     events: [],
     pendingEvent: null,

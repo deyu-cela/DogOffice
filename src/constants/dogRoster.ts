@@ -21,11 +21,12 @@ const mk = (
   role: string,
   industry: ProjectCategory,
   grade: DogGrade,
-  stats: [number, number, number, number], // speed, quality, teamwork, charisma
+  stats: [number, number, number, number], // 舊格式 [speed, quality, teamwork, charisma]；patience 由 teamwork 派生（teamwork × 1.0 clamp 1-10）
   flavor: string,
 ): RosterEntry => ({
   rosterId, name, breed, role, industry, grade,
-  stats: { speed: stats[0], quality: stats[1], teamwork: stats[2], charisma: stats[3] },
+  // 從舊 4 stat 遷移為 3 stat：teamwork → patience
+  stats: { speed: stats[0], quality: stats[1], patience: Math.max(1, Math.min(10, stats[2])) },
   flavor,
 });
 

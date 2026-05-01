@@ -94,7 +94,7 @@ type WalkerActions = {
   addWalker: (dog: Dog) => void;
   removeByName: (name: string) => void;
   syncWithStaff: (staff: Dog[]) => void;
-  tick: (morale: number, health: number) => void;
+  tick: (avgFatigue: number) => void;
 };
 
 type WalkerStore = {
@@ -160,16 +160,16 @@ export const useWalkerStore = create<WalkerStore>((set, get) => ({
     set({ walkers: next });
   },
 
-  tick: (morale, health) => {
+  tick: (avgFatigue) => {
     const { walkers, bounds } = get();
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
     // === 大優化：99% 時間什麼都不做 ===
-    // 沒有 walker 在「該動」狀態 → 直接 return（不 setState → React 不 re-render → R3F 不重畫）
     const anyDue = walkers.some((w) => now >= w.idleUntil);
     if (!anyDue) return;
 
-    const speedPenalty = morale < 35 || health < 35 ? 0.55 : 1;
+    // 平均疲勞高 → 走路慢
+    const speedPenalty = avgFatigue >= 60 ? 0.55 : 1;
     const next = walkers.map((w) => {
       // 還沒到該動的時間 → 完全不變
       if (now < w.idleUntil) return w;

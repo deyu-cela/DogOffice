@@ -5,14 +5,12 @@ import { ROLE_IMAGE_MAP } from '@/constants/dogRoles';
 export function WalkingDogs() {
   const walkers = useWalkerStore((s) => s.walkers);
   const staff = useGameStore((s) => s.staff);
-  const reputation = useGameStore((s) => s.reputation);
 
-  const avgMorale = staff.length > 0
-    ? staff.reduce((n, d) => n + d.morale, 0) / staff.length
-    : 70;
-  const low = avgMorale < 40 || reputation < 25;
-  const busy = avgMorale >= 60 && reputation >= 50;
-  const statusEmoji = low ? '' : busy ? '✨' : reputation < 35 ? '' : '';
+  // 用平均疲勞當情緒指標
+  const avgFatigue = staff.length > 0
+    ? staff.reduce((n, d) => n + d.fatigue, 0) / staff.length
+    : 0;
+  const statusEmoji = avgFatigue >= 60 ? '' : avgFatigue < 30 ? '✨' : '';
 
   return (
     <div className="absolute inset-0 pointer-events-none">

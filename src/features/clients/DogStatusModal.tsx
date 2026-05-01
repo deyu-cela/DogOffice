@@ -92,13 +92,11 @@ export function DogStatusModal({ dog, onClose }: { dog: Dog; onClose: () => void
           <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
             <StatRow label="速度" value={dog.stats.speed} />
             <StatRow label="專業" value={dog.stats.quality} />
-            <StatRow label="協作" value={dog.stats.teamwork} />
-            <StatRow label="魅力" value={dog.stats.charisma} />
+            <StatRow label="耐心" value={dog.stats.patience} />
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 mb-3 text-[10px]">
-          <Meter label="士氣" value={dog.morale} color="#35c59c" />
+        <div className="grid grid-cols-2 gap-1.5 mb-3 text-[10px]">
           <Meter label="疲勞" value={dog.fatigue} color="#ffc35c" />
           <Meter label="忠誠" value={dog.loyalty} color="#2f8df4" />
         </div>
@@ -134,7 +132,7 @@ function StatRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center justify-between">
       <span style={{ color: 'var(--muted)' }}>{label}</span>
-      <span className="font-extrabold" style={{ color: '#173b78' }}>{value}</span>
+      <span className="font-extrabold" style={{ color: '#173b78' }}>{Math.round(value)}</span>
     </div>
   );
 }

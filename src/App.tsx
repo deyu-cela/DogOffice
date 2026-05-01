@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
@@ -11,17 +11,20 @@ import { Tutorial } from '@/features/tutorial/Tutorial';
 import { ConflictModal } from '@/features/save/ConflictModal';
 import { OfficeScene } from '@/features/office/OfficeScene';
 import { BuildingDrawer } from '@/features/office/BuildingDrawer';
-import { TopBar } from '@/features/hud/TopBar';
-import { RightPanel } from '@/features/hud/RightPanel';
-import { LogBar } from '@/features/hud/LogBar';
-import { InfoButton } from '@/features/hud/InfoButton';
+import { MoneyDayCluster } from '@/features/hud/MoneyDayCluster';
+import { TopRightButtons } from '@/features/hud/TopRightButtons';
+import { StatBars } from '@/features/hud/StatBars';
 import { StaffActionModal } from '@/features/staff/StaffActionModal';
+import { TeamEditModal } from '@/features/staff/TeamEditModal';
 import { TraitChoiceModal } from '@/features/staff/TraitChoiceModal';
+import { GachaModal } from '@/features/recruit/GachaModal';
+import { ShopModal } from '@/features/shop/ShopModal';
+import { ProjectDetailModal } from '@/features/clients/ProjectDetailModal';
 import { VictoryModal } from '@/features/victory/VictoryModal';
 import { FrisbeeGame } from '@/features/minigames/FrisbeeGame';
 import { MemoryGame } from '@/features/minigames/MemoryGame';
 import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
-import { ProjectsBar } from '@/features/clients/ProjectsBar';
+import { CrisisBattleScreen } from '@/features/leaderboard/CrisisBattleScreen';
 import { BankLoanModal } from '@/features/loan/BankLoanModal';
 import { AchievementsScreen } from '@/features/achievements/AchievementsScreen';
 import { AchievementToast } from '@/features/achievements/AchievementToast';
@@ -31,7 +34,6 @@ import { StarterPackBanner } from '@/features/starterPack/StarterPackBanner';
 import { useUiStore } from '@/store/uiStore';
 import { SvgIcon } from '@/components/SvgIcon';
 import { BgmController, type BgmScene } from '@/components/BgmController';
-import { BgmToggle } from '@/components/BgmToggle';
 
 const STARTER_PACK_SESSION_KEY = 'dogoffice:starter-pack-shown';
 
@@ -60,7 +62,6 @@ export default function App() {
     if (authedUserId) {
       loadCloud();
     } else {
-      // 登出：同時清掉雲端 meta 與遊戲狀態，避免下個帳號看到殘留資料
       resetSaveStore();
       resetGame();
     }
@@ -78,6 +79,10 @@ export default function App() {
   const bgmScene: BgmScene = showAchievements ? 'memories' : showSplash ? 'splash' : 'office';
   const claimedStarterPack = useGameStore((s) => s.claimedStarterPack);
   const openStarterPack = useUiStore((s) => s.openStarterPack);
+  const teamModalOpen = useUiStore((s) => s.teamModalOpen);
+  const closeTeamModal = useUiStore((s) => s.closeTeamModal);
+  const projectDetailId = useUiStore((s) => s.projectDetailId);
+  const closeProjectDetail = useUiStore((s) => s.closeProjectDetail);
 
   useEffect(() => {
     if (showSplash || claimedStarterPack) return;
@@ -88,70 +93,39 @@ export default function App() {
 
   return (
     <>
-      <style>{`
-        .app-grid {
-          grid-template-columns: 1fr;
-          grid-template-rows: auto 1fr auto;
-          grid-template-areas:
-            "top"
-            "main"
-            "log";
-        }
-        .pane-top { grid-area: top; }
-        .pane-main { grid-area: main; min-width: 0; }
-        .pane-log { grid-area: log; }
-        .pane-right { display: none; }
-
-        @media (min-width: 1024px) {
-          .app-grid {
-            grid-template-columns: 1fr 360px;
-            grid-template-rows: auto 1fr auto;
-            grid-template-areas:
-              "top top"
-              "main right"
-              "log log";
-          }
-          .pane-right {
-            display: flex;
-            flex-direction: column;
-            grid-area: right;
-            min-width: 0;
-            min-height: 0;
-          }
-        }
-      `}</style>
+      {/* 主容器：iso 視野 + 100px 邊距，封頂 1200 */}
       <div
-        className="app-grid mx-auto p-3 md:p-5 gap-3 md:gap-4 min-h-screen grid"
-        style={{ maxWidth: 1440 }}
+        className="relative mx-auto h-screen overflow-hidden"
+        style={{ width: 'min(calc(100vh * 22 / 18 + 100px), 1200px)' }}
       >
-        <div className="pane-top">
-          <TopBar />
-        </div>
-
-        <div className="pane-main flex flex-col gap-3">
-          <ProjectsBar />
+        {/* 工作室背景 */}
+        <div className="absolute inset-0 overflow-hidden">
           <OfficeScene />
         </div>
 
-        <div className="pane-right">
-          <RightPanel />
-        </div>
-
-        <div className="pane-log">
-          <LogBar />
-        </div>
+        {/* HUD overlay（受 max-width 容器限制） */}
+        <MoneyDayCluster />
+        <TopRightButtons />
+        <StatBars />
+        {!showSplash && <StarterPackBanner />}
       </div>
 
-      <InfoButton />
-
+      {/* Modals / overlays（fullscreen，不受 max-width 限制） */}
       <DailySummary />
       {showSplash && <SplashScreen />}
       <Tutorial />
       <BuildingDrawer />
       {miniGame?.type === 'frisbee' && <FrisbeeGame />}
       {miniGame?.type === 'memory' && <MemoryGame />}
+      {miniGame?.type === 'crisis' && <CrisisBattleScreen />}
       {trainingSession && <TrainingQuiz />}
       {staffModal && <StaffActionModal />}
+      {teamModalOpen && <TeamEditModal onClose={closeTeamModal} />}
+      <GachaModal />
+      <ShopModal />
+      {projectDetailId && (
+        <ProjectDetailModal projectId={projectDetailId} onClose={closeProjectDetail} />
+      )}
       <TraitChoiceModal />
       <BankLoanModal />
       <VictoryModal />
@@ -161,9 +135,7 @@ export default function App() {
       <CoinBurstOverlay />
       <StudioIntro />
       <BgmController scene={bgmScene} />
-      <BgmToggle />
       <StarterPackModal />
-      {!showSplash && <StarterPackBanner />}
 
       {bankrupt && (
         <div className="fixed inset-0 z-[900] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-6">

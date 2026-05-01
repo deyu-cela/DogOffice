@@ -11,7 +11,16 @@ import type {
   Team,
   TrainingSession,
 } from '@/types';
-import { submitLeaderboard, isIgnorableApiError } from '@/lib/leaderboardApi';
+import {
+  saveLocalEntry as saveCrisisEntryLocal,
+  submitLeaderboard,
+  isIgnorableApiError,
+} from '@/lib/leaderboardApi';
+import {
+  computeCeoStats,
+  MONSTER_ATK,
+  MONSTER_INTERVAL,
+} from '@/features/leaderboard/crisisFormulas';
 import type { GameSaveData } from '@/types/save';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { TRAINING_QUESTIONS } from '@/constants/questions';
@@ -37,11 +46,11 @@ import {
   trimSettled,
 } from '@/lib/projectGen';
 import { runProjectsDay } from '@/lib/projectEngine';
+import { pickBestTeamForIndustry } from '@/lib/autoAssign';
 
 const initialQueue = [generateCandidate(), generateCandidate(), generateCandidate()];
 
-// === IPO 勝利條件 ===
-const IPO_REPUTATION = 80;
+// === IPO 勝利條件（信譽門檻已移除）===
 const IPO_MONEY = 50000;
 const IPO_OFFICE_LEVEL = 4;
 const IPO_PROJECTS = 80;
@@ -51,7 +60,12 @@ const OFFICE_DAILY_EXPENSE = [5, 8, 14, 22, 35];
 
 // === 重構：產業 / 抽卡 / 強化 ===
 export const INDUSTRIES: ProjectCategory[] = ['tech', 'design', 'marketing', 'service'];
-export const TEAM_MAX_MEMBERS = 4;
+// 絕對上限（最高 office level 時的隊伍上限）
+export const TEAM_MAX_MEMBERS = 5;
+// 依辦公室等級計算：初始 2，每擴建 +1，封頂 5
+export function teamMaxMembers(officeLevel: number): number {
+  return Math.min(TEAM_MAX_MEMBERS, 2 + officeLevel);
+}
 export const GACHA_COST = 100;
 export const DOG_LEVEL_MAX = 10;
 // 強化升級成本：Lv n→n+1 = base × ratio^(n-1)，整數
@@ -130,7 +144,6 @@ function instantiateRosterDog(entry: RosterEntry): Dog {
     pipDaysLeft: 0,
     pipScore: 0,
     pipTasks: [],
-    morale: 70,
     fatigue: 0,
     loyalty: 50,
     experience: 0,
@@ -192,6 +205,11 @@ type Actions = {
   flipMemoryCard: (id: number) => void;
   finishMemory: () => void;
 
+  openCrisisBattle: () => void;
+  crisisTick: (dt: number) => void;
+  finishCrisis: (nickname?: string) => Promise<LeaderboardEntry | null>;
+  closeCrisis: () => void;
+
   openTraining: () => void;
   answerTraining: (optionIndex: number) => void;
   nextTrainingQuestion: () => void;
@@ -214,7 +232,7 @@ type Actions = {
   takeBankLoan: () => void;
   dismissLoanModal: () => void;
 
-  applyTrainingBoost: (dogId: string, stat: 'speed' | 'quality' | 'teamwork' | 'charisma') => void;
+  applyTrainingBoost: (dogId: string, stat: 'speed' | 'quality' | 'patience') => void;
 
   openTraitChoiceModal: (dogId: string) => void;
   closeTraitChoiceModal: () => void;
@@ -233,6 +251,7 @@ type Actions = {
   toggleTeamOpen: (industry: ProjectCategory) => void;
   addDogToTeam: (industry: ProjectCategory, dogId: string) => void;
   removeDogFromTeam: (industry: ProjectCategory, dogId: string) => void;
+  autoFillTeam: (industry: ProjectCategory) => void;
   upgradeDogLevel: (dogId: string) => void;          // 用 $
   upgradeDogWithFragments: (dogId: string) => void;  // 用碎片
 
@@ -245,10 +264,40 @@ export type GameStore = GameState & Actions;
 const emptyCompanyBuffs: CompanyBuffs = {
   speedBoost: 0,
   qualityBoost: 0,
-  teamworkBoost: 0,
-  charismaBoost: 0,
   decor: 1,
+  categorySpeed: { tech: 0, design: 0, marketing: 0, service: 0 },
+  categoryQuality: { tech: 0, design: 0, marketing: 0, service: 0 },
 };
+
+// 舊存檔的 companyBuffs 沒有 categorySpeed/Quality，但 purchases 還在
+// → 依新版設施對應規則從 purchases 重建 buffs（避免玩家已花的錢失效）
+function rebuildBuffsFromPurchases(
+  purchases: Partial<Record<string, number>>,
+): CompanyBuffs {
+  const buffs: CompanyBuffs = {
+    speedBoost: 0,
+    qualityBoost: 0,
+    decor: 1,
+    categorySpeed: { tech: 0, design: 0, marketing: 0, service: 0 },
+    categoryQuality: { tech: 0, design: 0, marketing: 0, service: 0 },
+  };
+  for (const item of SHOP_ITEMS) {
+    const lv = purchases[item.id] ?? 0;
+    if (lv <= 0) continue;
+    switch (item.id) {
+      case 'desk': buffs.categorySpeed.tech += lv; break;
+      case 'policy': buffs.categoryQuality.tech += lv; break;
+      case 'artwall': buffs.categorySpeed.design += lv; buffs.decor += 2 * lv; break;
+      case 'lamp': buffs.categoryQuality.design += lv; buffs.decor += lv; break;
+      case 'coffee': buffs.categorySpeed.marketing += lv; break;
+      case 'snack': buffs.categoryQuality.marketing += lv; break;
+      case 'toy': buffs.categorySpeed.service += lv; buffs.decor += lv; break;
+      case 'gym': buffs.categoryQuality.service += lv; break;
+      case 'sofa': /* 每日結算讀 purchases.sofa，不寫入 buffs */ break;
+    }
+  }
+  return buffs;
+}
 
 // Day 1 起始：team 都還沒開，inbox 為空；抽到第一隻狗後該 team 自動開、案件才會補進來
 function initialInbox(): Project[] {
@@ -258,8 +307,7 @@ function initialInbox(): Project[] {
 const initialState: GameState = {
   day: 1,
   money: 800,
-  reputation: 30,
-  tierBudget: 15, // 沒員工：reputation 30/2 = 15 + officeBonus 0 = 15
+  tierBudget: 0, // 沒員工 → 0；招到第一隻會 trigger computeTierBudget
   companyBuffs: { ...emptyCompanyBuffs },
   officeLevel: 0,
   officeSkin: 0,
@@ -310,35 +358,7 @@ const initialState: GameState = {
   claimedStarterPack: false,
 };
 
-// === 排行榜 localStorage helpers ===
-const LB_KEY = 'dogoffice_leaderboard_v1';
-function loadLeaderboard(): LeaderboardEntry[] {
-  if (typeof localStorage === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(LB_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw) as LeaderboardEntry[];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-function saveLeaderboard(list: LeaderboardEntry[]): void {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(LB_KEY, JSON.stringify(list));
-  } catch {
-    // ignore
-  }
-}
-function recordVictory(entry: LeaderboardEntry): LeaderboardEntry[] {
-  const list = loadLeaderboard();
-  list.push(entry);
-  list.sort((a, b) => a.days - b.days || b.money - a.money);
-  const top = list.slice(0, 20);
-  saveLeaderboard(top);
-  return top;
-}
+// === 排行榜（金融海嘯傷害榜）localStorage 邏輯放 src/lib/leaderboardApi.ts ===
 
 function refillCurrent(state: GameState): GameState {
   if (state.recruitmentClosed) {
@@ -453,19 +473,20 @@ function runAdvanceDay(prev: GameState): GameState {
   const projSummary = dayResult.summary;
 
   // === Phase 2: 員工底薪 + 辦公室固定費 ===
-  // 全 team 關（公司休業）→ 不付員工日薪，只付設施費
-  const anyTeamOpen = INDUSTRIES.some((ind) => s.teams[ind].open);
-  const totalSalary = anyTeamOpen ? s.staff.reduce((n, d) => n + d.expectedSalary, 0) : 0;
+  // 只付有在工作（指派到案件）的狗的薪水；沒接案的不算成本
+  const totalSalary = s.staff
+    .filter((d) => d.assignedProjectId != null)
+    .reduce((n, d) => n + d.expectedSalary, 0);
   const officeCost = OFFICE_DAILY_EXPENSE[s.officeLevel] ?? 0;
   const expense = totalSalary + officeCost;
   s.money -= expense;
 
-  // === Phase 3: 連續 3 天無人接案 → 全員士氣 -2 ===
-  const hasActive = s.clients.some((c) => c.status === 'active');
-  if (!hasActive && s.staff.length > 0) {
-    // 用 daysAtCompany / day 大致估算（簡單做：直接每天扣 -1 morale 直到接案）
-    // 這裡簡化為：每無案的天 -1 morale；連 3 天 -2 是 plan 寫法但保留簡化
-    s.staff = s.staff.map((d) => ({ ...d, morale: clamp(d.morale - 1, 0, 100) }));
+  // === Phase 3: sofa 休息區每日疲勞回復 ===
+  const sofaLv = s.purchases.sofa ?? 0;
+  if (sofaLv > 0 && s.staff.length > 0) {
+    const recover = 3 + sofaLv * 2;
+    s.staff = s.staff.map((d) => ({ ...d, fatigue: clamp(d.fatigue - recover, 0, 100) }));
+    s = pushLog(s, `休息區運作中，全員疲勞 −${recover}。`);
   }
 
   // === Phase 4: 推天數 + 重算 tierBudget ===
@@ -521,12 +542,11 @@ function runAdvanceDay(prev: GameState): GameState {
     }
   }
 
-  // === Phase 7: 破產判定（資金 ≤ 0 連 5 天 OR 信譽 ≤ 5）===
+  // === Phase 7: 破產判定（資金 ≤ 0 連 5 天）===
   if (s.money <= 0) {
     s.bankruptCountdown += 1;
     s.money = 0;
     s = pushLog(s, ` 資金見底（已連續 ${s.bankruptCountdown} 天）`);
-    // 破產第 1 天：若還沒借過 + 沒有未還貸款 → 自動彈貸款 modal
     if (s.bankruptCountdown === 1 && !s.loanTaken && s.loanRepayDaysLeft === 0) {
       s.loanModalOpen = true;
     }
@@ -536,11 +556,6 @@ function runAdvanceDay(prev: GameState): GameState {
     }
   } else {
     s.bankruptCountdown = 0;
-  }
-  if (s.reputation <= 5) {
-    s.bankrupt = true;
-    s = pushLog(s, ' 信譽崩盤，公司倒閉了！');
-    return s;
   }
 
   // === Phase 8: 日結算 log ===
@@ -556,44 +571,21 @@ function runAdvanceDay(prev: GameState): GameState {
     income: projSummary.income,
     expense: totalExpense,
     cashDelta: projSummary.income - totalExpense,
-    reputationDelta: projSummary.reputationDelta,
     completedCount: projSummary.completedCount,
     failedCount: projSummary.failedCount,
     levelUps: projSummary.levelUps,
     bankruptCountdown: s.bankruptCountdown,
   };
 
-  // === Phase 9: IPO 達成檢查 ===
+  // === Phase 9: IPO 達成檢查（信譽門檻已移除）===
   if (
     s.ipoAchievedAt === null &&
-    s.reputation >= IPO_REPUTATION &&
     s.money >= IPO_MONEY &&
     s.officeLevel >= IPO_OFFICE_LEVEL &&
     s.projectsCompleted >= IPO_PROJECTS
   ) {
     s.ipoAchievedAt = s.day;
     s.ipoDismissed = false;
-    recordVictory({
-      days: s.day,
-      money: s.money,
-      goal: IPO_MONEY,
-      officeLevel: s.officeLevel,
-      staffCount: s.staff.length,
-      projectsCompleted: s.projectsCompleted,
-      date: new Date().toISOString(),
-    });
-    void submitLeaderboard({
-      days: s.day,
-      money: s.money,
-      goal: IPO_MONEY,
-      office_level: s.officeLevel,
-      staff_count: s.staff.length,
-      projects_completed: s.projectsCompleted,
-    }).catch((err) => {
-      if (!isIgnorableApiError(err)) {
-        console.warn('[leaderboard] submit failed:', err);
-      }
-    });
     s = pushLog(s, ` 公司 IPO 上市成功！用時 ${s.day} 天！`);
   }
 
@@ -640,7 +632,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       pipScore: 0,
       pipTasks: [],
       severance: Math.max(18, s.current.expectedSalary * 2),
-      morale: 70,
       fatigue: 0,
       loyalty: 50,
       experience: 0,
@@ -696,78 +687,52 @@ export const useGameStore = create<GameStore>((set, get) => ({
       money: s.money - cost,
       purchases: { ...s.purchases, [id]: currentLevel + 1 },
     };
-    const buffs = { ...next.companyBuffs };
-    const applyToAllStaff = (fn: (d: Dog) => Dog) => {
-      next.staff = next.staff.map(fn);
+    const buffs: CompanyBuffs = {
+      ...next.companyBuffs,
+      categorySpeed: { ...next.companyBuffs.categorySpeed },
+      categoryQuality: { ...next.companyBuffs.categoryQuality },
     };
     switch (id) {
-      case 'snack':
-        applyToAllStaff((d) => ({
-          ...d,
-          morale: clamp(d.morale + 15, 0, 100),
-          loyalty: clamp(d.loyalty + 3, 0, 100),
-        }));
-        next = pushLog(next, '買了高級零食，大家尾巴搖更快了。');
-        break;
-      case 'toy':
-        applyToAllStaff((d) => ({
-          ...d,
-          morale: clamp(d.morale + 12, 0, 100),
-          loyalty: clamp(d.loyalty + 5, 0, 100),
-        }));
-        buffs.decor += 1;
-        next = pushLog(next, '玩具區啟用，辦公室更有活力了。');
-        break;
       case 'desk':
-        buffs.speedBoost += 1;
-        next = pushLog(next, '新辦公桌到了，全公司速度 +1。');
+        buffs.categorySpeed.tech += 1;
+        next = pushLog(next, '新辦公桌到了，工程師案件速度 +1。');
         break;
       case 'policy':
-        buffs.qualityBoost += 1;
-        next = pushLog(next, '流程更清楚，全公司專業 +1。');
-        break;
-      case 'lamp':
-        buffs.decor += 1;
-        applyToAllStaff((d) => ({
-          ...d,
-          morale: clamp(d.morale + 6, 0, 100),
-        }));
-        next = pushLog(next, '新吊燈裝上了，整間辦公室可愛很多。');
-        break;
-      case 'sofa':
-        buffs.teamworkBoost += 1;
-        applyToAllStaff((d) => ({
-          ...d,
-          morale: clamp(d.morale + 8, 0, 100),
-          loyalty: clamp(d.loyalty + 8, 0, 100),
-        }));
-        next = pushLog(next, '休息區升級後，狗狗們看起來放鬆多了。');
+        buffs.categoryQuality.tech += 1;
+        next = pushLog(next, '流程手冊上線，工程師案件品質 +1。');
         break;
       case 'artwall':
+        buffs.categorySpeed.design += 1;
         buffs.decor += 2;
-        applyToAllStaff((d) => ({
-          ...d,
-          loyalty: clamp(d.loyalty + 4, 0, 100),
-        }));
-        next = pushLog(next, '展示牆完成，整體氣氛更像新創公司了（tierBudget +8）。');
+        next = pushLog(next, '品牌展示牆完成，設計案件速度 +1（稀有度預算 +8）。');
+        break;
+      case 'lamp':
+        buffs.categoryQuality.design += 1;
+        buffs.decor += 1;
+        next = pushLog(next, '暖光吊燈裝上，設計案件品質 +1。');
         break;
       case 'coffee':
-        buffs.speedBoost += 1;
-        applyToAllStaff((d) => ({
-          ...d,
-          morale: clamp(d.morale + 5, 0, 100),
-        }));
-        next = pushLog(next, '咖啡機上線了，效率跟心情都變好。');
+        buffs.categorySpeed.marketing += 1;
+        next = pushLog(next, '精品咖啡機上線，行銷案件速度 +1。');
+        break;
+      case 'snack':
+        buffs.categoryQuality.marketing += 1;
+        next = pushLog(next, '高級零食備好，行銷案件品質 +1。');
+        break;
+      case 'toy':
+        buffs.categorySpeed.service += 1;
+        buffs.decor += 1;
+        next = pushLog(next, '狗狗玩具區啟用，客服案件速度 +1。');
         break;
       case 'gym':
-        buffs.speedBoost += 1;
-        buffs.teamworkBoost += 1;
-        applyToAllStaff((d) => ({
-          ...d,
-          loyalty: clamp(d.loyalty + 6, 0, 100),
-        }));
-        next = pushLog(next, '健身區開放了，狗狗們精神抖擻！');
+        buffs.categoryQuality.service += 1;
+        next = pushLog(next, '狗狗健身區開放，客服案件品質 +1。');
         break;
+      case 'sofa': {
+        const lv = currentLevel + 1;
+        next = pushLog(next, `休息區升級到 Lv ${lv}，每日全員疲勞 −${3 + lv * 2}。`);
+        break;
+      }
     }
     next.companyBuffs = buffs;
     next.tierBudget = recomputeTierBudget(next);
@@ -814,7 +779,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     newStaff[index] = { ...dog, status: 'pip', pipDaysLeft: 3, pipScore: 0, pipTasks: tasks };
     let next: GameState = {
       ...s,
-      staff: newStaff.map((d, i) => (i === index ? { ...d, morale: clamp(d.morale - 4, 0, 100) } : d)),
+      staff: newStaff,
     };
     next = pushLog(next, ` ${dog.name} 進入 PIP 改善流程（3天觀察期），需完成改善任務。`);
     set(next as Partial<GameStore>);
@@ -835,7 +800,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const dog = s.staff[index];
     if (!dog) return;
     const newStaff = [...s.staff];
-    newStaff[index] = { ...dog, status: 'active', pipDaysLeft: 0, pipScore: 0, pipTasks: [], morale: clamp(dog.morale + 2, 0, 100) };
+    newStaff[index] = { ...dog, status: 'active', pipDaysLeft: 0, pipScore: 0, pipTasks: [] };
     let next: GameState = { ...s, staff: newStaff, staffActionModal: null };
     next = pushLog(next, `✅ ${dog.name} 通過 PIP，決定留任。`);
     set(next as Partial<GameStore>);
@@ -902,14 +867,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...s,
       // 拒絕後直接移除，其他案件位置保留（隔天 morning 才補位）
       clients: s.clients.filter((c) => c.id !== projectId),
-      reputation: clamp(s.reputation - 1, 0, 100),
     };
-    next = pushLog(next, `❌ 拒絕：${project.title}（${project.clientName}）→ 信譽 -1`);
+    next = pushLog(next, `❌ 拒絕：${project.title}（${project.clientName}）`);
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
   },
 
-  // 中途放棄已接的案：付違約金 + 信譽下降 + 隊員士氣 -5、釋出員工
+  // 中途放棄已接的案：付違約金、釋出員工
   abandonProject: (projectId) => {
     const s = get();
     const project = s.clients.find((c) => c.id === projectId);
@@ -918,20 +882,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
     let next: GameState = {
       ...s,
       money: Math.max(0, s.money - project.penalty),
-      reputation: clamp(s.reputation + project.reputationDelta.fail, 0, 100),
       projectsFailed: s.projectsFailed + 1,
       clients: s.clients.map((c) =>
         c.id === projectId ? { ...c, status: 'failed', pendingEvent: null } : c,
       ),
       staff: s.staff.map((d) =>
         assignedIds.has(d.id)
-          ? { ...d, morale: clamp(d.morale - 5, 0, 100), assignedProjectId: null }
+          ? { ...d, assignedProjectId: null }
           : d,
       ),
     };
     next = pushLog(
       next,
-      ` 放棄案件「${project.title}」(${project.clientName})：扣 $${project.penalty}、信譽 ${project.reputationDelta.fail}`,
+      ` 放棄案件「${project.title}」(${project.clientName})：扣 $${project.penalty}`,
     );
     next.tierBudget = recomputeTierBudget(next);
     next = applyAutoAccept(next);
@@ -1084,8 +1047,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...s,
       miniGame: null,
       money: Math.max(0, s.money - 10 + cashReward),
-      // 全員士氣 +(6 + min(14, score))
-      staff: s.staff.map((d) => ({ ...d, morale: clamp(d.morale + 6 + Math.min(14, score), 0, 100) })),
     };
     if (activeProject) {
       const sprintBonus = score * 2;
@@ -1157,12 +1118,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const mg = s.miniGame;
     // Pitch Memory: 完美 → 隔天保送 1 個高 tier 案
     const cashReward = mg.matches >= 8 ? 10 : mg.matches >= 6 ? 5 : 0;
-    const moraleGain = 8 + (mg.matches >= 8 ? 15 : Math.round(mg.matches * 2));
     let next: GameState = {
       ...s,
       miniGame: null,
       money: Math.max(0, s.money - 10 + cashReward),
-      staff: s.staff.map((d) => ({ ...d, morale: clamp(d.morale + moraleGain, 0, 100) })),
     };
     if (mg.matches >= 8) {
       // 保送 1 個 tier 平均 +1 的案到 inbox
@@ -1178,8 +1137,89 @@ export const useGameStore = create<GameStore>((set, get) => ({
       next = pushLog(next, ` Pitch Memory 全配對！inbox 多了 1 個 tier${forced} 案`);
     }
     const cashMsg = cashReward > 0 ? `，回饋 $${cashReward}` : '';
-    next = pushLog(next, `翻牌結束！配對 ${mg.matches}/8，士氣 +${moraleGain}${cashMsg}。`);
+    next = pushLog(next, `翻牌結束！配對 ${mg.matches}/8${cashMsg}。`);
     set(next as Partial<GameStore>);
+  },
+
+  openCrisisBattle: () => {
+    const s = get();
+    if (s.miniGame || s.trainingSession) return;
+    const stats = computeCeoStats(s.staff, s.teams);
+    if (stats.hp <= 0) return;
+    set({
+      miniGame: {
+        type: 'crisis',
+        ceoHp: stats.hp,
+        ceoMaxHp: stats.hp,
+        ceoAtk: stats.atk,
+        ceoInterval: stats.interval,
+        monsterAtk: MONSTER_ATK,
+        monsterInterval: MONSTER_INTERVAL,
+        ceoTimer: 0,
+        monsterTimer: 0,
+        totalDamage: 0,
+        teamSize: stats.teamSize,
+        ended: false,
+        hitFx: [],
+      },
+    });
+  },
+
+  crisisTick: (dt) => {
+    const s = get();
+    if (!s.miniGame || s.miniGame.type !== 'crisis' || s.miniGame.ended) return;
+    const mg = { ...s.miniGame };
+    const now = performance.now();
+
+    let hitFx = mg.hitFx.filter((fx) => now - fx.bornAt < 700);
+
+    mg.ceoTimer += dt;
+    if (mg.ceoTimer >= mg.ceoInterval) {
+      mg.ceoTimer -= mg.ceoInterval;
+      mg.totalDamage += mg.ceoAtk;
+      hitFx = [...hitFx, { id: nextTreatId(), side: 'monster', damage: mg.ceoAtk, bornAt: now }];
+    }
+
+    mg.monsterTimer += dt;
+    if (mg.monsterTimer >= mg.monsterInterval) {
+      mg.monsterTimer -= mg.monsterInterval;
+      mg.ceoHp = Math.max(0, mg.ceoHp - mg.monsterAtk);
+      hitFx = [...hitFx, { id: nextTreatId(), side: 'ceo', damage: mg.monsterAtk, bornAt: now }];
+      if (mg.ceoHp <= 0) mg.ended = true;
+    }
+
+    mg.hitFx = hitFx;
+    set({ miniGame: mg });
+  },
+
+  finishCrisis: async (nickname) => {
+    const s = get();
+    if (!s.miniGame || s.miniGame.type !== 'crisis') return null;
+    const mg = s.miniGame;
+    const entry: LeaderboardEntry = {
+      damage: Math.floor(mg.totalDamage),
+      teamSize: mg.teamSize,
+      date: new Date().toISOString(),
+      nickname: nickname || undefined,
+    };
+    saveCrisisEntryLocal(entry);
+    try {
+      await submitLeaderboard({
+        damage: entry.damage,
+        team_size: entry.teamSize,
+      });
+    } catch (err) {
+      if (!isIgnorableApiError(err)) {
+        console.warn('[crisis-leaderboard] submit failed:', err);
+      }
+    }
+    return entry;
+  },
+
+  closeCrisis: () => {
+    const s = get();
+    if (!s.miniGame || s.miniGame.type !== 'crisis') return;
+    set({ miniGame: null });
   },
 
   openTraining: () => {
@@ -1275,12 +1315,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
   applySave: (data) => {
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
     const [first, ...rest] = fresh;
+    const loadedBuffs: CompanyBuffs = data.companyBuffs ?? { ...emptyCompanyBuffs };
+    const purchases = (data.purchases ?? {}) as Partial<Record<string, number>>;
+    const isLegacyBuffs =
+      Object.values(loadedBuffs.categorySpeed).every((v) => v === 0) &&
+      Object.values(loadedBuffs.categoryQuality).every((v) => v === 0) &&
+      Object.keys(purchases).length > 0;
+    const rebuiltBuffs: CompanyBuffs = isLegacyBuffs
+      ? rebuildBuffsFromPurchases(purchases)
+      : loadedBuffs;
     set({
       day: data.day,
       money: data.money,
-      reputation: data.reputation ?? 30,
-      tierBudget: data.tierBudget ?? 21,
-      companyBuffs: data.companyBuffs ?? { ...emptyCompanyBuffs },
+      tierBudget: data.tierBudget ?? 0,
+      companyBuffs: rebuiltBuffs,
       officeLevel: data.officeLevel,
       officeSkin: data.officeSkin ?? data.officeLevel,
       purchases: data.purchases,
@@ -1445,7 +1493,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       trainingSession: null,
       log: [
         ...s.log,
-        { day: s.day, msg: ` ${dog.name} 培訓 +1 ${stat === 'speed' ? '速度' : stat === 'quality' ? '專業' : stat === 'teamwork' ? '協作' : '魅力'}！` },
+        { day: s.day, msg: ` ${dog.name} 培訓 +1 ${stat === 'speed' ? '速度' : stat === 'quality' ? '專業' : '耐心'}！` },
       ].slice(-30),
     });
   },
@@ -1562,7 +1610,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const industry = dogPrimaryIndustry(hired.role);
     const team = s.teams[industry];
     let updatedTeam = team;
-    if (team.memberIds.length < TEAM_MAX_MEMBERS) {
+    if (team.memberIds.length < teamMaxMembers(s.officeLevel)) {
       updatedTeam = { ...team, memberIds: [...team.memberIds, hired.id] };
       // 第一隻該產業的狗 → 自動開啟該 team
       if (team.memberIds.length === 0) {
@@ -1622,12 +1670,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const team = s.teams[industry];
     if (!team) return;
     if (team.memberIds.includes(dogId)) return;
-    if (team.memberIds.length >= TEAM_MAX_MEMBERS) return;
+    if (team.memberIds.length >= teamMaxMembers(s.officeLevel)) return;
     if (!s.staff.some((d) => d.id === dogId)) return;
+    // 員工不能同時在多個 team
+    const inOther = INDUSTRIES.some((ind) => ind !== industry && s.teams[ind].memberIds.includes(dogId));
+    if (inOther) return;
     set({
       teams: {
         ...s.teams,
         [industry]: { ...team, memberIds: [...team.memberIds, dogId] },
+      },
+    });
+  },
+
+  autoFillTeam: (industry) => {
+    const s = get();
+    const team = s.teams[industry];
+    if (!team) return;
+    const capacity = teamMaxMembers(s.officeLevel);
+    // 候選人 = 沒被其他 team 佔住的員工
+    const candidates = s.staff.filter((d) =>
+      !INDUSTRIES.some((ind) => ind !== industry && s.teams[ind].memberIds.includes(d.id)),
+    );
+    const picks = pickBestTeamForIndustry(candidates, industry, capacity);
+    const newIds = picks.map((d) => d.id);
+    set({
+      teams: {
+        ...s.teams,
+        [industry]: { ...team, memberIds: newIds },
       },
     });
   },
@@ -1699,16 +1769,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
 function applyDogLevelUp(state: GameState, dogId: string): GameState {
   const dog = state.staff.find((d) => d.id === dogId);
   if (!dog) return state;
-  const rollGain = (): number => 0.5 + Math.random() * 0.5;
+  // 每升一級 stats +0 或 +1（50% 機率），保證整數
+  const rollGain = (): number => (Math.random() < 0.5 ? 0 : 1);
   const newLevel = dog.level + 1;
   const newStats = {
     speed: clamp(dog.stats.speed + rollGain(), 1, 20),
     quality: clamp(dog.stats.quality + rollGain(), 1, 20),
-    teamwork: clamp(dog.stats.teamwork + rollGain(), 1, 20),
-    charisma: clamp(dog.stats.charisma + rollGain(), 1, 20),
+    patience: clamp(dog.stats.patience + rollGain(), 1, 20),
   };
-  const TRAIT_UNLOCK_LEVELS = [3, 6, 9];
-  const grantsTrait = TRAIT_UNLOCK_LEVELS.includes(newLevel);
+  // 只在升到滿等（Lv.10）時給特性選擇
+  const grantsTrait = newLevel === DOG_LEVEL_MAX;
   const updatedDog: Dog = { ...dog, level: newLevel, stats: newStats };
   let pendingTraitChoice = updatedDog.pendingTraitChoice;
   if (grantsTrait) {

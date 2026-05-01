@@ -6,7 +6,6 @@ export function VictoryModal() {
   const ipoAchievedAt = useGameStore((s) => s.ipoAchievedAt);
   const ipoDismissed = useGameStore((s) => s.ipoDismissed);
   const money = useGameStore((s) => s.money);
-  const reputation = useGameStore((s) => s.reputation);
   const officeLevel = useGameStore((s) => s.officeLevel);
   const projectsCompleted = useGameStore((s) => s.projectsCompleted);
   const staff = useGameStore((s) => s.staff);
@@ -36,7 +35,6 @@ export function VictoryModal() {
         <div className="grid grid-cols-2 gap-3 mb-5 p-4 rounded-lg" style={{ background: '#f7fbff', border: '1px solid var(--line)' }}>
           <VictoryStat label="達成天數" value={`${ipoAchievedAt} 天`} large />
           <VictoryStat label="最終資金" value={`$${money.toLocaleString()}`} green large />
-          <VictoryStat label="最終信譽" value={`${Math.round(reputation)} / 100`} />
           <VictoryStat label="完成案件" value={`${projectsCompleted} 件`} />
           <VictoryStat label="辦公室" value={levelName} />
           <VictoryStat label="員工數" value={`${staff.length} 位`} />

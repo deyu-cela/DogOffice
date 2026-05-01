@@ -12,7 +12,7 @@ export function StarterPackBanner() {
       type="button"
       onClick={open}
       aria-label="開啟新手禮包"
-      className="starter-pack-banner fixed z-[700] inline-flex items-center gap-2 rounded-full font-extrabold cursor-pointer"
+      className="starter-pack-banner absolute z-[700] inline-flex items-center gap-2 rounded-full font-extrabold cursor-pointer"
       style={{
         background: 'linear-gradient(180deg, #fff7e0, #ffd9a3)',
         border: '1px solid rgba(255,180,90,0.9)',
