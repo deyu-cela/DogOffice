@@ -8,9 +8,13 @@ import { AuthScreen } from '@/features/auth/AuthScreen';
 import { LeaderboardPanel } from '@/features/leaderboard/LeaderboardPanel';
 import { LoginScrapbook } from './LoginScrapbook';
 import { LobbyCard } from './LobbyCard';
+import { CompanyNameModal } from './CompanyNameModal';
+import { displayCompanyName } from '@/lib/companyName';
 
 export function SplashScreen() {
   const startGame = useGameStore((s) => s.startGame);
+  const setCompanyName = useGameStore((s) => s.setCompanyName);
+  const companyName = useGameStore((s) => s.companyName);
   const day = useGameStore((s) => s.day);
   const money = useGameStore((s) => s.money);
   const officeLevel = useGameStore((s) => s.officeLevel);
@@ -29,6 +33,7 @@ export function SplashScreen() {
   const base = import.meta.env.BASE_URL;
   const [lbOpen, setLbOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [namingOpen, setNamingOpen] = useState(false);
 
   const authed = authStatus === 'authed' && !!user;
   const bootstrapping = authStatus === 'bootstrapping';
@@ -46,6 +51,20 @@ export function SplashScreen() {
       document.body.style.overflow = bodyOverflow;
     };
   }, []);
+
+  function handleStart() {
+    if (!companyName || companyName.trim() === '') {
+      setNamingOpen(true);
+      return;
+    }
+    startGame();
+  }
+
+  function handleConfirmName(name: string) {
+    setCompanyName(name);
+    setNamingOpen(false);
+    startGame();
+  }
 
   async function onLogout() {
     if (loggingOut) return;
@@ -65,6 +84,7 @@ export function SplashScreen() {
         ) : (
           <LobbyCard
             account={user?.account ?? '老闆'}
+            companyName={displayCompanyName(companyName)}
             day={day}
             money={money}
             officeLevel={officeLevel}
@@ -79,7 +99,7 @@ export function SplashScreen() {
             loggingOut={loggingOut}
             unlockedAchievements={unlockedAchievementIds.length}
             totalAchievements={ACHIEVEMENTS.length}
-            onStart={startGame}
+            onStart={handleStart}
             onLogout={onLogout}
             onLeaderboard={() => setLbOpen(true)}
             onAchievements={openAchievements}
@@ -88,6 +108,7 @@ export function SplashScreen() {
       </LoginScrapbook>
 
       {lbOpen && <LeaderboardPanel onClose={() => setLbOpen(false)} />}
+      {namingOpen && <CompanyNameModal onConfirm={handleConfirmName} />}
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function DailySummary() {
     summary.bankruptCountdown > 0;
   if (!hasContent) return null;
 
-  const cashColor = summary.cashDelta >= 0 ? '#16926f' : '#d34a4a';
+  const cashColor = summary.cashDelta >= 0 ? '#6f966d' : '#d74e63';
 
   return (
     <>
@@ -32,18 +32,25 @@ export function DailySummary() {
         }
       `}</style>
       <div
-        className="bx-panel bx-stripe px-4 py-3 rounded-xl"
+        className="px-4 py-3 rounded-xl"
         style={{
           position: 'fixed',
           right: 16,
           bottom: 16,
           zIndex: 950,
           width: 'min(360px, calc(100vw - 32px))',
+          color: '#5b382d',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,247,239,0.78)), repeating-linear-gradient(0deg, rgba(186,121,82,0.06) 0 1px, transparent 1px 16px), rgba(247,214,191,0.54)',
+          border: '1px solid rgba(208,130,105,0.34)',
+          boxShadow: '0 14px 30px rgba(166,91,85,0.14), inset 0 0 0 1px rgba(255,255,255,0.48)',
+          backdropFilter: 'blur(8px) saturate(1.04)',
+          WebkitBackdropFilter: 'blur(8px) saturate(1.04)',
           animation: 'summaryFadeIn 0.28s cubic-bezier(0.2,0.8,0.2,1)',
         }}
       >
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--muted)' }}>
+          <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: '#886153' }}>
             <SvgIcon name="log" size={16} />
             第 {summary.day - 1} 天結算
           </span>
@@ -51,31 +58,35 @@ export function DailySummary() {
             type="button"
             onClick={dismiss}
             className="text-[10px] px-1.5 rounded-md"
-            style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
+            style={{
+              background: 'linear-gradient(180deg, rgba(255,254,254,0.76), rgba(255,232,233,0.62))',
+              color: '#cf405b',
+              border: '1px solid rgba(229,116,132,0.32)',
+            }}
           >
             X
           </button>
         </div>
 
         <div className="flex items-center justify-between text-[11px] mb-1">
-          <span style={{ color: 'var(--muted)' }}>現金流</span>
+          <span style={{ color: '#886153' }}>現金變化</span>
           <span className="font-extrabold" style={{ color: cashColor }}>
             {summary.cashDelta >= 0 ? '+' : ''}${summary.cashDelta}
           </span>
         </div>
-        <div className="text-[10px] mb-1.5" style={{ color: 'var(--muted)' }}>
+        <div className="text-[10px] mb-1.5" style={{ color: '#886153' }}>
           收入 ${summary.income} - 支出 ${summary.expense}
         </div>
 
         {(summary.completedCount > 0 || summary.failedCount > 0) && (
           <div className="flex gap-2 mb-1 text-[11px]">
             {summary.completedCount > 0 && (
-              <span className="px-2 py-0.5 rounded-md font-bold" style={{ background: '#eefaf7', color: '#16926f' }}>
+              <span className="px-2 py-0.5 rounded-md font-bold" style={{ background: 'rgba(223,238,218,0.68)', color: '#6f966d' }}>
                 完成 {summary.completedCount}
               </span>
             )}
             {summary.failedCount > 0 && (
-              <span className="px-2 py-0.5 rounded-md font-bold" style={{ background: '#fff7f7', color: '#d34a4a' }}>
+              <span className="px-2 py-0.5 rounded-md font-bold" style={{ background: 'rgba(255,232,233,0.68)', color: '#d74e63' }}>
                 失敗 {summary.failedCount}
               </span>
             )}
@@ -85,9 +96,9 @@ export function DailySummary() {
         {summary.levelUps.length > 0 && (
           <div className="text-[11px] mb-1">
             {summary.levelUps.map((u, i) => (
-              <div key={i} className="flex items-center gap-1.5" style={{ color: 'var(--blue)' }}>
+              <div key={i} className="flex items-center gap-1.5" style={{ color: '#b97428' }}>
                 <SvgIcon name="quality" size={15} />
-                <span><b>{u.name}</b> 升 {u.to} 級</span>
+                <span><b>{u.name}</b> 升到 Lv.{u.to}</span>
               </div>
             ))}
           </div>
@@ -96,7 +107,7 @@ export function DailySummary() {
         {summary.bankruptCountdown > 0 && (
           <div
             className="text-[11px] mt-1.5 px-2 py-1 rounded-md font-bold text-center"
-            style={{ background: '#fff7f7', color: '#d34a4a' }}
+            style={{ background: 'rgba(255,232,233,0.68)', color: '#d74e63' }}
           >
             資金見底（{summary.bankruptCountdown}/5 天）
           </div>

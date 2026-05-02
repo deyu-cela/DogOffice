@@ -26,6 +26,9 @@ export type SvgIconName =
   | 'warning'
   | 'target'
   | 'wand'
+  | 'calendar'
+  | 'hourglass'
+  | 'play'
   | 'growth'
   | 'shopSnack'
   | 'shopToy'
@@ -211,6 +214,32 @@ export function SvgIcon({ name, size = 24, className }: Props) {
           <path d="M25 5v3M25 11v3M22 8h3M27 8h3" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
           <circle cx="13" cy="20" r="1.4" fill={GOLD} />
           <circle cx="9" cy="14" r="1.2" fill={GOLD} />
+        </svg>
+      );
+    case 'calendar':
+      return (
+        <svg {...common}>
+          <rect x="6" y="8" width="20" height="18" rx="3" fill="none" stroke={BLUE} strokeWidth="2.2" />
+          <path d="M6 13h20M11 6v5M21 6v5" fill="none" stroke={BLUE} strokeWidth="2.2" strokeLinecap="round" />
+          <circle cx="11.5" cy="17.5" r="1.4" fill={ORANGE} />
+          <circle cx="16" cy="17.5" r="1.4" fill={ORANGE} />
+          <circle cx="20.5" cy="17.5" r="1.4" fill={ORANGE} />
+          <circle cx="11.5" cy="22" r="1.4" fill={ORANGE} />
+          <circle cx="16" cy="22" r="1.4" fill={ORANGE} />
+        </svg>
+      );
+    case 'hourglass':
+      return (
+        <svg {...common}>
+          <path d="M10 6h12M10 26h12" stroke={BLUE} strokeWidth="2.3" strokeLinecap="round" />
+          <path d="M12 8c0 5 4 5.8 4 8s-4 3-4 8h8c0-5-4-5.8-4-8s4-3 4-8h-8Z" fill="none" stroke={BLUE} strokeWidth="2.1" strokeLinejoin="round" />
+          <path d="M14 10h4c-.2 2-1.2 3-2 3.8-.8-.8-1.8-1.8-2-3.8ZM14 22c.25-1.9 1.3-2.8 2-3.6.7.8 1.75 1.7 2 3.6h-4Z" fill={ORANGE} />
+        </svg>
+      );
+    case 'play':
+      return (
+        <svg {...common}>
+          <path d="M11 8.5v15l13-7.5-13-7.5Z" fill={BLUE} stroke={BLUE} strokeWidth="2" strokeLinejoin="round" />
         </svg>
       );
     case 'growth':

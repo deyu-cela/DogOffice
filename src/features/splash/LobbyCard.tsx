@@ -8,6 +8,7 @@ const IPO_PROJECTS = 80;
 
 type Props = {
   account: string;
+  companyName: string;
   day: number;
   money: number;
   officeLevel: number;
@@ -30,6 +31,7 @@ type Props = {
 
 export function LobbyCard({
   account,
+  companyName,
   day,
   money,
   officeLevel,
@@ -83,11 +85,11 @@ export function LobbyCard({
         <p>
           {bankrupt ? (
             <>
-              公司目前破產中，重新出發 <span aria-hidden>💔</span>
+              「{companyName}」破產中 <span aria-hidden>💔</span>
             </>
           ) : (
             <>
-              狗狗們等你打卡上班 <span aria-hidden>🐾</span>
+              「{companyName}」狗狗們等你打卡上班 <span aria-hidden>🐾</span>
             </>
           )}
         </p>

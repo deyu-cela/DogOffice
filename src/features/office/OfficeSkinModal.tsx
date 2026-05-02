@@ -126,7 +126,7 @@ export function OfficeSkinModal({ onClose }: { onClose: () => void }) {
                     )}
                   </div>
                   <div className="text-[11px] mt-0.5" style={{ color: 'var(--muted)' }}>
-                    主題：{lv.theme ?? 'kawaii'}・容量 {lv.maxStaff} 隻
+                    主題：{lv.theme ?? 'kawaii'}
                   </div>
                 </div>
               </button>

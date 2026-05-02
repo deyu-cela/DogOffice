@@ -132,7 +132,7 @@ export type TutorialStepData = {
 export const TUTORIAL_STEPS: TutorialStepData[] = [
   {
     dog: '',
-    title: '歡迎來到狗狗公司！',
+    title: '歡迎來到{COMPANY}！',
     text: '汪汪！我是<b>小柴</b>，你的經營顧問！<br/>這裡是你的辦公室，讓我帶你認識一下～',
     tip: ' 教學很快，別擔心！',
   },

@@ -10,6 +10,13 @@ import {
 } from '@/lib/leaderboardApi';
 import { useAuthStore } from '@/store/authStore';
 
+const UNNAMED_COMPANY = '未命名公司';
+
+function entryDisplayName(entry: LeaderboardEntry): string {
+  const name = (entry.companyName ?? '').trim();
+  return name.length > 0 ? name : UNNAMED_COMPANY;
+}
+
 export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
   const authedUser = useAuthStore((s) => s.user);
 
@@ -94,7 +101,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             <div className="text-[11px] font-bold mb-1" style={{ color: 'var(--blue)' }}>
               你的最佳成績 #{myBest.rank}
             </div>
-            <EntryRow rank={myBest.rank} entry={myBest.entry} highlight compact showNickname={false} />
+            <EntryRow rank={myBest.rank} entry={myBest.entry} highlight compact showName={false} />
           </div>
         )}
 
@@ -119,7 +126,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
                   rank={i + 1}
                   entry={entry}
                   highlight={!!authedUser && !!myBest && entry.date === myBest.entry.date && entry.days === myBest.entry.days}
-                  showNickname
+                  showName
                 />
               ))}
             </div>
@@ -140,18 +147,18 @@ function EntryRow({
   rank,
   entry,
   highlight = false,
-  showNickname = false,
+  showName = false,
   compact = false,
 }: {
   rank: number;
   entry: LeaderboardEntry;
   highlight?: boolean;
-  showNickname?: boolean;
+  showName?: boolean;
   compact?: boolean;
 }) {
   const isFirst = rank === 1;
-  const primary = `第 ${entry.days} 天達成`;
   const detail = `現金 $${entry.money.toLocaleString()} · 員工 ${entry.staffCount} 位`;
+  const company = entryDisplayName(entry);
 
   return (
     <div
@@ -166,15 +173,22 @@ function EntryRow({
         #{rank}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-bold flex items-center gap-2 flex-wrap">
-          <span className="tabular-nums">{primary}</span>
-          {showNickname && entry.nickname && (
-            <span className="text-[11px] font-normal" style={{ color: 'var(--muted)' }}>@{entry.nickname}</span>
-          )}
-        </div>
-        <div className="text-xs" style={{ color: 'var(--muted)' }}>
-          {detail}
-        </div>
+        {showName ? (
+          <>
+            <div className="text-sm font-extrabold truncate" style={{ color: 'var(--ink)' }} title={company}>
+              {company}
+            </div>
+            <div className="text-xs" style={{ color: 'var(--muted)' }}>
+              <span className="tabular-nums">第 {entry.days} 天</span>
+              <span> · {detail}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-sm font-bold tabular-nums">第 {entry.days} 天達成</div>
+            <div className="text-xs" style={{ color: 'var(--muted)' }}>{detail}</div>
+          </>
+        )}
       </div>
       <div className="text-[10px] text-right whitespace-nowrap" style={{ color: 'var(--muted)' }}>
         {new Date(entry.date).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}

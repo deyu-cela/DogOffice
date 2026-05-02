@@ -9,19 +9,25 @@ import { estimateSpecialTaskRemainingDays, teamTotalAbility, useGameStore } from
 const OFFICE_TIER_BONUS = [0, 5, 12, 22, 35];
 const OFFICE_TIER_CAP = [3, 3, 4, 4, 5];
 
+const cardStyle: React.CSSProperties = {
+  background:
+    'linear-gradient(180deg, rgba(255,255,255,0.66), rgba(255,247,239,0.62)), repeating-linear-gradient(0deg, rgba(186,121,82,0.05) 0 1px, transparent 1px 15px)',
+  border: '1px solid rgba(208,130,105,0.32)',
+  boxShadow: '0 8px 16px rgba(166,91,85,0.08), inset 0 0 0 1px rgba(255,255,255,0.42)',
+  backdropFilter: 'blur(7px) saturate(1.02)',
+  WebkitBackdropFilter: 'blur(7px) saturate(1.02)',
+};
+
 function upgradeBenefits(curLv: number): string[] {
   const next = curLv + 1;
   const benefits: string[] = [];
-  const curMax = OFFICE_LEVELS[curLv].maxStaff;
-  const nextMax = OFFICE_LEVELS[next].maxStaff;
-  if (nextMax > curMax) benefits.push(`員工上限 +${nextMax - curMax}（→${nextMax}）`);
   const curBonus = OFFICE_TIER_BONUS[curLv] ?? 0;
   const nextBonus = OFFICE_TIER_BONUS[next] ?? 0;
-  if (nextBonus > curBonus) benefits.push(`稀有度 +${nextBonus - curBonus}`);
+  if (nextBonus > curBonus) benefits.push(`能力加成 +${nextBonus - curBonus}`);
   const curCap = OFFICE_TIER_CAP[curLv] ?? 3;
   const nextCap = OFFICE_TIER_CAP[next] ?? 3;
-  if (nextCap > curCap) benefits.push(`解鎖 ${nextCap} 級案件`);
-  if (next === 3) benefits.push('達成 IPO 條件之一');
+  if (nextCap > curCap) benefits.push(`隊伍上限 ${nextCap} 位`);
+  if (next === 3) benefits.push('解鎖 IPO 挑戰');
   return benefits;
 }
 
@@ -57,88 +63,62 @@ export function ConstructionPanel() {
     !taskInProgress
       ? ''
       : !Number.isFinite(estRemaining)
-        ? 'team 沒人在'
-        : `預估剩 ${estRemaining} 天`;
+        ? '隊伍能力不足'
+        : `約 ${estRemaining} 天`;
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div
-        className="p-3 rounded-xl"
-        style={{ background: '#f7fbff', border: '1px solid var(--line)' }}
-      >
-        <div className="flex items-center gap-2 text-sm font-bold" style={{ color: '#173b78' }}>
+      <div className="p-3 rounded-xl" style={cardStyle}>
+        <div className="flex items-center gap-2 text-sm font-bold" style={{ color: '#5b382d' }}>
           <SvgIcon name="office" size={20} />
-          <span>目前辦公室：{curLv.name}（等級 {officeLevel + 1}）</span>
+          <span>目前辦公室：{curLv.name}（Lv.{officeLevel + 1}）</span>
         </div>
-        <div className="text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
-          員工上限 {curLv.maxStaff}・稀有度加成 +{OFFICE_TIER_BONUS[officeLevel] ?? 0}・最高 {OFFICE_TIER_CAP[officeLevel] ?? 3} 級案件
+        <div className="text-[11px] mt-1" style={{ color: '#886153' }}>
+          能力加成 +{OFFICE_TIER_BONUS[officeLevel] ?? 0}，隊伍上限 {OFFICE_TIER_CAP[officeLevel] ?? 3} 位
         </div>
       </div>
 
       {atMax ? (
-        <div className="p-3 rounded-xl text-center" style={{ background: '#eefaf7', border: '1px solid rgba(51,194,154,0.28)' }}>
-          <strong>已達最大規模</strong>
+        <div className="p-3 rounded-xl text-center" style={{ ...cardStyle, color: '#6f966d' }}>
+          <strong>已達最高等級</strong>
         </div>
       ) : (
         <>
-          {/* 特殊任務區塊（紅色調） */}
           {task && (
             <div
               className="p-3 rounded-xl"
               style={{
-                background: 'linear-gradient(180deg, #fff5f2, #fde0d8)',
-                border: '1.5px solid #c63a3a',
-                boxShadow: '0 2px 6px rgba(138,31,31,0.18)',
+                ...cardStyle,
+                background:
+                  'linear-gradient(180deg, rgba(255,254,254,0.7), rgba(255,232,233,0.58)), repeating-linear-gradient(0deg, rgba(186,121,82,0.05) 0 1px, transparent 1px 15px)',
               }}
             >
               <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="font-bold flex items-center gap-1.5" style={{ color: '#8a1f1f' }}>
-                  <span>⚠ 特殊任務</span>
-                  <span className="text-[11px] font-normal" style={{ color: '#a85a4f' }}>
-                    （升級必經）
+                <div className="font-bold flex items-center gap-1.5" style={{ color: '#5b382d' }}>
+                  <span>特殊任務</span>
+                  <span className="text-[11px] font-normal" style={{ color: '#886153' }}>
+                    升級前置
                   </span>
                 </div>
-                {taskCompleted && (
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: '#1f8a47', color: 'white' }}
-                  >
-                    ✓ 已完成
-                  </span>
-                )}
-                {taskInProgress && (
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: '#c63a3a', color: 'white' }}
-                  >
-                    進行中
-                  </span>
-                )}
-                {taskAvailable && (
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: '#a85a4f', color: 'white' }}
-                  >
-                    待啟動
-                  </span>
-                )}
+                {taskCompleted && <StatusPill color="#6f966d">已完成</StatusPill>}
+                {taskInProgress && <StatusPill color="#d74e63">進行中</StatusPill>}
+                {taskAvailable && <StatusPill color="#c87e78">可開始</StatusPill>}
               </div>
-              <div className="text-sm font-bold" style={{ color: '#5a1a1a' }}>
+              <div className="text-sm font-bold" style={{ color: '#5b382d' }}>
                 {task.name}
               </div>
               {taskAvailable && (
                 <>
-                  <div className="text-[11px] mt-1" style={{ color: '#7a3a35' }}>
-                    每日依 team 員工綜合能力推進，升級員工會即時加快。
-                    基準：滿員 + 全員 Lv{SPECIAL_TASK_BASELINE_LEVEL[targetLevel]} 約 {SPECIAL_TASK_BASE_DAYS[targetLevel]} 天完成。
+                  <div className="text-[11px] mt-1" style={{ color: '#886153' }}>
+                    派出 team 累積工作量完成挑戰。基準：全員 Lv{SPECIAL_TASK_BASELINE_LEVEL[targetLevel]} 約 {SPECIAL_TASK_BASE_DAYS[targetLevel]} 天。
                   </div>
                   <button
                     onClick={() => startSpecialTask(targetLevel)}
                     className="mt-2 w-full text-sm font-bold py-1.5 rounded-lg"
                     style={{
-                      background: 'linear-gradient(180deg, #c63a3a, #8a1f1f)',
+                      background: 'linear-gradient(180deg, #f7b267, #c87e78)',
                       color: 'white',
-                      border: '1px solid #8a1f1f',
+                      border: '1px solid rgba(208,130,105,0.42)',
                       cursor: 'pointer',
                     }}
                   >
@@ -152,65 +132,52 @@ export function ConstructionPanel() {
                     className="mt-2"
                     style={{
                       height: 8,
-                      background: 'rgba(138,31,31,0.18)',
-                      borderRadius: 4,
+                      background: 'rgba(255,255,255,0.42)',
+                      borderRadius: 999,
                       overflow: 'hidden',
-                      border: '1px solid rgba(138,31,31,0.28)',
+                      border: '1px solid rgba(214,145,150,0.26)',
                     }}
                   >
                     <div
                       style={{
                         height: '100%',
                         width: `${progressPct}%`,
-                        background: 'linear-gradient(90deg, #c63a3a, #e76b66)',
+                        background: 'linear-gradient(90deg, #f7b267, #d74e63)',
                         transition: 'width 0.3s',
                       }}
                     />
                   </div>
-                  <div
-                    className="mt-1 flex justify-between text-[11px] font-bold"
-                    style={{ color: '#8a1f1f' }}
-                  >
-                    <span>
-                      {Math.round(safeWorkDone)} / {safeWorkRequired} 工時
-                    </span>
+                  <div className="mt-1 flex justify-between text-[11px] font-bold" style={{ color: '#6e4638' }}>
+                    <span>{Math.round(safeWorkDone)} / {safeWorkRequired} 工作量</span>
                     <span>{remainingLabel}</span>
                   </div>
-                  <div className="text-[10px]" style={{ color: '#a85a4f' }}>
-                    當前每日推進 {Math.round(currentAbility * 10) / 10}（team 綜合能力）
+                  <div className="text-[10px]" style={{ color: '#886153' }}>
+                    每日隊伍能力：{Math.round(currentAbility * 10) / 10}
                   </div>
                 </>
               )}
               {taskCompleted && (
-                <div className="text-[11px] mt-1" style={{ color: '#1f8a47' }}>
-                  任務已完成，下方可付費升級。
+                <div className="text-[11px] mt-1" style={{ color: '#6f966d' }}>
+                  任務完成，可以進行辦公室升級。
                 </div>
               )}
             </div>
           )}
 
-          <div
-            className="p-3 rounded-xl"
-            style={{
-              background: 'linear-gradient(180deg, #ffffff, #eef6ff)',
-              border: '1px solid #7fb2ef',
-              boxShadow: 'var(--shadow-soft)',
-              opacity: taskCompleted ? 1 : 0.78,
-            }}
-          >
+          <div className="p-3 rounded-xl" style={{ ...cardStyle, opacity: taskCompleted ? 1 : 0.82 }}>
             <div className="flex justify-between items-start gap-2">
               <div className="flex-1">
-                <div className="font-bold flex items-center gap-1.5">
+                <div className="font-bold flex items-center gap-1.5" style={{ color: '#5b382d' }}>
                   <SvgIcon name="office" size={19} />
-                  <span>擴建 → {nextLv.name}</span>
+                  <span>升級到 {nextLv.name}</span>
                 </div>
                 <div className="flex flex-col gap-0.5 mt-1.5">
                   {benefits.map((b, i) => (
-                    <div key={i} className="text-[11px]" style={{ color: 'var(--muted)' }}>{b}</div>
+                    <div key={i} className="text-[11px]" style={{ color: '#886153' }}>{b}</div>
                   ))}
                   {!taskCompleted && (
-                    <div className="text-[11px] font-bold" style={{ color: '#8a1f1f' }}>
-                      ⚠ 需先完成上方特殊任務
+                    <div className="text-[11px] font-bold" style={{ color: '#d74e63' }}>
+                      需要先完成特殊任務
                     </div>
                   )}
                 </div>
@@ -221,10 +188,10 @@ export function ConstructionPanel() {
                 className="text-sm px-3"
                 style={{
                   background: canUpgrade
-                    ? 'linear-gradient(180deg, #2f8df4, #1c63c8)'
-                    : '#e9f1ff',
-                  color: canUpgrade ? 'white' : '#8aa2c8',
-                  border: '1px solid var(--line)',
+                    ? 'linear-gradient(180deg, #f7b267, #c87e78)'
+                    : 'rgba(255,240,237,0.58)',
+                  color: canUpgrade ? 'white' : '#a98a80',
+                  border: '1px solid rgba(208,130,105,0.32)',
                   cursor: canUpgrade ? 'pointer' : 'not-allowed',
                 }}
               >
@@ -235,5 +202,16 @@ export function ConstructionPanel() {
         </>
       )}
     </div>
+  );
+}
+
+function StatusPill({ color, children }: { color: string; children: string }) {
+  return (
+    <span
+      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+      style={{ background: color, color: 'white' }}
+    >
+      {children}
+    </span>
   );
 }

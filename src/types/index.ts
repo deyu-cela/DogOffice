@@ -311,6 +311,7 @@ export type DailySummary = {
 };
 
 export type GameState = {
+  companyName: string;            // 公司名稱（玩家自訂，綁帳號一次定終身；空字串代表尚未命名）
   day: number;
   money: number;
   tierBudget: number;            // 案件稀有度預算，每天 morning 重算
@@ -401,13 +402,15 @@ export type LeaderboardEntry = {
   money: number;       // 達成當下的現金
   staffCount: number;  // 達成當下的員工數
   date: string;
-  nickname?: string;
+  companyName?: string;  // 公司名（取代 nickname 顯示）
+  nickname?: string;     // 舊欄位保留，新版不顯示
 };
 
 export type LeaderboardSubmitModal = {
   days: number;
   money: number;
   staffCount: number;
+  companyName: string;
 };
 
 // === 化學反應快取記錄（保留結構給 UI 顯示用，不是觸發狀態）===

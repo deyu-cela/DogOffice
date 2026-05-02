@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/SvgIcon';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { useGameStore } from '@/store/gameStore';
+import { displayCompanyName } from '@/lib/companyName';
 
 export function VictoryModal() {
   const ipoAchievedAt = useGameStore((s) => s.ipoAchievedAt);
@@ -9,6 +10,7 @@ export function VictoryModal() {
   const officeLevel = useGameStore((s) => s.officeLevel);
   const projectsCompleted = useGameStore((s) => s.projectsCompleted);
   const staff = useGameStore((s) => s.staff);
+  const companyName = useGameStore((s) => s.companyName);
   const dismissIpo = useGameStore((s) => s.dismissIpo);
   const restart = useGameStore((s) => s.restart);
 
@@ -29,7 +31,7 @@ export function VictoryModal() {
         <div className="mx-auto mb-3 w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: '#eef6ff', border: '1px solid var(--line)' }}>
           <SvgIcon name="trophy" size={38} />
         </div>
-        <div className="text-2xl font-extrabold mb-2" style={{ color: 'var(--blue)' }}>公司 IPO 上市了！</div>
+        <div className="text-2xl font-extrabold mb-2" style={{ color: 'var(--blue)' }}>{displayCompanyName(companyName)} IPO 上市了！</div>
         <div className="text-sm mb-5" style={{ color: 'var(--muted)' }}>狗狗們敲響了上市鐘，全公司沸騰！</div>
 
         <div className="grid grid-cols-2 gap-3 mb-5 p-4 rounded-lg" style={{ background: '#f7fbff', border: '1px solid var(--line)' }}>
