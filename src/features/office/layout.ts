@@ -22,7 +22,7 @@ export type PurchaseDef = {
 };
 
 export const BUILDING_LAYOUT: BuildingDef[] = [
-  { kind: 'shop', gx: 7.4, gy: 1.6, w: 4.4, h: 5.6 },
+  { kind: 'shop', gx: 6.5, gy: 1.6, w: 4.4, h: 5.6 },
   { kind: 'dorm', gx: 2.2, gy: 5.7, w: 5.3, h: 4.5 },
   { kind: 'hr', gx: 7, gy: 9.1, w: 3.5, h: 3.2 },
 ];
@@ -34,9 +34,9 @@ export const PURCHASE_LAYOUT: PurchaseDef[] = [
   { id: 'coffee', src: JP_ASSETS.coffeeMachine, gx: 0.2, gy: 5.5, w: 1.4, h: 2.2, yOffset: 0 },
   { id: 'sofa', src: JP_ASSETS.beanBag, gx: 2.0, gy: 8.9, w: 4.8, h: 4.4 },
   // policy 改為左牆掛件，不在地面出現（見 WallPolicy3D）
-  { id: 'snack', src: JP_ASSETS.snackJar, gx: 5.3, gy: 3.65, w: 0.45, h: 0.6, yOffset: 1.0 },
-  { id: 'toy', src: JP_ASSETS.toyBall, gx: 9, gy: 1.5, w: 0.8, h: 0.8 },
-  { id: 'artwall', src: JP_ASSETS.pictureFrame, gx: 3.5, gy: 0.3, w: 1.4, h: 1.1 },
+  { id: 'snack', src: JP_ASSETS.snackJar, gx: 3.3, gy: 0.2, w: 1.4, h: 2.2 },
+  { id: 'toy', src: JP_ASSETS.toyBall, gx: 9, gy: 1.5, w: 2.8, h: 2.8 },
+  { id: 'artwall', src: JP_ASSETS.pictureFrame, gx: 9.3, gy: 7.0, w: 2.5, h: 2.7 },
 ];
 
 // 地板上的障礙物（grid 空間，中心 + 寬高）

@@ -44,6 +44,7 @@ const PRELOAD_URLS = [
   JP_ASSETS.sakuraPetal,
   JP_ASSETS.gptFloor,
   JP_ASSETS.gptWall,
+  JP_ASSETS.lanternRed,
 ];
 
 function usePixelTexture(src: string): Texture {
@@ -441,6 +442,7 @@ export function ThreeRoom() {
           <ConstructionDog3D />
           <PurchaseArea3D />
           <WallPolicy3D />
+          <Chandelier3D />
           <WallStickyNotes3D />
         </Suspense>
       </Canvas>
@@ -497,8 +499,8 @@ function ConstructionDog3D() {
   const [hover, setHover] = useState(false);
   const texture = usePixelTexture(JP_ASSETS.constructionDog);
   // 緊鄰販賣機（shop）右側：shop 中心 (7.4, 1.6) w=4.4，右邊緣 ≈ 9.6
-  const gx = 10.5;
-  const gy = 1.6;
+  const gx = 9.5;
+  const gy = 9.5;
   const height = hover ? 2.22 : 2.05;
   const width = height;
   const [x, , z] = gridToWorld(gx, gy);
@@ -576,6 +578,38 @@ function CeilingBars() {
       <boxGeometry args={[1, 1, 1]} />
       <meshBasicMaterial color="#6d5a3a" />
     </instancedMesh>
+  );
+}
+
+function Chandelier3D() {
+  const count = useGameStore((s) => s.purchases.lamp ?? 0);
+  const openFacilityInfo = useUiStore((s) => s.openFacilityInfo);
+  const texture = usePixelTexture(JP_ASSETS.lanternRed);
+  if (count === 0) return null;
+  const gx = 1.5;
+  const gy = 1.5;
+  const [x, , z] = gridToWorld(gx, gy);
+  const w = 2.4;
+  const h = 3.0;
+  return (
+    <mesh
+      position={[x, WALL_H +0.2 , z]}
+      rotation={[0, FACING_Y, 0]}
+      onClick={(e) => {
+        e.stopPropagation();
+        openFacilityInfo('lamp');
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto';
+      }}
+    >
+      <planeGeometry args={[w, h]} />
+      <meshBasicMaterial map={texture} transparent alphaTest={0.1} side={DoubleSide} />
+    </mesh>
   );
 }
 
@@ -1777,11 +1811,10 @@ function ZoneFurniture3D() {
       <FurnitureSprite
         key={`snack-${i}`}
         src={JP_ASSETS.snackJar}
-        gx={4 + (i % 2)}
-        gy={3}
-        w={0.5}
-        h={0.65}
-        yOffset={1.2}
+        gx={3.3 + (i % 2) * 0.6}
+        gy={2.4 + Math.floor(i / 2) * 0.5}
+        w={0.6}
+        h={0.6}
       />,
     );
   }

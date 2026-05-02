@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SvgIcon } from '@/components/SvgIcon';
 import { useGameStore } from '@/store/gameStore';
 import { displayCompanyName } from '@/lib/companyName';
@@ -7,18 +7,16 @@ export function SubmitRecordModal() {
   const snap = useGameStore((s) => s.leaderboardSubmitModal);
   const submitOfficeRecord = useGameStore((s) => s.submitOfficeRecord);
   const closeLeaderboardSubmit = useGameStore((s) => s.closeLeaderboardSubmit);
-  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const submittedRef = useRef(false);
+
+  useEffect(() => {
+    if (!snap || submittedRef.current) return;
+    submittedRef.current = true;
+    void submitOfficeRecord().then(() => setSubmitted(true));
+  }, [snap, submitOfficeRecord]);
 
   if (!snap) return null;
-
-  const handleSubmit = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    await submitOfficeRecord();
-    setSubmitted(true);
-    setSubmitting(false);
-  };
 
   return (
     <div className="fixed inset-0 z-[860] flex items-center justify-center bg-[#08204d]/55 backdrop-blur-sm p-4">
@@ -36,7 +34,7 @@ export function SubmitRecordModal() {
           </div>
           <div>
             <h2 className="text-lg font-extrabold" style={{ color: '#9a6a1a' }}>恭喜入主豪華總部！</h2>
-            <p className="text-xs" style={{ color: '#9a6a1a' }}>把這場成績留在排行榜吧</p>
+            <p className="text-xs" style={{ color: '#9a6a1a' }}>成績已自動登上排行榜</p>
           </div>
         </div>
 
@@ -46,62 +44,32 @@ export function SubmitRecordModal() {
           <Stat label="員工" value={`${snap.staffCount} 位`} />
         </div>
 
-        {!submitted ? (
-          <>
-            <div
-              className="px-3 py-2 rounded-lg text-sm mb-3 text-center"
-              style={{ backgroundColor: '#fff7ec', border: '1px solid #f0c97a', color: '#9a6a1a' }}
-            >
-              <div className="text-[11px] font-bold mb-0.5">將以這個名字上榜</div>
-              <div className="text-base font-extrabold truncate" title={displayCompanyName(snap.companyName)}>
-                {displayCompanyName(snap.companyName)}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={closeLeaderboardSubmit}
-                disabled={submitting}
-                className="flex-1 py-2.5 rounded-lg font-bold text-sm disabled:opacity-50"
-                style={{ backgroundColor: '#ffffff', color: '#9a6a1a', border: '1px solid #f0c97a' }}
-              >
-                先不上傳
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex-1 py-2.5 rounded-lg font-extrabold text-sm text-white disabled:opacity-50"
-                style={{
-                  backgroundImage: 'linear-gradient(180deg, #ff7a3d, #d24722)',
-                  boxShadow: '0 6px 18px rgba(210,71,34,0.32)',
-                }}
-              >
-                {submitting ? '上傳中…' : '上傳排行榜'}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div
-              className="text-center py-2 rounded-lg text-sm font-bold mb-3"
-              style={{ backgroundColor: '#eef6ff', color: 'var(--blue)', border: '1px solid #7fb2ef' }}
-            >
-              成績已上傳！
-            </div>
-            <button
-              type="button"
-              onClick={closeLeaderboardSubmit}
-              className="w-full py-2.5 rounded-lg font-extrabold text-sm text-white"
-              style={{
-                backgroundImage: 'linear-gradient(180deg, #5a8ed1, #3a6fb0)',
-                boxShadow: '0 6px 18px rgba(58,111,176,0.32)',
-              }}
-            >
-              關閉
-            </button>
-          </>
-        )}
+        <div
+          className="px-3 py-2 rounded-lg text-sm mb-3 text-center"
+          style={{ backgroundColor: '#fff7ec', border: '1px solid #f0c97a', color: '#9a6a1a' }}
+        >
+          <div className="text-[11px] font-bold mb-0.5">已上榜名字</div>
+          <div className="text-base font-extrabold truncate" title={displayCompanyName(snap.companyName)}>
+            {displayCompanyName(snap.companyName)}
+          </div>
+        </div>
+        <div
+          className="text-center py-2 rounded-lg text-sm font-bold mb-3"
+          style={{ backgroundColor: '#eef6ff', color: 'var(--blue)', border: '1px solid #7fb2ef' }}
+        >
+          {submitted ? '成績已上傳！' : '上傳中…'}
+        </div>
+        <button
+          type="button"
+          onClick={closeLeaderboardSubmit}
+          className="w-full py-2.5 rounded-lg font-extrabold text-sm text-white"
+          style={{
+            backgroundImage: 'linear-gradient(180deg, #5a8ed1, #3a6fb0)',
+            boxShadow: '0 6px 18px rgba(58,111,176,0.32)',
+          }}
+        >
+          關閉
+        </button>
       </div>
     </div>
   );

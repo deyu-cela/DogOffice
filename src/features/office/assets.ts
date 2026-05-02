@@ -2,7 +2,7 @@ const BASE = `${import.meta.env.BASE_URL}assets/jp-office/`;
 
 export const JP_ASSETS = {
   manekiNeko: `${BASE}maneki_neko.png`,
-  lanternRed: `${BASE}lantern_red.png`,
+  lanternRed: `${BASE}gpt-chandelier.png`,
   bonsai: `${BASE}bonsai.png`,
   bambooPot: `${BASE}bamboo_pot.png`,
   sakuraBranch: `${BASE}sakura_branch.png`,
@@ -10,9 +10,9 @@ export const JP_ASSETS = {
   beanBag: `${BASE}gpt_dog_sofa.png`,
   coffeeMachine: `${BASE}gpt_coffe.png`,
   bookshelf: `${BASE}bookshelf.png`,
-  pictureFrame: `${BASE}picture_frame.png`,
-  snackJar: `${BASE}snack_jar.png`,
-  toyBall: `${BASE}toy_ball.png`,
+  pictureFrame: `${BASE}cropped.png`,
+  snackJar: `${BASE}gpt-cookie.png`,
+  toyBall: `${BASE}gpt-toy.png`,
   clipboard: `${BASE}clipboard.png`,
   policyWall: `${BASE}policy_wall.png`,
   crtMonitor: `${BASE}crt_monitor.png`,

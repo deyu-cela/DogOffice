@@ -1311,7 +1311,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       companyName: companyName || undefined,
     };
     saveLocalEntry(entry);
-    set({ leaderboardSubmitModal: null });
     try {
       await submitLeaderboard({
         days: entry.days,
