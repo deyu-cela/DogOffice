@@ -6,6 +6,14 @@ const DESIGN_W = 1024;
 const DESIGN_H = 641;
 const STAGE_H = 608;
 const FOOTER_H = 38;
+const COVER_FADE_MS = 6000;
+
+const COVERS = [
+  { src: 'login-lobby-carousel-1.png', alt: '狗狗公司城市大廳' },
+  { src: 'login-lobby-carousel-2.png', alt: '狗狗公司辦公室團隊合照' },
+  { src: 'login-lobby-carousel-3.png', alt: '狗狗公司工作室日常' },
+  { src: 'login-lobby-carousel-4.png', alt: '狗狗公司溫暖大廳自拍' },
+];
 
 type Props = {
   base: string;
@@ -13,9 +21,36 @@ type Props = {
 };
 
 export function LoginScrapbook({ base, children }: Props) {
-  const [coverError, setCoverError] = useState(false);
+  const [coverErrors, setCoverErrors] = useState<Set<number>>(() => new Set());
+  const [coverIdx, setCoverIdx] = useState(0);
   const stageRef = useRef<HTMLDivElement | null>(null);
-  const coverSrc = `${base}assets/login/paw-der-games-cover.jpg`;
+  const livingCount = COVERS.length - coverErrors.size;
+  const allDead = livingCount === 0;
+
+  useEffect(() => {
+    if (livingCount <= 1) return;
+    const t = setInterval(() => {
+      setCoverIdx((current) => {
+        for (let step = 1; step <= COVERS.length; step++) {
+          const next = (current + step) % COVERS.length;
+          if (!coverErrors.has(next)) return next;
+        }
+        return current;
+      });
+    }, COVER_FADE_MS);
+    return () => clearInterval(t);
+  }, [livingCount, coverErrors]);
+
+  useEffect(() => {
+    if (!coverErrors.has(coverIdx) || allDead) return;
+    for (let step = 1; step <= COVERS.length; step++) {
+      const next = (coverIdx + step) % COVERS.length;
+      if (!coverErrors.has(next)) {
+        setCoverIdx(next);
+        return;
+      }
+    }
+  }, [coverErrors, coverIdx, allDead]);
 
   useEffect(() => {
     function updateScale() {
@@ -66,20 +101,33 @@ export function LoginScrapbook({ base, children }: Props) {
                 忘記密碼？試試 Google 登入
               </span>
               <div className="login-polaroid-photo">
-                {coverError ? (
+                {allDead ? (
                   <div className="login-polaroid-fallback">
                     <span>📸</span>
                     <p>Paw-der Games</p>
                     <small>相片即將上線</small>
                   </div>
                 ) : (
-                  <img
-                    src={coverSrc}
-                    alt="Paw-der Games 狗狗公司辦公室合照"
-                    onError={() => setCoverError(true)}
-                    loading="eager"
-                    decoding="async"
-                  />
+                  COVERS.map((cover, i) => (
+                    <img
+                      key={cover.src}
+                      className="login-polaroid-cover"
+                      src={`${base}assets/login/${cover.src}`}
+                      alt={cover.alt}
+                      data-active={i === coverIdx ? 'true' : 'false'}
+                      data-dead={coverErrors.has(i) ? 'true' : 'false'}
+                      onError={() =>
+                        setCoverErrors((prev) => {
+                          if (prev.has(i)) return prev;
+                          const next = new Set(prev);
+                          next.add(i);
+                          return next;
+                        })
+                      }
+                      loading={i === 0 ? 'eager' : 'lazy'}
+                      decoding="async"
+                    />
+                  ))
                 )}
                 <span className="login-photo-title">
                   Paw-<wbr />der<br />Games
