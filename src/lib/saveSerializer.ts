@@ -1,6 +1,7 @@
-import type { CompanyBuffs, GameState } from '@/types';
+import type { CompanyBuffs, GameState, Tool } from '@/types';
 import type { GameSaveData } from '@/types/save';
 import { SAVE_VERSION } from '@/types/save';
+import { getToolIconByDefId } from '@/constants/tools';
 
 const LOG_TAIL_LIMIT = 10;
 
@@ -102,6 +103,7 @@ export function serialize(state: GameState): GameSaveData {
     teams: state.teams,
     claimedStarterPack: state.claimedStarterPack,
     specialTasks: state.specialTasks,
+    tools: state.tools,
   };
 }
 
@@ -159,7 +161,18 @@ export function deserialize(raw: unknown): GameSaveData | null {
         ? dog.pendingTraitChoice
         : null,
     onLeaveDay: typeof dog.onLeaveDay === 'number' ? dog.onLeaveDay : null,
+    equippedToolId: typeof dog.equippedToolId === 'string' ? dog.equippedToolId : null,
   })) as GameSaveData['staff'];
+
+  const tools = Array.isArray(d.tools)
+    ? (d.tools as Array<Record<string, unknown>>).map((t) => {
+        const defId = typeof t.defId === 'string' ? t.defId : '';
+        const iconName = typeof t.iconName === 'string'
+          ? (t.iconName as Tool['iconName'])
+          : getToolIconByDefId(defId);
+        return { ...t, iconName } as Tool;
+      })
+    : [];
 
   const clients = (Array.isArray(d.clients)
     ? (d.clients as Array<Record<string, unknown>>).map(roundProjectFields)
@@ -197,11 +210,13 @@ export function deserialize(raw: unknown): GameSaveData | null {
     teams: d.teams,
     claimedStarterPack: d.claimedStarterPack === true,
     specialTasks: d.specialTasks && typeof d.specialTasks === 'object' ? d.specialTasks : undefined,
+    tools,
   };
 }
 
 export function migrate(version: number, raw: unknown): GameSaveData | null {
   if (typeof version !== 'number' || version > SAVE_VERSION) return null;
   if (version === 1) return null;
+  // v2 → v3：deserialize 已對 dog.equippedToolId/tools 做 fallback，無需額外動作
   return deserialize(raw);
 }

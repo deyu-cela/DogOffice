@@ -37,11 +37,11 @@ export function TopRightButtons() {
           type="button"
           onClick={openAchievements}
           className="bx-chip bx-shine bx-fade-up pointer-events-auto grid place-items-center rounded-xl"
-          style={{ ...ICON_BTN_STYLE, animationDelay: '30ms', fontSize: 22, lineHeight: 1 }}
+          style={{ ...ICON_BTN_STYLE, animationDelay: '30ms' }}
           title="成就 CG 收藏"
           aria-label="成就 CG 收藏"
         >
-          <span aria-hidden="true">🖼️</span>
+          <SvgIcon name="gallery" size={24} />
         </button>
 
         <button

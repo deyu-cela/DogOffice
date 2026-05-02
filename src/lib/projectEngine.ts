@@ -6,6 +6,7 @@ import type {
   LogEntry,
   Project,
   ProjectCategory,
+  Tool,
 } from '@/types';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import { isRoleMatched } from './projectGen';
@@ -18,6 +19,20 @@ import {
   getProjectRewardMul,
   getProjectExpMulForDog,
 } from './dogTraitsEngine';
+import {
+  buildToolMap,
+  getTeamChainBoost,
+  getTeamLuckyBonus,
+  getToolExpMul,
+  getToolFatigueAccumMul,
+  getToolGuardedFatigueMul,
+  getToolQualityBoost,
+  getToolSelfQualityMul,
+  getToolSelfSpeedMul,
+  getToolSpeedBoost,
+  rollTool,
+} from './toolsEngine';
+import { TOOL_DROP_CHANCE } from '@/constants/tools';
 
 // === 類別主/次 stat 加成（只剩 speed/quality）===
 type CategoryMul = {
@@ -80,7 +95,11 @@ function bargainMulFor(assignedDogs: Dog[]): number {
 
 // === 每日疲勞變化（納入 patience）===
 // 基礎 +10/天，patience 每 1 點減 0.5 累積；patience 10 → +5/天，patience 0 → +10/天
-function applyDailyFatigue(staff: Dog[], patienceBoost: number = 0): Dog[] {
+function applyDailyFatigue(
+  staff: Dog[],
+  patienceBoost: number = 0,
+  toolMap: Map<string, Tool> = new Map(),
+): Dog[] {
   return staff.map((d) => {
     const wasAssigned = !!d.assignedProjectId;
     let nextFatigue = d.fatigue;
@@ -90,10 +109,11 @@ function applyDailyFatigue(staff: Dog[], patienceBoost: number = 0): Dog[] {
       } else {
         const gradeMul = d.grade === 'S' ? 0.7 : d.grade === 'A' ? 0.85 : 1.0;
         const traitMul = getDogFatigueAccumMul(d);
+        const toolMul = getToolFatigueAccumMul(toolMap, d.id);
         const effPatience = d.stats.patience + patienceBoost;
         const patienceFactor = Math.max(2, 10 - effPatience * 0.5);
         nextFatigue = clamp(
-          Math.round(d.fatigue + patienceFactor * gradeMul * traitMul),
+          Math.round(d.fatigue + patienceFactor * gradeMul * traitMul * toolMul),
           0,
           100,
         );
@@ -121,6 +141,7 @@ function applyDailyLoyalty(staff: Dog[]): Dog[] {
 type DayProgress = {
   staffById: Map<string, Dog>;
   currentDay: number;
+  toolMap: Map<string, Tool>;
 };
 
 function buildDogIdMap(staff: Dog[]): Map<string, Dog> {
@@ -155,23 +176,38 @@ function pushProjectProgress(
 
   const catSpeedBonus = buffs.categorySpeed[project.category] ?? 0;
   const catQualityBonus = buffs.categoryQuality[project.category] ?? 0;
+  const assignedIds = assignedDogs.map((d) => d.id);
+  const chainBoost = getTeamChainBoost(ctx.toolMap, assignedIds);
   for (const dog of assignedDogs) {
-    const speed = dog.stats.speed + buffs.speedBoost + catSpeedBonus;
-    const quality = dog.stats.quality + buffs.qualityBoost + catQualityBonus;
+    const toolSpeed = getToolSpeedBoost(ctx.toolMap, dog.id);
+    const toolQuality = getToolQualityBoost(ctx.toolMap, dog.id);
+    const speed = dog.stats.speed + buffs.speedBoost + catSpeedBonus + toolSpeed;
+    const quality = dog.stats.quality + buffs.qualityBoost + catQualityBonus + toolQuality;
     const roleMatch = isRoleMatched(dog, project.category) ? 1.15 : 1.0;
     const traitSpeed = getDogSpeedMul(dog);
     const traitQuality = getDogQualityMul(dog);
+    const toolSpeedMul = getToolSelfSpeedMul(ctx.toolMap, dog.id);
+    const toolQualityMul = getToolSelfQualityMul(ctx.toolMap, dog.id, project.clientTier);
+    const guardedFatigueMul = getToolGuardedFatigueMul(ctx.toolMap, dog.id, fatigueMul(dog));
 
     const contrib =
       speed *
       catMul.speedMul *
       roleMatch *
       effChemSpeed *
-      fatigueMul(dog) *
-      traitSpeed;
+      guardedFatigueMul *
+      traitSpeed *
+      toolSpeedMul *
+      chainBoost;
 
     workAdded += contrib;
-    qualityAdded += quality * catMul.qualityMul * effChemQuality * traitQuality * contrib;
+    qualityAdded +=
+      quality *
+      catMul.qualityMul *
+      effChemQuality *
+      traitQuality *
+      toolQualityMul *
+      contrib;
   }
 
   return {
@@ -228,6 +264,7 @@ export function simulateProjectDays(
   category: ProjectCategory,
   buffs: CompanyBuffs,
   maxDays = 60,
+  toolMap: Map<string, Tool> = new Map(),
 ): { days: number; finalDogs: Dog[]; complete: boolean } {
   if (dogs.length === 0 || workRequired <= 0) {
     return {
@@ -252,7 +289,7 @@ export function simulateProjectDays(
       }
       return { ...d, fatigue: nextFatigue };
     });
-    const contrib = estimateDailyContrib(category, current, buffs);
+    const contrib = estimateDailyContrib(category, current, buffs, toolMap);
     workDone += contrib;
     if (workDone >= workRequired) {
       return { days: day, finalDogs: current, complete: true };
@@ -266,6 +303,7 @@ export function estimateDailyContrib(
   category: ProjectCategory,
   dogs: Dog[],
   buffs: CompanyBuffs,
+  toolMap: Map<string, Tool> = new Map(),
 ): number {
   if (dogs.length === 0) return 0;
   const catMul = categoryMulFor(category);
@@ -273,14 +311,26 @@ export function estimateDailyContrib(
   const chemBoost = getProjectChemBoost(dogs);
   const effChemSpeed = 1 + (chem.speedMul - 1) * chemBoost;
   const catSpeedBonus = buffs.categorySpeed[category] ?? 0;
+  const dogIds = dogs.map((d) => d.id);
+  const chainBoost = getTeamChainBoost(toolMap, dogIds);
 
   let total = 0;
   for (const dog of dogs) {
-    const speed = dog.stats.speed + buffs.speedBoost + catSpeedBonus;
+    const toolSpeed = getToolSpeedBoost(toolMap, dog.id);
+    const speed = dog.stats.speed + buffs.speedBoost + catSpeedBonus + toolSpeed;
     const roleMatch = isRoleMatched(dog, category) ? 1.15 : 1.0;
     const traitSpeed = getDogSpeedMul(dog);
+    const toolSpeedMul = getToolSelfSpeedMul(toolMap, dog.id);
+    const guardedFatigueMul = getToolGuardedFatigueMul(toolMap, dog.id, fatigueMul(dog));
     const contrib =
-      speed * catMul.speedMul * roleMatch * effChemSpeed * fatigueMul(dog) * traitSpeed;
+      speed *
+      catMul.speedMul *
+      roleMatch *
+      effChemSpeed *
+      guardedFatigueMul *
+      traitSpeed *
+      toolSpeedMul *
+      chainBoost;
     total += contrib;
   }
   return total;
@@ -304,7 +354,7 @@ export type DayResult = {
 export function runProjectsDay(state: GameState): DayResult {
   let s = { ...state };
   const newLogs: LogEntry[] = [];
-  const toast: GameState['toast'] = null;
+  let toast: GameState['toast'] = null;
   const summary: DaySummaryPartial = {
     income: 0,
     completedCount: 0,
@@ -313,14 +363,19 @@ export function runProjectsDay(state: GameState): DayResult {
   };
 
   // 1. 每日 fatigue / loyalty
-  s.staff = applyDailyFatigue(s.staff, s.companyBuffs.patienceBoost ?? 0);
+  const initialToolMap = buildToolMap(s.staff, s.tools);
+  s.staff = applyDailyFatigue(s.staff, s.companyBuffs.patienceBoost ?? 0, initialToolMap);
   s.staff = applyDailyLoyalty(s.staff);
   s.staff = s.staff.map((d) =>
     d.onLeaveDay != null && d.onLeaveDay < s.day ? { ...d, onLeaveDay: null } : d,
   );
 
   // 2. 推進每個 active 案
-  const ctx: DayProgress = { staffById: buildDogIdMap(s.staff), currentDay: s.day };
+  const ctx: DayProgress = {
+    staffById: buildDogIdMap(s.staff),
+    currentDay: s.day,
+    toolMap: buildToolMap(s.staff, s.tools),
+  };
   const updatedClients: Project[] = [];
   for (const project of s.clients) {
     if (project.status !== 'active') {
@@ -353,9 +408,10 @@ export function runProjectsDay(state: GameState): DayResult {
       s.staff = s.staff.map((d) => {
         if (!assignedIds.has(d.id)) return d;
         const expMul = getProjectExpMulForDog(d, assignedDogs);
+        const toolExpMul = getToolExpMul(ctx.toolMap, d.id);
         return {
           ...d,
-          experience: d.experience + Math.round(settled.experienceGain * expMul),
+          experience: d.experience + Math.round(settled.experienceGain * expMul * toolExpMul),
           loyalty: clamp(d.loyalty + 2, 0, 100),
           assignedProjectId: null,
         };
@@ -372,6 +428,31 @@ export function runProjectsDay(state: GameState): DayResult {
           reward: settled.finalReward,
         },
       ];
+      // === 工具掉落（按 category；luckyCharm 加成）===
+      const luckyBonus = getTeamLuckyBonus(ctx.toolMap, assignedDogs.map((d) => d.id));
+      const dropChance = TOOL_DROP_CHANCE + luckyBonus;
+      if (Math.random() < dropChance) {
+        const tool = rollTool(project.category, s.day);
+        if (tool) {
+          s.tools = [...s.tools, tool];
+          s.pendingToolDrops = [
+            ...s.pendingToolDrops,
+            {
+              id: `tool-${s.day}-${project.id}-${s.pendingToolDrops.length}`,
+              projectId: project.id,
+              tool,
+            },
+          ];
+          newLogs.push({
+            day: s.day,
+            msg: `🛠 撿到工具：${tool.name}（${tool.grade}）`,
+          });
+          toast = {
+            msg: `🛠 撿到 ${tool.grade} 級工具：${tool.name}`,
+            type: 'positive',
+          };
+        }
+      }
     } else {
       settledClients.push(project);
     }

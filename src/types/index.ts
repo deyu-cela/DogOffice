@@ -63,6 +63,9 @@ export type Dog = {
   level: number;                                // 1-10，玩家用 $ 或碎片升級
   rosterId?: string;                            // 對應 DOG_ROSTER 條目；圖鑑唯一（重抽 → 加碎片）
   fragments: number;                            // 累積碎片：升 Lv N→N+1 需要 N 個（與 $ 二擇一）；Lv 10 後抽到 → 全轉錢
+
+  // === 工具系統 ===
+  equippedToolId?: string | null;               // 裝備中的工具 instanceId，null/undefined = 沒裝
 };
 
 export type PipTask = {
@@ -188,6 +191,58 @@ export type ShopItem = {
   // 設施對應的職業類別；'all' 代表全員受惠（如 sofa）
   category: ProjectCategory | 'all';
 };
+
+// === 工具系統 ===
+export type ToolGrade = 'S' | 'A' | 'B';
+
+export type ToolTraitId =
+  | 'fastStart'        // 該員工 speed 整體 ×1.20
+  | 'antiFatigue'      // fatigue 累積 ×0.85
+  | 'chainBoost'       // 同案隊友 +5% speed（每位戴此 trait 工具者疊加）
+  | 'highTierExpert'   // tier ≥4 案 quality ×1.15
+  | 'expGain'          // 完成案 experienceGain ×1.20
+  | 'luckyCharm'       // 該案完成後再 +5% 工具掉落機率
+  | 'guardian'         // 疲勞對 speed 的懲罰減半
+  | 'precision';       // quality 額外 +1（加性）
+
+export type ToolIconName =
+  | 'toolKeyboard'
+  | 'toolMonitor'
+  | 'toolGpu'
+  | 'toolTablet'
+  | 'toolColor'
+  | 'toolBrush'
+  | 'toolBible'
+  | 'toolDashboard'
+  | 'toolLight'
+  | 'toolManual'
+  | 'toolHeadset'
+  | 'toolMirror';
+
+export type ToolDef = {
+  defId: string;
+  name: string;
+  iconName: ToolIconName;
+  category: ProjectCategory;
+  desc: string;
+};
+
+export type Tool = {
+  instanceId: string;
+  defId: string;
+  name: string;          // 冗餘存：避免 def 改名後既有 tool 顯示破掉
+  iconName: ToolIconName;
+  category: ProjectCategory;
+  grade: ToolGrade;
+  speedBoost: number;
+  qualityBoost: number;
+  traits: ToolTraitId[];
+  obtainedDay: number;
+};
+
+export type ToolPickerModal = {
+  dogId: string;
+} | null;
 
 export type Walker = {
   id: number;
@@ -322,6 +377,10 @@ export type GameState = {
   staff: Dog[];
   staffActionModal: StaffActionModal | null;
 
+  // 工具系統
+  tools: Tool[];
+  toolPickerModal: ToolPickerModal;
+
   // 案件
   clients: Project[];                  // offered 5 + active N + 最近結算（done/failed）5
   projectsCompleted: number;
@@ -374,6 +433,9 @@ export type GameState = {
 
   // 完成案件金幣動畫（純 UI，不持久化）
   pendingCoinBursts: { id: string; projectId: string; reward: number }[];
+
+  // 工具掉落飛行動畫（純 UI，不持久化）
+  pendingToolDrops: { id: string; projectId: string; tool: Tool }[];
 
   // 新手禮包：本局是否已領（重新開局會重置）
   claimedStarterPack: boolean;

@@ -7,9 +7,10 @@ import type {
   ShopItemEffectKey,
   SpecialTask,
   Team,
+  Tool,
 } from './index';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 // v2: 接案制版本（plan §6 對應）
 export type GameSaveData = {
@@ -56,6 +57,9 @@ export type GameSaveData = {
 
   // 特殊任務進度（v5+；舊存檔載入時依 officeLevel 重建）
   specialTasks?: Record<number, SpecialTask>;
+
+  // 工具系統（v3 起；舊存檔沒有 → 空陣列；員工 equippedToolId 也補 null）
+  tools?: Tool[];
 };
 
 export type SavePayload = {

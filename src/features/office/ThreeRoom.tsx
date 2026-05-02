@@ -12,6 +12,7 @@ import { ROLE_IMAGE_MAP, ROLE_WAITING_IMAGE_MAP, ROLE_WAITING_SPRITE_FRAMES, ROL
 import { useWalkerStore } from '@/store/walkerStore';
 import { ROOM_GRID } from './iso';
 import { BUILDING_LAYOUT, PURCHASE_LAYOUT } from './layout';
+import { projectCardRectCache } from '@/lib/cardRectCache';
 import type { ShopItemEffectKey } from '@/types';
 
 // 房間尺寸（world units）
@@ -448,6 +449,17 @@ export function ThreeRoom() {
   );
 }
 
+function ToolTargetAnchor({ gx, gy, h }: { gx: number; gy: number; h: number }) {
+  const [x, , z] = gridToWorld(gx, gy);
+  return (
+    <group position={[x, h / 2, z]}>
+      <Html center zIndexRange={[0, 0]} style={{ pointerEvents: 'none' }}>
+        <div data-tool-target="1" style={{ width: 1, height: 1, opacity: 0 }} />
+      </Html>
+    </group>
+  );
+}
+
 function PurchaseArea3D() {
   const purchases = useGameStore((s) => s.purchases);
   const openFacilityInfo = useUiStore((s) => s.openFacilityInfo);
@@ -458,20 +470,22 @@ function PurchaseArea3D() {
         const count = purchases[item.id] ?? 0;
         if (count === 0) return null;
         return (
-          <FurnitureSprite
-            key={item.id}
-            src={item.src}
-            gx={item.gx}
-            gy={item.gy}
-            w={item.w}
-            h={item.h}
-            yOffset={item.yOffset ?? 0}
-            shadow={false}
-            onClick={(e) => {
-              e.stopPropagation();
-              openFacilityInfo(item.id);
-            }}
-          />
+          <group key={item.id}>
+            <FurnitureSprite
+              src={item.src}
+              gx={item.gx}
+              gy={item.gy}
+              w={item.w}
+              h={item.h}
+              yOffset={item.yOffset ?? 0}
+              shadow={false}
+              onClick={(e) => {
+                e.stopPropagation();
+                openFacilityInfo(item.id);
+              }}
+            />
+            {item.id === 'toy' && <ToolTargetAnchor gx={item.gx} gy={item.gy} h={item.h} />}
+          </group>
         );
       })}
     </>
@@ -638,6 +652,24 @@ function WallStickyNotes3D() {
         return (
           <Html key={p.id} position={pos} center zIndexRange={[20, 0]}>
             <div
+              data-project-id={p.id}
+              ref={(el) => {
+                if (!el) return;
+                const write = () => {
+                  const r = el.getBoundingClientRect();
+                  // unmount 時 element 已 detach，rect 會是 0,0；過濾掉避免覆寫正確值
+                  if (r.width === 0 && r.height === 0) return;
+                  projectCardRectCache.set(p.id, r);
+                };
+                write();
+                const ro = new ResizeObserver(write);
+                ro.observe(el);
+                window.addEventListener('resize', write);
+                return () => {
+                  ro.disconnect();
+                  window.removeEventListener('resize', write);
+                };
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 openProjectDetail(p.id);

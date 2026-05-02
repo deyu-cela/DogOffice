@@ -7,6 +7,20 @@ import {
 } from '@/store/gameStore';
 import { dogPower, dogPowerStars, dogGrade } from '@/lib/utils';
 import { DOG_TRAITS_MAP, type DogTraitId } from '@/constants/dogTraits';
+import { getDogToolCategory, getDogToolStatBoost } from '@/lib/toolsEngine';
+import { SvgIcon } from '@/components/SvgIcon';
+import type { ToolGrade } from '@/types';
+
+const TOOL_GRADE_BG: Record<ToolGrade, string> = {
+  S: 'linear-gradient(180deg, #ffd95a, #f0a818)',
+  A: 'linear-gradient(180deg, #c9a4f0, #8a4ce0)',
+  B: 'linear-gradient(180deg, #c8d8e8, #6a8aa8)',
+};
+const TOOL_GRADE_TEXT: Record<ToolGrade, string> = {
+  S: '#5a3d05',
+  A: '#fff',
+  B: '#fff',
+};
 
 const TRAIT_UNLOCK_LEVELS = new Set([DOG_LEVEL_MAX]);
 
@@ -55,6 +69,8 @@ export function StaffActionModal() {
   const upgradeDog = useGameStore((s) => s.upgradeDogLevel);
   const upgradeDogFrag = useGameStore((s) => s.upgradeDogWithFragments);
   const openTraitChoice = useGameStore((s) => s.openTraitChoiceModal);
+  const tools = useGameStore((s) => s.tools);
+  const openToolPicker = useGameStore((s) => s.openToolPicker);
 
   if (!modal) return null;
   const dog = staff[modal.staffIndex];
@@ -124,6 +140,44 @@ export function StaffActionModal() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-lg font-extrabold">{dog.name}</span>
+              {(() => {
+                const toolCat = getDogToolCategory(dog);
+                if (!toolCat) return null;
+                const equipped = dog.equippedToolId
+                  ? tools.find((t) => t.instanceId === dog.equippedToolId) ?? null
+                  : null;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => openToolPicker(dog.id)}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold"
+                    style={{
+                      background: equipped ? '#fff7e6' : '#f0f4f8',
+                      border: '1px solid var(--line)',
+                      color: equipped ? '#7a4a1c' : '#6b7a8a',
+                    }}
+                    title={equipped ? `${equipped.name}（${equipped.grade}）` : '裝備工具'}
+                  >
+                    <SvgIcon name="tool" size={14} />
+                    {equipped ? (
+                      <>
+                        <SvgIcon name={equipped.iconName} size={14} />
+                        <span
+                          className="text-[10px] px-1 rounded font-black"
+                          style={{
+                            background: TOOL_GRADE_BG[equipped.grade],
+                            color: TOOL_GRADE_TEXT[equipped.grade],
+                          }}
+                        >
+                          {equipped.grade}
+                        </span>
+                      </>
+                    ) : (
+                      <span>無</span>
+                    )}
+                  </button>
+                );
+              })()}
               <span
                 className="text-[11px] px-1.5 rounded-md font-extrabold"
                 style={{
@@ -179,24 +233,59 @@ export function StaffActionModal() {
         </div>
 
         {/* C. 4 stats */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-3">
-          {STAT_LABELS.map(({ key, label, color }) => {
-            const v = dog.stats[key];
-            const display = Math.round(v);
-            const pct = Math.max(0, Math.min(100, v * 10));
-            return (
-              <div key={key}>
-                <div className="flex justify-between text-[11px] mb-0.5">
-                  <span style={{ color: 'var(--muted)' }}>{label}</span>
-                  <span className="font-extrabold" style={{ color }}>{display}</span>
-                </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
-                  <div className="h-full" style={{ width: `${pct}%`, background: color }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {(() => {
+          const toolBoost = getDogToolStatBoost(dog, tools);
+          return (
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-3">
+              {STAT_LABELS.map(({ key, label, color }) => {
+                const base = dog.stats[key];
+                const bonus = key === 'speed' ? toolBoost.speed : key === 'quality' ? toolBoost.quality : 0;
+                const total = base + bonus;
+                const display = Math.round(base);
+                const bonusDisplay = bonus > 0 ? `+${bonus.toFixed(1)}` : null;
+                const basePct = Math.max(0, Math.min(100, base * 10));
+                const totalPct = Math.max(0, Math.min(100, total * 10));
+                return (
+                  <div key={key}>
+                    <div className="flex justify-between items-baseline text-[11px] mb-0.5">
+                      <span style={{ color: 'var(--muted)' }}>{label}</span>
+                      <span className="flex items-baseline gap-1">
+                        <span className="font-extrabold" style={{ color }}>{display}</span>
+                        {bonusDisplay && (
+                          <span
+                            className="font-extrabold text-[10px]"
+                            style={{ color: '#16a77f' }}
+                            title="工具加成"
+                          >
+                            {bonusDisplay}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div
+                      className="relative h-1.5 rounded-full overflow-hidden"
+                      style={{ background: '#e4eefc' }}
+                    >
+                      {bonus > 0 && (
+                        <div
+                          className="absolute inset-y-0 left-0"
+                          style={{
+                            width: `${totalPct}%`,
+                            background: 'rgba(22,167,127,0.55)',
+                          }}
+                        />
+                      )}
+                      <div
+                        className="absolute inset-y-0 left-0"
+                        style={{ width: `${basePct}%`, background: color }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* E. learned traits */}
         {(dog.learnedTraits ?? []).length > 0 && (

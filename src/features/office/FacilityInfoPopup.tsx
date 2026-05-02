@@ -4,6 +4,7 @@ import { useUiStore } from '@/store/uiStore';
 import { useGameStore, MAX_SHOP_LEVEL } from '@/store/gameStore';
 import { SHOP_ITEMS } from '@/constants/shopItems';
 import type { ShopItemEffectKey } from '@/types';
+import { ToolInventoryModal } from '@/features/staff/ToolInventoryModal';
 
 function describeEffect(id: ShopItemEffectKey, lv: number): string[] {
   if (lv <= 0) return ['尚未購置，前往商店購買後生效。'];
@@ -46,6 +47,10 @@ export function FacilityInfoPopup() {
   }, [id, close]);
 
   if (!id) return null;
+  // 狗狗玩具區改用工具庫存介面
+  if (id === 'toy') {
+    return <ToolInventoryModal onClose={close} />;
+  }
   const item = SHOP_ITEMS.find((i) => i.id === id);
   if (!item) return null;
 

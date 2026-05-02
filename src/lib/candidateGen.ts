@@ -90,6 +90,7 @@ export function generateCandidate(opts?: { role?: string }): Dog {
     pendingTraitChoice: null,
     level: 1,
     fragments: 0,
+    equippedToolId: null,
   };
 
   // 直接面試到 A / S 的狗：補對應數量的特性選擇（A=1 輪，S=2 輪）

@@ -18,6 +18,7 @@ import { StatBars } from '@/features/hud/StatBars';
 import { StaffActionModal } from '@/features/staff/StaffActionModal';
 import { TeamEditModal } from '@/features/staff/TeamEditModal';
 import { TraitChoiceModal } from '@/features/staff/TraitChoiceModal';
+import { ToolPickerModal } from '@/features/staff/ToolPickerModal';
 import { GachaModal } from '@/features/recruit/GachaModal';
 import { ShopModal } from '@/features/shop/ShopModal';
 import { ProjectDetailModal } from '@/features/clients/ProjectDetailModal';
@@ -30,6 +31,7 @@ import { BankLoanModal } from '@/features/loan/BankLoanModal';
 import { AchievementsScreen } from '@/features/achievements/AchievementsScreen';
 import { AchievementToast } from '@/features/achievements/AchievementToast';
 import { CoinBurstOverlay } from '@/components/CoinBurstOverlay';
+import { ToolDropOverlay } from '@/components/ToolDropOverlay';
 import { StarterPackModal } from '@/features/starterPack/StarterPackModal';
 import { StarterPackBanner } from '@/features/starterPack/StarterPackBanner';
 import { useUiStore } from '@/store/uiStore';
@@ -131,12 +133,14 @@ export default function App() {
         <ProjectDetailModal projectId={projectDetailId} onClose={closeProjectDetail} />
       )}
       <TraitChoiceModal />
+      <ToolPickerModal />
       <BankLoanModal />
       <VictoryModal />
       <ConflictModal />
       {showAchievements && <AchievementsScreen />}
       <AchievementToast />
       <CoinBurstOverlay />
+      <ToolDropOverlay />
       <StudioIntro />
       <BgmController scene={bgmScene} />
       <StarterPackModal />

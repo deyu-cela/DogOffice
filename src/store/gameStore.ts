@@ -9,8 +9,10 @@ import type {
   ProjectCategory,
   ShopItemEffectKey,
   Team,
+  Tool,
   TrainingSession,
 } from '@/types';
+import { getDogToolCategory, getDogToolStatBoost } from '@/lib/toolsEngine';
 import {
   saveLocalEntry,
   submitLeaderboard,
@@ -156,6 +158,7 @@ function instantiateRosterDog(entry: RosterEntry): Dog {
     pendingTraitChoice: null,
     level: 1,
     fragments: 0,
+    equippedToolId: null,
   };
 }
 
@@ -241,6 +244,7 @@ type Actions = {
   checkAchievements: (event: AchievementEvent, payload?: AchievementCheckPayload) => void;
 
   consumeCoinBurst: (id: string) => void;
+  consumeToolDrop: (id: string) => void;
 
   // === 抽卡 / 團隊 / 強化 ===
   recruitFromGacha: () => GachaResult | null;
@@ -257,6 +261,12 @@ type Actions = {
 
   // === 特殊任務 ===
   startSpecialTask: (targetLevel: number) => void;
+
+  // === 工具系統 ===
+  equipTool: (dogId: string, toolInstanceId: string) => void;
+  unequipTool: (dogId: string) => void;
+  openToolPicker: (dogId: string) => void;
+  closeToolPicker: () => void;
 };
 
 export type GameStore = GameState & Actions;
@@ -332,6 +342,9 @@ const initialState: GameState = {
   staff: [],
   staffActionModal: null,
 
+  tools: [],
+  toolPickerModal: null,
+
   clients: initialInbox(),
   projectsCompleted: 0,
   projectsFailed: 0,
@@ -371,6 +384,7 @@ const initialState: GameState = {
   unlockedAchievementIds: [],
   pendingAchievementToasts: [],
   pendingCoinBursts: [],
+  pendingToolDrops: [],
 
   claimedStarterPack: false,
   specialTasks: createInitialSpecialTasks(0),
@@ -388,6 +402,7 @@ export function dogAbility(d: Dog): number {
 }
 
 // 所有放在 team 裡的員工，綜合能力總和（不論 team open/close）
+// 工具加成：依 dog 已裝備工具，把 speedBoost / qualityBoost 加進 ability，立即影響營建特殊任務
 export function teamTotalAbility(state: GameState): number {
   const ids = new Set<string>();
   for (const team of Object.values(state.teams)) {
@@ -395,7 +410,10 @@ export function teamTotalAbility(state: GameState): number {
   }
   let sum = 0;
   for (const dog of state.staff) {
-    if (ids.has(dog.id)) sum += dogAbility(dog);
+    if (!ids.has(dog.id)) continue;
+    sum += dogAbility(dog);
+    const boost = getDogToolStatBoost(dog, state.tools);
+    sum += boost.speed * 0.4 + boost.quality * 0.4;
   }
   return sum;
 }
@@ -1383,6 +1401,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       log: [{ day: 1, msg: '公司剛開張，先去人資招員工，才能接案賺錢！' }],
       showSplash: s.showSplash,
       specialTasks: createInitialSpecialTasks(0),
+      tools: [],
+      toolPickerModal: null,
     }));
   },
 
@@ -1410,7 +1430,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       bankrupt: data.bankrupt,
       bankruptCountdown: data.bankruptCountdown ?? 0,
       tutorialStep: data.tutorialStep,
-      staff: data.staff.map((d) => ({ ...d, level: d.level ?? 1 })),
+      staff: data.staff.map((d) => ({
+        ...d,
+        level: d.level ?? 1,
+        equippedToolId: d.equippedToolId ?? null,
+      })),
+      tools: data.tools ?? [],
+      toolPickerModal: null,
       teams: data.teams ?? emptyTeams(),
       clients: data.clients ?? initialInbox(),
       projectsCompleted: data.projectsCompleted ?? 0,
@@ -1470,6 +1496,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       showSplash: false,
       tutorialStep: 7,
       specialTasks: createInitialSpecialTasks(0),
+      tools: [],
+      toolPickerModal: null,
     }));
   },
 
@@ -1630,6 +1658,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const s = get();
     if (!s.pendingCoinBursts.some((b) => b.id === id)) return;
     set({ pendingCoinBursts: s.pendingCoinBursts.filter((b) => b.id !== id) });
+  },
+
+  consumeToolDrop: (id) => {
+    const s = get();
+    if (!s.pendingToolDrops.some((b) => b.id === id)) return;
+    set({ pendingToolDrops: s.pendingToolDrops.filter((b) => b.id !== id) });
   },
 
   recruitFromGacha: () => {
@@ -1853,6 +1887,47 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
     set(next as Partial<GameStore>);
   },
+
+  // === 工具系統 ===
+  equipTool: (dogId, toolInstanceId) => {
+    const s = get();
+    const targetDog = s.staff.find((d) => d.id === dogId);
+    const tool = s.tools.find((t) => t.instanceId === toolInstanceId);
+    if (!targetDog || !tool) return;
+    // category 必須相符；PM/CEO（getDogToolCategory=null）禁止
+    const dogCat = getDogToolCategory(targetDog);
+    if (!dogCat || tool.category !== dogCat) return;
+    // 不變式：先把已裝此 tool 的人卸下；再裝給 target
+    const newStaff = s.staff.map((d) => {
+      if (d.equippedToolId === toolInstanceId && d.id !== dogId) {
+        return { ...d, equippedToolId: null };
+      }
+      if (d.id === dogId) {
+        return { ...d, equippedToolId: toolInstanceId };
+      }
+      return d;
+    });
+    set({ staff: newStaff });
+  },
+
+  unequipTool: (dogId) => {
+    const s = get();
+    const dog = s.staff.find((d) => d.id === dogId);
+    if (!dog || !dog.equippedToolId) return;
+    set({
+      staff: s.staff.map((d) => (d.id === dogId ? { ...d, equippedToolId: null } : d)),
+    });
+  },
+
+  openToolPicker: (dogId) => {
+    const s = get();
+    const dog = s.staff.find((d) => d.id === dogId);
+    if (!dog) return;
+    if (!getDogToolCategory(dog)) return; // PM/CEO 不開
+    set({ toolPickerModal: { dogId } });
+  },
+
+  closeToolPicker: () => set({ toolPickerModal: null }),
 }));
 
 // === 升級執行：扣完成本後呼叫，負責 stats 隨機加、特性解鎖、Lv10 碎片轉錢、log ===

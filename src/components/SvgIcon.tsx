@@ -38,7 +38,21 @@ export type SvgIconName =
   | 'shopSofa'
   | 'shopArtwall'
   | 'shopCoffee'
-  | 'shopGym';
+  | 'shopGym'
+  | 'tool'
+  | 'gallery'
+  | 'toolKeyboard'
+  | 'toolMonitor'
+  | 'toolGpu'
+  | 'toolTablet'
+  | 'toolColor'
+  | 'toolBrush'
+  | 'toolBible'
+  | 'toolDashboard'
+  | 'toolLight'
+  | 'toolManual'
+  | 'toolHeadset'
+  | 'toolMirror';
 
 type Props = {
   name: SvgIconName;
@@ -153,6 +167,16 @@ export function SvgIcon({ name, size = 24, className }: Props) {
     case 'briefcase':
       return (
         <svg {...common}><rect x="6" y="11" width="20" height="14" rx="2.5" fill="#eaf4ff" stroke={BLUE} strokeWidth="2" /><path d="M12 11V8h8v3M6 16h20M14 17h4" stroke={LIGHT_BLUE} strokeWidth="2" strokeLinecap="round" /></svg>
+      );
+    case 'tool':
+      // 扳手 + 螺絲起子交叉，象徵裝備工具槽
+      return (
+        <svg {...common}>
+          <path d="M21.5 4.5a4.5 4.5 0 0 0-5.6 5.6l-9 9a2.2 2.2 0 1 0 3.1 3.1l9-9a4.5 4.5 0 0 0 5.6-5.6l-2.7 2.7-2.4-.3-.3-2.4 2.3-2.3Z" fill="#eaf4ff" stroke={BLUE} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M22 22l-6-6" stroke={ORANGE} strokeWidth="2.2" strokeLinecap="round" />
+          <rect x="20.5" y="20" width="6" height="3" rx="1" transform="rotate(45 23.5 21.5)" fill={GOLD} stroke={BLUE} strokeWidth="1.5" />
+          <circle cx="9" cy="22" r="1.4" fill={BLUE} />
+        </svg>
       );
     case 'training':
       return (
@@ -336,6 +360,157 @@ export function SvgIcon({ name, size = 24, className }: Props) {
           <rect x="9" y="15" width="14" height="2" rx="1" fill={LIGHT_BLUE} />
           <rect x="23" y="11" width="3" height="10" rx="1" fill={BLUE} />
           <rect x="26" y="13" width="3" height="6" rx="1" fill={BLUE} />
+        </svg>
+      );
+    case 'gallery':
+      return (
+        <svg {...common}>
+          <rect x="4" y="6" width="24" height="20" rx="2" fill="#f5e6c8" stroke={BLUE} strokeWidth="2" />
+          <rect x="6.5" y="8.5" width="19" height="15" fill="#eaf4ff" stroke={LIGHT_BLUE} strokeWidth="1.4" />
+          <circle cx="11" cy="13" r="2.2" fill={GOLD} />
+          <path d="M7 22l5-6 4 3.5 3.5-2.5L25 22" fill={TEAL} stroke={BLUE} strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M4 26h24" stroke={BLUE} strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
+    case 'toolKeyboard':
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="9" width="25" height="14" rx="2.2" fill="#eaf4ff" stroke={BLUE} strokeWidth="2" />
+          <rect x="6" y="11.5" width="3" height="2.4" rx="0.4" fill={LIGHT_BLUE} />
+          <rect x="10" y="11.5" width="3" height="2.4" rx="0.4" fill={LIGHT_BLUE} />
+          <rect x="14" y="11.5" width="3" height="2.4" rx="0.4" fill={LIGHT_BLUE} />
+          <rect x="18" y="11.5" width="3" height="2.4" rx="0.4" fill={LIGHT_BLUE} />
+          <rect x="22" y="11.5" width="3" height="2.4" rx="0.4" fill={LIGHT_BLUE} />
+          <rect x="6" y="15" width="3" height="2.4" rx="0.4" fill={LIGHT_BLUE} />
+          <rect x="10" y="15" width="3" height="2.4" rx="0.4" fill={ORANGE} />
+          <rect x="14" y="15" width="3" height="2.4" rx="0.4" fill={LIGHT_BLUE} />
+          <rect x="18" y="15" width="3" height="2.4" rx="0.4" fill={LIGHT_BLUE} />
+          <rect x="22" y="15" width="3" height="2.4" rx="0.4" fill={LIGHT_BLUE} />
+          <rect x="9" y="18.6" width="14" height="2.4" rx="0.6" fill={LIGHT_BLUE} />
+        </svg>
+      );
+    case 'toolMonitor':
+      return (
+        <svg {...common}>
+          <rect x="2" y="6" width="13" height="10" rx="1.4" fill="#eaf4ff" stroke={BLUE} strokeWidth="1.8" />
+          <rect x="17" y="6" width="13" height="10" rx="1.4" fill="#eaf4ff" stroke={BLUE} strokeWidth="1.8" />
+          <rect x="3.5" y="7.5" width="10" height="7" fill={LIGHT_BLUE} opacity="0.55" />
+          <rect x="18.5" y="7.5" width="10" height="7" fill={TEAL} opacity="0.55" />
+          <path d="M7.5 16v3M22.5 16v3M5 21h6M19 21h6" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M14.5 11.5h2.5" stroke={ORANGE} strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
+    case 'toolGpu':
+      return (
+        <svg {...common}>
+          <rect x="3" y="10" width="26" height="12" rx="1.4" fill="#1f2c44" stroke={BLUE} strokeWidth="1.8" />
+          <circle cx="10" cy="16" r="3.2" fill="#0f1828" stroke={LIGHT_BLUE} strokeWidth="1.4" />
+          <path d="M10 13.2v5.6M7.2 16h5.6M8.2 13.8l3.6 4.4M8.2 18.2l3.6-4.4" stroke={LIGHT_BLUE} strokeWidth="1.2" strokeLinecap="round" />
+          <circle cx="20" cy="16" r="3.2" fill="#0f1828" stroke={ORANGE} strokeWidth="1.4" />
+          <path d="M20 13.2v5.6M17.2 16h5.6M18.2 13.8l3.6 4.4M18.2 18.2l3.6-4.4" stroke={ORANGE} strokeWidth="1.2" strokeLinecap="round" />
+          <rect x="24" y="13" width="4" height="6" fill={GOLD} stroke={BLUE} strokeWidth="1.2" />
+          <path d="M5 22v3M9 22v3M16 22v3M23 22v3M27 22v3" stroke={BLUE} strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
+    case 'toolTablet':
+      return (
+        <svg {...common}>
+          <rect x="4" y="7" width="20" height="18" rx="2" fill="#fff" stroke={BLUE} strokeWidth="2" />
+          <rect x="6.5" y="9.5" width="15" height="13" rx="1" fill="#eaf4ff" stroke={LIGHT_BLUE} strokeWidth="1.2" />
+          <circle cx="9.5" cy="20" r="0.9" fill={ORANGE} />
+          <path d="M22 6l5.5 5.5-9 9-3 .5.5-3 6-12Z" fill={GOLD} stroke={BLUE} strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M19.5 8.5l5.5 5.5" stroke={BLUE} strokeWidth="1.4" />
+          <path d="M16 19.5l3 3" stroke={ORANGE} strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+      );
+    case 'toolColor':
+      return (
+        <svg {...common}>
+          <rect x="3" y="6" width="26" height="16" rx="2" fill="#fff" stroke={BLUE} strokeWidth="2" />
+          <rect x="5" y="8" width="22" height="12" fill="#0b1530" />
+          <rect x="6" y="9" width="3.5" height="10" fill="#ef5b5b" />
+          <rect x="9.5" y="9" width="3.5" height="10" fill={ORANGE} />
+          <rect x="13" y="9" width="3.5" height="10" fill={GOLD} />
+          <rect x="16.5" y="9" width="3.5" height="10" fill={TEAL} />
+          <rect x="20" y="9" width="3.5" height="10" fill={LIGHT_BLUE} />
+          <rect x="23.5" y="9" width="2.5" height="10" fill={PURPLE} />
+          <path d="M11 22v3M21 22v3M9 26h14" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'toolBrush':
+      return (
+        <svg {...common}>
+          <path d="M22 4l5.5 5.5-13 13-5.5-5.5L22 4Z" fill={GOLD} stroke={BLUE} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M9 17l5.5 5.5-3 3a3.9 3.9 0 1 1-5.5-5.5l3-3Z" fill="#fff" stroke={BLUE} strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M11 22.5l1.6 1.6" stroke={BLUE} strokeWidth="1.4" strokeLinecap="round" />
+          <circle cx="6.5" cy="25.5" r="1.4" fill={ORANGE} />
+          <circle cx="3.5" cy="22.5" r="1.1" fill={TEAL} />
+          <circle cx="4.5" cy="27" r="0.9" fill={PURPLE} />
+        </svg>
+      );
+    case 'toolBible':
+      return (
+        <svg {...common}>
+          <path d="M4 7c4-1.6 8-1.6 12 0v18c-4-1.6-8-1.6-12 0V7Z" fill="#fff" stroke={BLUE} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M28 7c-4-1.6-8-1.6-12 0v18c4-1.6 8-1.6 12 0V7Z" fill="#fff" stroke={BLUE} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M16 7v18" stroke={BLUE} strokeWidth="1.4" />
+          <path d="M16 12.5l-1.5-2-1.5 1 2.4 2.6L16 12.5ZM16 12.5l1.5-2 1.5 1-2.4 2.6L16 12.5Z" fill={GOLD} stroke={ORANGE} strokeWidth="0.8" strokeLinejoin="round" />
+          <path d="M7 12h6M7 16h6M19 12h6M19 16h6" stroke={LIGHT_BLUE} strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'toolDashboard':
+      return (
+        <svg {...common}>
+          <rect x="3" y="6" width="26" height="18" rx="2" fill="#fff" stroke={BLUE} strokeWidth="2" />
+          <rect x="5" y="8" width="22" height="14" fill="#0b1530" />
+          <rect x="7" y="16" width="3" height="4" fill={LIGHT_BLUE} />
+          <rect x="11" y="13" width="3" height="7" fill={TEAL} />
+          <rect x="15" y="10" width="3" height="10" fill={GOLD} />
+          <rect x="19" y="14" width="3" height="6" fill={ORANGE} />
+          <rect x="23" y="11" width="3" height="9" fill="#ef5b5b" />
+          <path d="M7 13l4-4 4 2 4-3 5 4" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M11 24v3M21 24v3M9 28h14" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'toolLight':
+      return (
+        <svg {...common}>
+          <circle cx="16" cy="14" r="9" fill="none" stroke={BLUE} strokeWidth="2" />
+          <circle cx="16" cy="14" r="6" fill={GOLD} stroke={ORANGE} strokeWidth="1.4" />
+          <circle cx="16" cy="14" r="2.4" fill="#fff" />
+          <path d="M3 14h2M27 14h2M16 1v2M16 25v2M6 4l1.5 1.5M24.5 5.5L26 4M6 24l1.5-1.5M24.5 22.5L26 24" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" />
+          <rect x="14.5" y="22" width="3" height="6" fill={BLUE} />
+          <path d="M11 28h10" stroke={BLUE} strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'toolManual':
+      return (
+        <svg {...common}>
+          <path d="M7 5h16a2 2 0 0 1 2 2v20l-4-3-3 3-3-3-3 3-3-3-4 3V7a2 2 0 0 1 2-2Z" fill="#ef5b5b" stroke={BLUE} strokeWidth="1.8" strokeLinejoin="round" />
+          <rect x="10" y="9" width="12" height="2.4" fill="#fff" opacity="0.85" />
+          <rect x="10" y="13" width="12" height="1.6" fill="#fff" opacity="0.6" />
+          <rect x="10" y="16" width="9" height="1.6" fill="#fff" opacity="0.6" />
+          <path d="M21 13.5l1.4 1.4 2.6-2.6" fill="none" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'toolHeadset':
+      return (
+        <svg {...common}>
+          <path d="M5 18C5 11 9 6 16 6s11 5 11 12" fill="none" stroke={BLUE} strokeWidth="2.2" strokeLinecap="round" />
+          <rect x="3.5" y="16" width="6" height="9" rx="1.6" fill={LIGHT_BLUE} stroke={BLUE} strokeWidth="1.6" />
+          <rect x="22.5" y="16" width="6" height="9" rx="1.6" fill={LIGHT_BLUE} stroke={BLUE} strokeWidth="1.6" />
+          <path d="M25.5 25v2a2 2 0 0 1-2 2h-3" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="20" cy="29" r="1.4" fill={ORANGE} />
+        </svg>
+      );
+    case 'toolMirror':
+      return (
+        <svg {...common}>
+          <ellipse cx="16" cy="13" rx="8" ry="9" fill="#fff" stroke={BLUE} strokeWidth="2" />
+          <ellipse cx="16" cy="13" rx="5.5" ry="6.5" fill="#eaf4ff" stroke={LIGHT_BLUE} strokeWidth="1.2" />
+          <path d="M12 9c1-1.6 2.6-2.4 4.5-2.4" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+          <rect x="14.5" y="22" width="3" height="7" rx="1" fill={GOLD} stroke={BLUE} strokeWidth="1.4" />
+          <ellipse cx="16" cy="29.5" rx="4" ry="1.2" fill={GOLD} stroke={BLUE} strokeWidth="1.4" />
         </svg>
       );
     case 'gem':

@@ -37,5 +37,6 @@ export function createStarterCeo(): Dog {
     pendingTraitChoice: null,
     level: 1,
     fragments: 0,
+    equippedToolId: null,
   };
 }

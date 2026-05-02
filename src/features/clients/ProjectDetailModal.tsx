@@ -3,6 +3,7 @@ import { useGameStore } from '@/store/gameStore';
 import type { ChemistryCombo, Dog, ProjectCategory, ClientTier } from '@/types';
 import { OFFER_TTL_DAYS } from '@/lib/projectGen';
 import { estimateDailyContrib } from '@/lib/projectEngine';
+import { buildToolMap } from '@/lib/toolsEngine';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import { DogAvatar } from '@/components/DogAvatar';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
@@ -56,6 +57,7 @@ export function ProjectDetailModal({
   const day = useGameStore((s) => s.day);
   const staff = useGameStore((s) => s.staff);
   const companyBuffs = useGameStore((s) => s.companyBuffs);
+  const tools = useGameStore((s) => s.tools);
   const reject = useGameStore((s) => s.rejectProject);
   const abandon = useGameStore((s) => s.abandonProject);
   const [confirmAbandon, setConfirmAbandon] = useState(false);
@@ -77,9 +79,10 @@ export function ProjectDetailModal({
   const isOffered = project?.status === 'offered';
   const assignedDogs = !project ? [] : staff.filter((d) => project.assignedStaffIds.includes(d.id));
 
+  const toolMap = useMemo(() => buildToolMap(staff, tools), [staff, tools]);
   const dailyContrib = useMemo(
-    () => (project ? estimateDailyContrib(project.category, assignedDogs, companyBuffs) : 0),
-    [project, assignedDogs, companyBuffs],
+    () => (project ? estimateDailyContrib(project.category, assignedDogs, companyBuffs, toolMap) : 0),
+    [project, assignedDogs, companyBuffs, toolMap],
   );
   const chemistries = useMemo(
     () => (project ? findChemistries(assignedDogs, project.category) : []),
