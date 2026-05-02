@@ -167,6 +167,7 @@ function ToolCard({ tool }: { tool: Tool }) {
           <div className="flex flex-wrap gap-1 mt-1">
             {tool.traits.map((tid) => {
               const def = TOOL_TRAIT_DEFS[tid];
+              if (!def) return null;
               return (
                 <span
                   key={tid}

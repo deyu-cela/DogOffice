@@ -63,9 +63,6 @@ export function StaffActionModal() {
   const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
   const close = useGameStore((s) => s.closeStaffAction);
-  const startPip = useGameStore((s) => s.startPip);
-  const togglePipTask = useGameStore((s) => s.togglePipTask);
-  const keep = useGameStore((s) => s.keepStaff);
   const fire = useGameStore((s) => s.fireStaff);
   const upgradeDog = useGameStore((s) => s.upgradeDogLevel);
   const upgradeDogFrag = useGameStore((s) => s.upgradeDogWithFragments);
@@ -382,76 +379,24 @@ export function StaffActionModal() {
           </button>
         )}
 
-        {/* G. PIP / fire / keep / close */}
-        {dog.status !== 'pip' ? (
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              onClick={close}
-              className="staff-soft-btn py-2 font-bold"
-            >
-              關閉
-            </button>
-            <button
-              onClick={() => startPip(idx)}
-              className="staff-soft-btn py-2 font-bold"
-              style={{
-                background: 'linear-gradient(180deg, #fff7f7, #ffecec)',
-                color: '#d34a4a',
-                border: '1px solid rgba(255,112,112,0.24)',
-              }}
-            >
-              進入 PIP
-            </button>
-          </div>
-        ) : (
-          <div>
-            <div className="text-sm font-bold mb-2">PIP 任務（{dog.pipDaysLeft} 天剩餘）</div>
-            <div className="flex flex-col gap-2 mb-3">
-              {dog.pipTasks?.map((task, ti) => (
-                <label
-                  key={ti}
-                  className="staff-paper-card flex items-center gap-2 p-2"
-                >
-                  <input
-                    type="checkbox"
-                    checked={task.done}
-                    onChange={() => togglePipTask(idx, ti)}
-                    className="w-4 h-4"
-                  />
-                  <span className={`text-sm ${task.done ? 'line-through opacity-60' : ''}`}>{task.text}</span>
-                </label>
-              ))}
-            </div>
-            <div className="grid grid-cols-3 gap-2.5">
-              <button
-                onClick={close}
-                className="staff-soft-btn py-2 font-bold"
-              >
-                關閉
-              </button>
-              <button
-                onClick={() => keep(idx)}
-                className="staff-kawaii-btn py-2 font-bold"
-                style={{
-                  background: 'linear-gradient(180deg, #35c59c, #16a77f)',
-                  color: 'white',
-                }}
-              >
-                留任
-              </button>
-              <button
-                onClick={() => fire(idx)}
-                className="staff-kawaii-btn py-2 font-bold"
-                style={{
-                  background: 'linear-gradient(180deg, #ff8d8d, #e24c4c)',
-                  color: 'white',
-                }}
-              >
-                資遣 ${dog.severance}
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            onClick={close}
+            className="staff-soft-btn py-2 font-bold"
+          >
+            關閉
+          </button>
+          <button
+            onClick={() => fire(idx)}
+            className="staff-kawaii-btn py-2 font-bold"
+            style={{
+              background: 'linear-gradient(180deg, #ff8d8d, #e24c4c)',
+              color: 'white',
+            }}
+          >
+            資遣 ${dog.severance}
+          </button>
+        </div>
       </div>
     </div>
   );

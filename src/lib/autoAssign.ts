@@ -42,7 +42,6 @@ function traitScoreFor(dog: Dog, category: ProjectCategory, alreadyPicked: Dog[]
       case 'overtime': score += 3; break;
       case 'perfectionist':
         score += category === 'tech' || category === 'design' || category === 'service' ? 5 : 1; break;
-      case 'mentor': score += alreadyPicked.length > 0 ? 4 : 0; break;
       case 'haggler': score += 6; break;
       case 'ironHeart': score += 1; break;
       case 'catalyst': score += alreadyPicked.length > 0 ? 5 : 1; break;

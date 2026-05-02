@@ -40,9 +40,6 @@ export type GameSaveData = {
   staff: Dog[];
   log: LogEntry[];
 
-  ipoAchievedAt: number | null;
-  ipoDismissed: boolean;
-
   loanTaken: boolean;
   loanRepayDaysLeft: number;
 

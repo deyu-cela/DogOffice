@@ -4,7 +4,6 @@ import type {
   Dog,
   GameState,
   LeaderboardEntry,
-  PipTask,
   Project,
   ProjectCategory,
   ShopItemEffectKey,
@@ -12,7 +11,11 @@ import type {
   Tool,
   TrainingSession,
 } from '@/types';
-import { getDogToolCategory, getDogToolStatBoost } from '@/lib/toolsEngine';
+import {
+  getDogToolCategory,
+  getDogToolStatBoost,
+  pickBestUnequippedToolForDog,
+} from '@/lib/toolsEngine';
 import {
   saveLocalEntry,
   submitLeaderboard,
@@ -29,7 +32,7 @@ import {
 } from '@/constants/specialTasks';
 import type { SpecialTask } from '@/types';
 import { pickTraitChoices } from '@/constants/dogTraits';
-import { clamp, nextDogId, nextTreatId, rand } from '@/lib/utils';
+import { clamp, dogPower, nextDogId, nextTreatId, rand } from '@/lib/utils';
 import { ensureQueueLength, generateCandidate } from '@/lib/candidateGen';
 import { createStarterCeo } from '@/lib/starterPackDog';
 import {
@@ -52,11 +55,6 @@ import { runProjectsDay } from '@/lib/projectEngine';
 import { pickBestTeamForIndustry } from '@/lib/autoAssign';
 
 const initialQueue = [generateCandidate(), generateCandidate(), generateCandidate()];
-
-// === IPO 勝利條件（信譽門檻已移除）===
-const IPO_MONEY = 50000;
-const IPO_OFFICE_LEVEL = 4;
-const IPO_PROJECTS = 80;
 
 // === 辦公室固定每日支出 ===
 export const OFFICE_DAILY_EXPENSE = [20, 48, 129, 285, 608];
@@ -81,10 +79,10 @@ export function dogLevelUpCost(currentLevel: number): number {
 
 function emptyTeams(): Record<ProjectCategory, Team> {
   return {
-    tech: { industry: 'tech', open: false, memberIds: [] },
-    design: { industry: 'design', open: false, memberIds: [] },
-    marketing: { industry: 'marketing', open: false, memberIds: [] },
-    service: { industry: 'service', open: false, memberIds: [] },
+    tech: { industry: 'tech', memberIds: [] },
+    design: { industry: 'design', memberIds: [] },
+    marketing: { industry: 'marketing', memberIds: [] },
+    service: { industry: 'service', memberIds: [] },
   };
 }
 
@@ -143,13 +141,8 @@ function instantiateRosterDog(entry: RosterEntry): Dog {
     score: 0,
     image: ROLE_IMAGE_MAP[entry.role] ?? '',
     isCEO: entry.grade === 'U',
-    status: 'active',
-    pipDaysLeft: 0,
-    pipScore: 0,
-    pipTasks: [],
     fatigue: 0,
     loyalty: 50,
-    experience: 0,
     assignedProjectId: null,
     daysAtCompany: 0,
     unhappyLeaveDays: 0,
@@ -184,9 +177,6 @@ type Actions = {
 
   openStaffAction: (index: number) => void;
   closeStaffAction: () => void;
-  startPip: (index: number) => void;
-  togglePipTask: (index: number, taskIndex: number) => void;
-  keepStaff: (index: number) => void;
   fireStaff: (index: number) => void;
 
   // === 接案制核心 actions ===
@@ -225,8 +215,6 @@ type Actions = {
   dismissToast: () => void;
   dismissDailySummary: () => void;
 
-  dismissIpo: () => void;
-
   toggleRecruitment: () => void;
 
   takeBankLoan: () => void;
@@ -249,7 +237,6 @@ type Actions = {
   // === 抽卡 / 團隊 / 強化 ===
   recruitFromGacha: () => GachaResult | null;
   recruitFromGachaTen: () => GachaResult[];
-  toggleTeamOpen: (industry: ProjectCategory) => void;
   addDogToTeam: (industry: ProjectCategory, dogId: string) => void;
   removeDogFromTeam: (industry: ProjectCategory, dogId: string) => void;
   autoFillTeam: (industry: ProjectCategory) => void;
@@ -374,8 +361,6 @@ const initialState: GameState = {
   dayElapsed: 0,
   toast: null,
 
-  ipoAchievedAt: null,
-  ipoDismissed: false,
   traitChoiceModal: null,
   dailySummary: null,
   loanTaken: false,
@@ -511,7 +496,42 @@ function pushLog(state: GameState, msg: string): GameState {
 
 function openTeamMemberIds(state: GameState, industry: ProjectCategory): Set<string> {
   const team = state.teams[industry];
-  return new Set(team?.open ? team.memberIds : []);
+  return new Set(team ? team.memberIds : []);
+}
+
+// 把指定 dogIds 的 equippedToolId 清空（玩具留在 s.tools，不銷毀）
+function unequipDogs(staff: Dog[], dogIds: string[]): Dog[] {
+  if (dogIds.length === 0) return staff;
+  const ids = new Set(dogIds);
+  let changed = false;
+  const next = staff.map((d) => {
+    if (!ids.has(d.id) || !d.equippedToolId) return d;
+    changed = true;
+    return { ...d, equippedToolId: null };
+  });
+  return changed ? next : staff;
+}
+
+// 為一批新加入 team 的員工依序挑最佳未裝備工具；dogPower desc 優先
+function autoEquipForNewMembers(staff: Dog[], tools: Tool[], newDogIds: string[]): Dog[] {
+  if (newDogIds.length === 0) return staff;
+  const ordered = [...newDogIds].sort((a, b) => {
+    const da = staff.find((d) => d.id === a);
+    const db = staff.find((d) => d.id === b);
+    if (!da || !db) return 0;
+    return dogPower(db) - dogPower(da);
+  });
+  let nextStaff = staff;
+  for (const dogId of ordered) {
+    const dog = nextStaff.find((d) => d.id === dogId);
+    if (!dog || dog.equippedToolId) continue;
+    const pickId = pickBestUnequippedToolForDog(tools, nextStaff, dog);
+    if (!pickId) continue;
+    nextStaff = nextStaff.map((d) =>
+      d.id === dogId ? { ...d, equippedToolId: pickId } : d,
+    );
+  }
+  return nextStaff;
 }
 
 function sanitizeProjectAssignments(state: GameState): GameState {
@@ -533,14 +553,14 @@ function sanitizeProjectAssignments(state: GameState): GameState {
 }
 
 // Team-based 自動接案
-// 對每個 open team：若該 team 沒人在做案 → 接該產業 inbox 最前面的 offered，team 成員全上工
+// 對每個有成員的 team：若該 team 沒人在做案 → 接該產業 inbox 最前面的 offered，team 成員全上工
 // 也會撿回「active 但 assignedStaffIds 被 sanitize 清空」的孤兒案
-// 在抽卡、team 開關、結算後呼叫
+// 在抽卡、team 變動、結算後呼叫
 function applyAutoAccept(state: GameState): GameState {
   let s = sanitizeProjectAssignments(state);
   for (const industry of INDUSTRIES) {
     const team = s.teams[industry];
-    if (!team.open || team.memberIds.length === 0) continue;
+    if (team.memberIds.length === 0) continue;
     // 任一 team 成員已被指派 → team 視為忙碌（一次只接 1 案）
     const busy = team.memberIds.some((id) => {
       const dog = s.staff.find((d) => d.id === id);
@@ -673,7 +693,7 @@ function runAdvanceDay(prev: GameState): GameState {
   if (pruneResult.expiredCount > 0) {
     s = pushLog(s, ` ${pruneResult.expiredCount} 個放太久的案子過期消失了`);
   }
-  const openInds = INDUSTRIES.filter((ind) => s.teams[ind].open);
+  const openInds = INDUSTRIES.filter((ind) => s.teams[ind].memberIds.length > 0);
   s.clients = fillInbox(s.clients, s.tierBudget, s.day, s.officeLevel, false, openInds);
   s.clients = trimSettled(s.clients);
   // === Phase 5.5: 自動接案 + 自動指派 ===
@@ -750,18 +770,6 @@ function runAdvanceDay(prev: GameState): GameState {
     levelUps: projSummary.levelUps,
     bankruptCountdown: s.bankruptCountdown,
   };
-
-  // === Phase 9: IPO 達成檢查（信譽門檻已移除）===
-  if (
-    s.ipoAchievedAt === null &&
-    s.money >= IPO_MONEY &&
-    s.officeLevel >= IPO_OFFICE_LEVEL &&
-    s.projectsCompleted >= IPO_PROJECTS
-  ) {
-    s.ipoAchievedAt = s.day;
-    s.ipoDismissed = false;
-    s = pushLog(s, ` 公司 IPO 上市成功！用時 ${s.day} 天！`);
-  }
 
   return s;
 }
@@ -914,51 +922,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   openStaffAction: (index) => set({ staffActionModal: { staffIndex: index } }),
   closeStaffAction: () => set({ staffActionModal: null }),
 
-  startPip: (index) => {
-    const s = get();
-    const dog = s.staff[index];
-    if (!dog || dog.status === 'pip') return;
-    const tasks: PipTask[] = [
-      `完成 1 次與 ${dog.role} 有關的改善會議`,
-      `提交 1 份${dog.role}改進紀錄`,
-      `讓主管確認本週表現是否進步`,
-      `完成 1 項跨部門協作任務`,
-      `撰寫個人改善計畫書`,
-    ]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
-      .map((text) => ({ text, done: false }));
-    const newStaff = [...s.staff];
-    newStaff[index] = { ...dog, status: 'pip', pipDaysLeft: 3, pipScore: 0, pipTasks: tasks };
-    let next: GameState = {
-      ...s,
-      staff: newStaff,
-    };
-    next = pushLog(next, ` ${dog.name} 進入 PIP 改善流程（3天觀察期），需完成改善任務。`);
-    set(next as Partial<GameStore>);
-  },
-
-  togglePipTask: (index, taskIndex) => {
-    const s = get();
-    const dog = s.staff[index];
-    if (!dog || dog.status !== 'pip' || !dog.pipTasks?.[taskIndex]) return;
-    const tasks = dog.pipTasks.map((t, i) => (i === taskIndex ? { ...t, done: !t.done } : t));
-    const newStaff = [...s.staff];
-    newStaff[index] = { ...dog, pipTasks: tasks };
-    set({ staff: newStaff });
-  },
-
-  keepStaff: (index) => {
-    const s = get();
-    const dog = s.staff[index];
-    if (!dog) return;
-    const newStaff = [...s.staff];
-    newStaff[index] = { ...dog, status: 'active', pipDaysLeft: 0, pipScore: 0, pipTasks: [] };
-    let next: GameState = { ...s, staff: newStaff, staffActionModal: null };
-    next = pushLog(next, `✅ ${dog.name} 通過 PIP，決定留任。`);
-    set(next as Partial<GameStore>);
-  },
-
   fireStaff: (index) => {
     const s = get();
     const dog = s.staff[index];
@@ -1103,13 +1066,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (s.lastRerollDay >= s.day) return; // 每天最多 1 次
     const cost = rerollCost(s.tierBudget);
     if (s.money < cost) return;
+    const openInds = INDUSTRIES.filter((ind) => s.teams[ind].memberIds.length > 0);
+    const nextClients = rerollInbox(s.clients, s.tierBudget, s.day, s.officeLevel, openInds);
+    const newOfferedCount = nextClients.filter((c) => c.status === 'offered').length;
     let next: GameState = {
       ...s,
       money: s.money - cost,
       lastRerollDay: s.day,
-      clients: rerollInbox(s.clients, s.tierBudget, s.day, s.officeLevel),
+      clients: nextClients,
     };
-    next = pushLog(next, ` 花 $${cost} 重新整理收件匣（5 個新案）`);
+    next = pushLog(next, ` 花 $${cost} 重新整理收件匣（${newOfferedCount} 個新案）`);
     next = applyAutoAccept(next);
     set(next as Partial<GameStore>);
   },
@@ -1371,17 +1337,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const bank = trainingBank.get('current')!;
     const ts = s.trainingSession;
     if (ts.questionIndex >= ts.maxQuestions - 1) {
-      // 培訓 → 答對題數每題給選定員工 +1 stat（簡化：第一個 active 員工 +1 quality；給 experience）
       const cashReward = ts.correctCount * 2;
       let next: GameState = {
         ...s,
         money: Math.max(0, s.money - 18 + cashReward),
-        // 全員獲得 ts.correctCount 經驗
-        staff: s.staff.map((d) => ({ ...d, experience: d.experience + ts.correctCount })),
         trainingSession: { ...ts, finished: true },
       };
       const cashMsg = cashReward > 0 ? `，回饋 $${cashReward}` : '';
-      next = pushLog(next, `培訓完成，答對 ${ts.correctCount}/${ts.maxQuestions}，全員 +${ts.correctCount} 經驗${cashMsg}`);
+      next = pushLog(next, `培訓完成，答對 ${ts.correctCount}/${ts.maxQuestions}${cashMsg}`);
       set(next as Partial<GameStore>);
     } else {
       const nextIndex = ts.questionIndex + 1;
@@ -1458,8 +1421,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       projectsCompleted: data.projectsCompleted ?? 0,
       projectsFailed: data.projectsFailed ?? 0,
       lastRerollDay: data.lastRerollDay ?? 0,
-      ipoAchievedAt: data.ipoAchievedAt ?? null,
-      ipoDismissed: data.ipoDismissed ?? false,
       log: data.log,
       vacancy: data.vacancy,
       vacancyTimer: data.vacancyTimer,
@@ -1516,8 +1477,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       toolPickerModal: null,
     }));
   },
-
-  dismissIpo: () => set({ ipoDismissed: true }),
 
   toggleRecruitment: () => {
     const s = get();
@@ -1720,17 +1679,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const industry = dogPrimaryIndustry(hired.role);
     const team = s.teams[industry];
     let updatedTeam = team;
-    if (team.memberIds.length < teamMaxMembers(s.officeLevel)) {
+    const joinedTeam = team.memberIds.length < teamMaxMembers(s.officeLevel);
+    if (joinedTeam) {
       updatedTeam = { ...team, memberIds: [...team.memberIds, hired.id] };
-      // 第一隻該產業的狗 → 自動開啟該 team
-      if (team.memberIds.length === 0) {
-        updatedTeam = { ...updatedTeam, open: true };
-      }
     }
+    const initialStaff = [...s.staff, hired];
+    const equippedStaff = joinedTeam
+      ? autoEquipForNewMembers(initialStaff, s.tools, [hired.id])
+      : initialStaff;
     let next: GameState = {
       ...s,
       money: s.money - GACHA_COST,
-      staff: [...s.staff, hired],
+      staff: equippedStaff,
       teams: { ...s.teams, [industry]: updatedTeam },
     };
     next = pushLog(
@@ -1741,7 +1701,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
     next.tierBudget = recomputeTierBudget(next);
     // 開新 team 後 inbox 立即補該產業案件 + 嘗試自動接
-    const openInds = INDUSTRIES.filter((ind) => next.teams[ind].open);
+    const openInds = INDUSTRIES.filter((ind) => next.teams[ind].memberIds.length > 0);
     next.clients = fillInbox(next.clients, next.tierBudget, next.day, next.officeLevel, false, openInds);
     next = applyAutoAccept(next);
     set(next as Partial<GameStore>);
@@ -1759,23 +1719,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     return results;
   },
 
-  toggleTeamOpen: (industry) => {
-    const s = get();
-    const team = s.teams[industry];
-    if (!team) return;
-    // 沒成員不允許開啟
-    if (!team.open && team.memberIds.length === 0) return;
-    let next: GameState = {
-      ...s,
-      teams: { ...s.teams, [industry]: { ...team, open: !team.open } },
-    };
-    next = sanitizeProjectAssignments(next);
-    const openInds = INDUSTRIES.filter((ind) => next.teams[ind].open);
-    next.clients = fillInbox(next.clients, next.tierBudget, next.day, next.officeLevel, false, openInds);
-    next = applyAutoAccept(next);
-    set(next as Partial<GameStore>);
-  },
-
   addDogToTeam: (industry, dogId) => {
     const s = get();
     const team = s.teams[industry];
@@ -1786,8 +1729,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // 員工不能同時在多個 team
     const inOther = INDUSTRIES.some((ind) => ind !== industry && s.teams[ind].memberIds.includes(dogId));
     if (inOther) return;
+    const equippedStaff = autoEquipForNewMembers(s.staff, s.tools, [dogId]);
     let next = sanitizeProjectAssignments({
       ...s,
+      staff: equippedStaff,
       teams: {
         ...s.teams,
         [industry]: { ...team, memberIds: [...team.memberIds, dogId] },
@@ -1808,8 +1753,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
     const picks = pickBestTeamForIndustry(candidates, industry, capacity);
     const newIds = picks.map((d) => d.id);
+    // 算出實際 add/remove 集合，再套用裝備調整
+    const oldIds = new Set(team.memberIds);
+    const newSet = new Set(newIds);
+    const removed = team.memberIds.filter((id) => !newSet.has(id));
+    const added = newIds.filter((id) => !oldIds.has(id));
+    let staff = unequipDogs(s.staff, removed);
+    staff = autoEquipForNewMembers(staff, s.tools, added);
     let next = sanitizeProjectAssignments({
       ...s,
+      staff,
       teams: {
         ...s.teams,
         [industry]: { ...team, memberIds: newIds },
@@ -1825,19 +1778,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!team) return;
     if (!team.memberIds.includes(dogId)) return;
     const newIds = team.memberIds.filter((id) => id !== dogId);
-    // 移除最後一隻 → 自動關閉 team
-    const open = newIds.length === 0 ? false : team.open;
     let next: GameState = {
       ...s,
+      staff: unequipDogs(s.staff, [dogId]),
       teams: {
         ...s.teams,
-        [industry]: { ...team, memberIds: newIds, open },
+        [industry]: { ...team, memberIds: newIds },
       },
     };
     next = sanitizeProjectAssignments(next);
-    // 若關閉了 team → 該產業 offered 應清掉
-    if (!open && team.open) {
-      const openInds = INDUSTRIES.filter((ind) => next.teams[ind].open);
+    // 移除最後一隻 → 該產業視為休業，重補 inbox（清掉該類 offered）
+    if (newIds.length === 0 && team.memberIds.length > 0) {
+      const openInds = INDUSTRIES.filter((ind) => next.teams[ind].memberIds.length > 0);
       next.clients = fillInbox(next.clients, next.tierBudget, next.day, next.officeLevel, false, openInds);
     }
     next = applyAutoAccept(next);

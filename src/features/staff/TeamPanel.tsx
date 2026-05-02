@@ -44,7 +44,7 @@ export function TeamPanel() {
   return (
     <div className="flex flex-col gap-2">
       <div className="text-[11px] font-bold" style={{ color: 'var(--muted)' }}>
-        產業 Team・有 ≥ 1 隻同產業狗才能開啟
+        產業 Team・隊伍有人即視為接該產業案
       </div>
       {INDUSTRIES.map((industry) => (
         <TeamCard
@@ -66,17 +66,16 @@ function TeamCard({
   staffById,
 }: {
   industry: ProjectCategory;
-  team: { open: boolean; memberIds: string[] };
+  team: { memberIds: string[] };
   eligible: Dog[];
   staffById: Map<string, Dog>;
 }) {
-  const toggle = useGameStore((s) => s.toggleTeamOpen);
   const addDog = useGameStore((s) => s.addDogToTeam);
   const removeDog = useGameStore((s) => s.removeDogFromTeam);
   const [editing, setEditing] = useState(false);
 
   const members = team.memberIds.map((id) => staffById.get(id)).filter((d): d is Dog => !!d);
-  const canOpen = team.memberIds.length > 0;
+  const isOpen = team.memberIds.length > 0;
   const color = INDUSTRY_COLOR[industry];
 
   const availableToAdd = eligible.filter((d) => !team.memberIds.includes(d.id));
@@ -85,7 +84,7 @@ function TeamCard({
     <div
       className="staff-paper-card p-3"
       style={{
-        borderColor: team.open ? `${color}88` : undefined,
+        borderColor: isOpen ? `${color}88` : undefined,
       }}
     >
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -105,21 +104,16 @@ function TeamCard({
             </div>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => toggle(industry)}
-          disabled={!canOpen}
+        <span
           className="staff-soft-btn text-[11px] px-2.5 py-1 font-extrabold"
-          data-active={team.open ? 'true' : 'false'}
+          data-active={isOpen ? 'true' : 'false'}
           style={{
-            color: team.open ? undefined : canOpen ? '#6e4638' : '#8aa2c8',
-            borderColor: team.open ? `${color}88` : undefined,
-            cursor: canOpen ? 'pointer' : 'not-allowed',
+            color: isOpen ? undefined : '#8aa2c8',
+            borderColor: isOpen ? `${color}88` : undefined,
           }}
-          title={canOpen ? (team.open ? '關閉接案' : '開啟接案') : '需要至少 1 隻該產業的狗'}
         >
-          {team.open ? '營業中' : canOpen ? '休業中' : '未解鎖'}
-        </button>
+          {isOpen ? '營業中' : '休業中'}
+        </span>
       </div>
 
       {members.length === 0 ? (

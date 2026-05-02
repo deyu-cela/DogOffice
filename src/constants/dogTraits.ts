@@ -3,7 +3,6 @@
 export type DogTraitId =
   | 'overtime'       // 加班王
   | 'perfectionist'  // 完美主義
-  | 'mentor'         // 老師
   | 'haggler'        // 議價達人
   | 'ironHeart'      // 鋼鐵心
   | 'catalyst'       // 化學催化
@@ -31,13 +30,6 @@ export const DOG_TRAITS: DogTraitDef[] = [
     name: '完美主義',
     emoji: '',
     desc: '案件品質 +20%，但推進速度 -10%。',
-  },
-  {
-    id: 'mentor',
-    name: '老師',
-    emoji: '',
-    desc: '同案隊員結案經驗 +50%（B 級以上才能習得）。',
-    gradeFilter: ['B', 'A', 'S'],
   },
   {
     id: 'haggler',

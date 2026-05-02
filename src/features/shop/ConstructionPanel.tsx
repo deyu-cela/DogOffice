@@ -23,7 +23,6 @@ function upgradeBenefits(curLv: number): string[] {
   const curCap = OFFICE_TIER_CAP[curLv] ?? 3;
   const nextCap = OFFICE_TIER_CAP[next] ?? 3;
   if (nextCap > curCap) benefits.push(`隊伍上限 ${nextCap} 位`);
-  if (next === 3) benefits.push('解鎖 IPO 挑戰');
   return benefits;
 }
 

@@ -52,9 +52,9 @@ const GRADE_BG: Record<ToolGrade, string> = {
   B: 'linear-gradient(180deg, #c8d8e8, #6a8aa8)',
 };
 const GRADE_TEXT: Record<ToolGrade, string> = {
-  S: '#5a3d05',
-  A: '#24152f',
-  B: '#fff',
+  S: '#1a1208',
+  A: '#150a1f',
+  B: '#0f1419',
 };
 
 type ToolRow = {
@@ -89,6 +89,7 @@ export function ToolInventoryModal({ onClose }: { onClose: () => void }) {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [sortKey, setSortKey] = useState<SortKey>('grade');
   const [desc, setDesc] = useState(true);
+  const [detailRow, setDetailRow] = useState<ToolRow | null>(null);
 
   const equipByName = useMemo(() => {
     const m = new Map<string, string>();
@@ -211,11 +212,20 @@ export function ToolInventoryModal({ onClose }: { onClose: () => void }) {
               }}
             >
               {visibleRows.map((row) => (
-                <ToolCard key={row.tool.instanceId} row={row} onDestroy={destroyTool} />
+                <ToolCard
+                  key={row.tool.instanceId}
+                  row={row}
+                  onDestroy={destroyTool}
+                  onOpenDetail={() => setDetailRow(row)}
+                />
               ))}
             </div>
           )}
         </div>
+
+        {detailRow && (
+          <ToolDetailPopup row={detailRow} onClose={() => setDetailRow(null)} />
+        )}
       </section>
     </div>,
     document.body,
@@ -225,9 +235,11 @@ export function ToolInventoryModal({ onClose }: { onClose: () => void }) {
 function ToolCard({
   row,
   onDestroy,
+  onOpenDetail,
 }: {
   row: ToolRow;
   onDestroy: (instanceId: string) => void;
+  onOpenDetail: () => void;
 }) {
   const { tool, equippedByName } = row;
   const accent = CARD_ACCENT[tool.grade];
@@ -236,13 +248,16 @@ function ToolCard({
 
   return (
     <div
-        className="tool-card-frame relative w-full overflow-hidden text-left"
+        className="tool-card-frame relative w-full overflow-hidden text-left cursor-pointer"
       style={{
-        aspectRatio: '0.78',
-        minHeight: 148,
+        aspectRatio: '0.9',
+        minHeight: 134,
         padding: 3,
       }}
-      title={`${tool.name}（${tool.grade}）`}
+      title={`${tool.name}（${tool.grade}）— 點擊看詳情`}
+      onClick={() => {
+        if (!confirming) onOpenDetail();
+      }}
     >
       <div
         className="tool-card-inner relative h-full overflow-hidden"
@@ -274,7 +289,10 @@ function ToolCard({
           <button
             type="button"
             aria-label="銷毀玩具"
-            onClick={() => setConfirming(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirming(true);
+            }}
             className="absolute right-1 top-1 z-10 grid place-items-center text-[10px] font-black"
             style={{
               width: 18,
@@ -292,22 +310,49 @@ function ToolCard({
           </button>
         )}
 
-        <div className="absolute inset-x-0 top-2 bottom-[50%] flex items-center justify-center">
+        <div className="absolute inset-x-0 top-1 bottom-[62%] flex items-center justify-center">
           <div className="drop-shadow-lg">
-            <SvgIcon name={tool.iconName} size={48} />
+            <SvgIcon name={tool.iconName} size={40} />
           </div>
         </div>
 
+        {tool.traits.length > 0 && (
+          <div
+            className="absolute inset-x-1 flex flex-wrap gap-0.5 justify-center"
+            style={{ bottom: 'calc(34% + 2px)' }}
+          >
+            {tool.traits.map((tid) => {
+              const def = TOOL_TRAIT_DEFS[tid];
+              if (!def) return null;
+              return (
+                <span
+                  key={tid}
+                  className="text-[11px] px-1.5 rounded-full font-black"
+                  style={{
+                    background: '#fff8e6',
+                    color: '#5b382d',
+                    border: '1px solid #d8b67a',
+                    boxShadow: '0 1px 2px rgba(91,56,45,0.18)',
+                  }}
+                  title={def.desc}
+                >
+                  {def.emoji}{def.name}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
         <div
-          className="tool-card-rarity-band absolute inset-x-0 bottom-0 px-1.5 py-1.5"
-          style={{ background: GRADE_BG[tool.grade], color: GRADE_TEXT[tool.grade] }}
+          className="tool-card-rarity-band absolute inset-x-0 bottom-0 px-1.5 py-1"
+          style={{ background: GRADE_BG[tool.grade], color: GRADE_TEXT[tool.grade], height: '34%' }}
         >
           <div className="relative flex items-center gap-1">
             <span
               className="grid place-items-center text-[10px] font-black"
               style={{
-                width: 18,
-                minHeight: 18,
+                width: 16,
+                minHeight: 16,
                 padding: '1px 2px',
                 color: GRADE_TEXT[tool.grade],
                 background: 'rgba(255,255,255,0.24)',
@@ -317,34 +362,13 @@ function ToolCard({
             >
               {tool.grade}
             </span>
-            <span className="min-w-0 truncate text-[11px] font-black leading-tight">
+            <span className="min-w-0 truncate text-[12px] font-black leading-tight">
               {tool.name}
             </span>
           </div>
-          <div className="tool-card-rarity-meta relative text-[9px] font-bold mt-0.5" style={{ opacity: 0.9 }}>
+          <div className="tool-card-rarity-meta relative text-[12px] font-black mt-0.5">
             速 +{tool.speedBoost}　專 +{tool.qualityBoost}
           </div>
-          {tool.traits.length > 0 && (
-            <div className="tool-card-traits relative flex flex-wrap gap-0.5 mt-1">
-              {tool.traits.map((tid) => {
-                const def = TOOL_TRAIT_DEFS[tid];
-                return (
-                  <span
-                    key={tid}
-                    className="text-[9px] px-1 rounded-full font-bold"
-                    style={{
-                      background: 'rgba(255,255,255,0.28)',
-                      color: GRADE_TEXT[tool.grade],
-                      border: '1px solid rgba(255,255,255,0.26)',
-                    }}
-                    title={def.desc}
-                  >
-                    {def.emoji}{def.name}
-                  </span>
-                );
-              })}
-            </div>
-          )}
         </div>
       </div>
 
@@ -356,6 +380,7 @@ function ToolCard({
             color: '#fff',
             borderRadius: 6,
           }}
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="text-[11px] font-black text-center leading-tight">
             銷毀「{tool.name}」？
@@ -363,7 +388,8 @@ function ToolCard({
           <div className="flex gap-1.5">
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 onDestroy(tool.instanceId);
                 setConfirming(false);
               }}
@@ -373,7 +399,10 @@ function ToolCard({
             </button>
             <button
               type="button"
-              onClick={() => setConfirming(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirming(false);
+              }}
               className="h-7 px-2 text-[10px] font-black"
               style={{
                 background: '#fff',
@@ -387,6 +416,96 @@ function ToolCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ToolDetailPopup({ row, onClose }: { row: ToolRow; onClose: () => void }) {
+  const { tool, equippedByName } = row;
+  return (
+    <div
+      className="absolute inset-0 z-[20] flex items-center justify-center p-3"
+      style={{ background: 'rgba(91, 56, 45, 0.55)', backdropFilter: 'blur(2px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="rounded-xl w-full max-w-sm flex flex-col"
+        style={{
+          background: 'linear-gradient(180deg, #fff8ee, #fff1e0)',
+          border: '1.5px solid #d8b67a',
+          boxShadow: '0 18px 36px rgba(91,56,45,0.32)',
+          color: '#3a2418',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex items-center gap-2 px-3 py-2 border-b"
+          style={{ borderColor: 'rgba(91,56,45,0.18)', background: GRADE_BG[tool.grade], color: GRADE_TEXT[tool.grade], borderTopLeftRadius: 10, borderTopRightRadius: 10 }}
+        >
+          <SvgIcon name={tool.iconName} size={32} />
+          <div className="flex-1 min-w-0">
+            <div className="font-black text-sm truncate">{tool.name}</div>
+            <div className="text-[11px] font-bold mt-0.5">
+              {tool.grade} 級・{CATEGORY_LABEL[tool.category]}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-3 py-3 flex flex-col gap-2">
+          <div
+            className="flex gap-2 text-[12px] font-black"
+          >
+            <div className="flex-1 text-center py-1.5 rounded" style={{ background: '#fff8e6', border: '1px solid #d8b67a' }}>
+              速度 +{tool.speedBoost}
+            </div>
+            <div className="flex-1 text-center py-1.5 rounded" style={{ background: '#fff8e6', border: '1px solid #d8b67a' }}>
+              專業 +{tool.qualityBoost}
+            </div>
+          </div>
+
+          <div className="text-[11px] font-bold" style={{ color: '#6e4638' }}>
+            {equippedByName ? `已裝備：${equippedByName}` : '尚未裝備'}・第 {tool.obtainedDay} 天獲得
+          </div>
+
+          {tool.traits.length > 0 ? (
+            <div className="flex flex-col gap-1.5 mt-1">
+              <div className="text-[12px] font-black" style={{ color: '#5b382d' }}>特性</div>
+              {tool.traits.map((tid) => {
+                const def = TOOL_TRAIT_DEFS[tid];
+                if (!def) return null;
+                return (
+                  <div
+                    key={tid}
+                    className="flex items-start gap-2 px-2 py-1.5 rounded"
+                    style={{ background: '#fff8e6', border: '1px solid #d8b67a' }}
+                  >
+                    <span className="text-[14px]">{def.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-black" style={{ color: '#3a2418' }}>{def.name}</div>
+                      <div className="text-[11px]" style={{ color: '#6e4638' }}>{def.desc}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-[11px] text-center py-2" style={{ color: '#886153' }}>
+              此玩具沒有特性
+            </div>
+          )}
+        </div>
+
+        <div className="px-3 pb-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-1.5 rounded text-[12px] font-black"
+            style={{ background: '#5b382d', color: '#fff' }}
+          >
+            關閉
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

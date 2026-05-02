@@ -1,4 +1,5 @@
 import type { Dog, GameState } from '@/types';
+import { OFFICE_LEVELS } from '@/constants/officeLevels';
 
 const BASE = `${import.meta.env.BASE_URL}assets/achievements/`;
 
@@ -139,11 +140,11 @@ export const ACHIEVEMENTS: Achievement[] = [
     id: 'forced_play_day',
     title: '強制玩耍日',
     storyBlurb:
-      '汪德遊戲 IPO 上市的那天傍晚，門口貼著一張公告：「今日目標已達成，所有員工強制去公園玩耍。」',
-    hint: '達成 IPO 上市。',
+      '汪德遊戲升上豪華總部那天傍晚，門口貼著一張公告：「今日目標已達成，所有員工強制去公園玩耍。」',
+    hint: '辦公室升級到豪華總部。',
     cgPath: `${BASE}forced_play_day.png`,
     triggerEvents: ['day_end', 'retroactive'],
-    check: (state) => state.ipoAchievedAt !== null,
+    check: (state) => state.officeLevel >= OFFICE_LEVELS.length - 1,
   },
 ];
 

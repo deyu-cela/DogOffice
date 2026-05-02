@@ -22,12 +22,6 @@ export function StatBars() {
   const staff = useGameStore((s) => s.staff);
   const projectsCompleted = useGameStore((s) => s.projectsCompleted);
 
-  const avgSpeed = staff.length > 0
-    ? Math.round((staff.reduce((n, d) => n + d.stats.speed, 0) / staff.length) * 10) / 10
-    : 0;
-  const avgQuality = staff.length > 0
-    ? Math.round((staff.reduce((n, d) => n + d.stats.quality, 0) / staff.length) * 10) / 10
-    : 0;
   const avgFatigue = staff.length > 0
     ? Math.round(staff.reduce((n, d) => n + d.fatigue, 0) / staff.length)
     : 0;
@@ -35,10 +29,8 @@ export function StatBars() {
 
   return (
     <div className="pointer-events-none absolute left-3 bottom-3 z-[680] flex flex-col items-start gap-1.5">
-      <Chip index={0} icon="speed" label="速度" value={`${avgSpeed}`} progress={avgSpeed * 10} color="#f7b267" />
-      <Chip index={1} icon="quality" label="品質" value={`${avgQuality}`} progress={avgQuality * 10} color="#9ec29c" />
-      <Chip index={2} icon="trophy" label="完成" value={`${projectsCompleted}`} progress={100} color="#d74e63" />
-      <Chip index={3} icon="coffee" label="疲勞" value={fatigueText} progress={avgFatigue} color="#c87e78" />
+      <Chip index={0} icon="briefcase" label="完成任務" value={`${projectsCompleted}`} progress={100} color="#d74e63" />
+      <Chip index={1} icon="coffee" label="疲勞" value={fatigueText} progress={avgFatigue} color="#c87e78" />
     </div>
   );
 }

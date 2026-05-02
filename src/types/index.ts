@@ -41,15 +41,10 @@ export type Dog = {
   image: string;
   isCEO?: boolean;
   interview?: { q: string; goodAnswer: string; badAnswer: string };
-  status?: 'active' | 'pip';
-  pipDaysLeft?: number;
-  pipScore?: number;
-  pipTasks?: PipTask[];
 
   // 接案制欄位
   fatigue: number;               // 疲勞 0-100，初始 0
   loyalty: number;               // 忠誠度 0-100，初始 50
-  experience: number;            // 累積經驗，0 起跳
   assignedProjectId: string | null; // 目前指派到的案子 id
   daysAtCompany: number;         // 在公司多少天（loyalty 自然累積）
   unhappyLeaveDays: number;      // 連續被拒請假的次數（連 3 直接離職）
@@ -66,11 +61,6 @@ export type Dog = {
 
   // === 工具系統 ===
   equippedToolId?: string | null;               // 裝備中的工具 instanceId，null/undefined = 沒裝
-};
-
-export type PipTask = {
-  text: string;
-  done: boolean;
 };
 
 // === 案件相關 ===
@@ -202,7 +192,6 @@ export type ToolTraitId =
   | 'antiFatigue'      // fatigue 累積 ×0.85
   | 'chainBoost'       // 同案隊友 +5% speed（每位戴此 trait 工具者疊加）
   | 'highTierExpert'   // tier ≥4 案 quality ×1.15
-  | 'expGain'          // 完成案 experienceGain ×1.20
   | 'luckyCharm'       // 該案完成後再 +5% 工具掉落機率
   | 'guardian'         // 疲勞對 speed 的懲罰減半
   | 'precision';       // quality 額外 +1（加性）
@@ -352,8 +341,7 @@ export type TraitChoiceModal = {
 // === 產業團隊（重構後核心） ===
 export type Team = {
   industry: ProjectCategory;
-  open: boolean;        // 是否接該產業的案
-  memberIds: string[];  // 1-4 隻
+  memberIds: string[];  // 1-4 隻；非空即視為接該產業案
 };
 
 export type DailySummary = {
@@ -413,10 +401,6 @@ export type GameState = {
   speedMultiplier: number;
   dayElapsed: number;
   toast: { msg: string; type: 'positive' | 'negative' } | null;
-
-  // IPO 勝利
-  ipoAchievedAt: number | null;        // IPO 達成天數
-  ipoDismissed: boolean;
 
   // 升級特性選擇 modal
   traitChoiceModal: TraitChoiceModal;

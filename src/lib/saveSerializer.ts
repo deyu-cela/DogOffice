@@ -1,10 +1,11 @@
-import type { CompanyBuffs, GameState, ProjectCategory, Tool, ToolGrade } from '@/types';
+import type { CompanyBuffs, GameState, ProjectCategory, Tool, ToolGrade, ToolTraitId } from '@/types';
 import type { GameSaveData } from '@/types/save';
 import { SAVE_VERSION } from '@/types/save';
-import { getToolIconByDefId } from '@/constants/tools';
+import { getToolIconByDefId, TOOL_TRAIT_DEFS } from '@/constants/tools';
 
 const TOOL_GRADES: ReadonlyArray<ToolGrade> = ['S', 'A', 'B'];
 const TOOL_CATEGORIES: ReadonlyArray<ProjectCategory> = ['tech', 'design', 'marketing', 'service'];
+const VALID_TOOL_TRAITS = new Set(Object.keys(TOOL_TRAIT_DEFS));
 
 function clampNum(v: unknown, min: number, max: number, fb: number): number {
   if (typeof v !== 'number' || !Number.isFinite(v)) return fb;
@@ -103,8 +104,6 @@ export function serialize(state: GameState): GameSaveData {
     recruitmentClosed: state.recruitmentClosed,
     staff: serializeStaff(state),
     log: state.log.slice(-LOG_TAIL_LIMIT),
-    ipoAchievedAt: state.ipoAchievedAt,
-    ipoDismissed: state.ipoDismissed,
     loanTaken: state.loanTaken,
     loanRepayDaysLeft: state.loanRepayDaysLeft,
     unlockedAchievementIds: [...state.unlockedAchievementIds],
@@ -132,7 +131,6 @@ function roundDogFields(dog: Record<string, unknown>): Record<string, unknown> {
     ...dog,
     fatigue: asInt(dog.fatigue, 0),
     loyalty: asInt(dog.loyalty, 50),
-    experience: asInt(dog.experience, 0),
     level: asInt(dog.level, 1),
     fragments: asInt(dog.fragments, 0),
     daysAtCompany: asInt(dog.daysAtCompany, 0),
@@ -186,7 +184,7 @@ export function deserialize(raw: unknown): GameSaveData | null {
           ? (t.iconName as Tool['iconName'])
           : getToolIconByDefId(defId);
         const traits = Array.isArray(t.traits)
-          ? (t.traits.filter((x) => typeof x === 'string') as Tool['traits']).slice(0, 4)
+          ? (t.traits.filter((x): x is ToolTraitId => typeof x === 'string' && VALID_TOOL_TRAITS.has(x)) as Tool['traits']).slice(0, 4)
           : [];
         const normalized: Tool = {
           instanceId,
@@ -237,8 +235,6 @@ export function deserialize(raw: unknown): GameSaveData | null {
     recruitmentClosed: d.recruitmentClosed === true,
     staff,
     log: Array.isArray(d.log) ? d.log.slice(-LOG_TAIL_LIMIT) : [],
-    ipoAchievedAt: typeof d.ipoAchievedAt === 'number' ? d.ipoAchievedAt : null,
-    ipoDismissed: d.ipoDismissed === true,
     loanTaken: d.loanTaken === true,
     loanRepayDaysLeft: asNum(d.loanRepayDaysLeft, 0),
     unlockedAchievementIds: Array.isArray(d.unlockedAchievementIds)

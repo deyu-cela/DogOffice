@@ -35,7 +35,6 @@ export const TOOL_TRAIT_DEFS: Record<ToolTraitId, { name: string; desc: string; 
   antiFatigue: { name: '抗疲勞', desc: '疲勞累積 ×0.85', emoji: '🛡' },
   chainBoost: { name: '連鎖', desc: '同案隊友 +5% 速度', emoji: '🔗' },
   highTierExpert: { name: '高難度專家', desc: 'tier 4-5 案專業 ×1.15', emoji: '🎯' },
-  expGain: { name: '經驗加倍', desc: '完成案經驗 ×1.20', emoji: '📈' },
   luckyCharm: { name: '幸運符', desc: '完成案 +5% 工具掉落', emoji: '🍀' },
   guardian: { name: '守護', desc: '疲勞對速度的懲罰減半', emoji: '✨' },
   precision: { name: '命中', desc: '專業 +1（加性）', emoji: '🎯' },

@@ -30,7 +30,6 @@ export const TRAINING_QUESTIONS: TrainingQuestion[] = [
   { q: '高士氣的最好表現方式是？', options: ['全部趴著不動', '辦公室更活潑有效率', '每隻狗都請假'], answer: 1, reward: 8 },
   { q: '培訓後最合理的效果是？', options: ['永久無限加錢', '短期或有限度的效率提升', '什麼都不變'], answer: 1, reward: 7 },
   { q: '小遊戲在養成遊戲裡最重要的是？', options: ['讓玩家真的參與', '只是按一下就結束', '越空洞越好'], answer: 0, reward: 8 },
-  { q: 'PIP 的目的是什麼？', options: ['懲罰員工', '給員工改善機會', '直接開除的前置步驟'], answer: 1, reward: 8 },
   { q: '團隊缺少主管時會怎樣？', options: ['沒差', '營運會更容易混亂', '大家更開心'], answer: 1, reward: 7 },
   { q: '公司沒錢時最該做什麼？', options: ['繼續招人', '控制支出穩住現金流', '買更多道具'], answer: 1, reward: 9 },
   { q: '什麼時候該升級辦公室？', options: ['一有錢就升', '員工快滿且資金充足時', '永遠不升'], answer: 1, reward: 7 },

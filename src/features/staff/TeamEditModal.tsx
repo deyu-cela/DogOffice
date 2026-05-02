@@ -140,7 +140,6 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
   const officeLevel = useGameStore((s) => s.officeLevel);
   const addDog = useGameStore((s) => s.addDogToTeam);
   const removeDog = useGameStore((s) => s.removeDogFromTeam);
-  const toggleTeam = useGameStore((s) => s.toggleTeamOpen);
   const autoFillTeam = useGameStore((s) => s.autoFillTeam);
   const openStaffAction = useGameStore((s) => s.openStaffAction);
 
@@ -153,8 +152,6 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
   };
 
   const [activeIndustry, setActiveIndustry] = useState<ProjectCategory>(() => {
-    const open = INDUSTRIES.find((i) => teams[i].open);
-    if (open) return open;
     const withMembers = INDUSTRIES.find((i) => teams[i].memberIds.length > 0);
     return withMembers ?? 'tech';
   });
@@ -259,7 +256,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
                 <SvgIcon name={INDUSTRY_ICON[ind]} size={13} />
                 <span>{INDUSTRY_LABEL[ind]}</span>
                 <span className="text-[9px] opacity-80">{t.memberIds.length}/{maxMembers}</span>
-                {t.open && <span className="w-1 h-1 rounded-full" style={{ background: active ? 'white' : color }} />}
+                {t.memberIds.length > 0 && <span className="w-1 h-1 rounded-full" style={{ background: active ? 'white' : color }} />}
               </button>
             );
           })}
@@ -271,7 +268,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
             X
           </button>
           <p className="w-full text-[10px] mt-0.5 mb-0" style={{ color: 'var(--muted)' }}>
-            切換 4 個產業 team；每隊最多 {maxMembers} 員，team 必須「開放接案」才會接該產業案子。
+            切換 4 個產業 team；每隊最多 {maxMembers} 員，隊伍有人即視為接該產業案。
           </p>
         </div>
 
@@ -316,20 +313,16 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
             >
               ✨ 自動配對
             </button>
-            <button
-              type="button"
-              onClick={() => toggleTeam(activeIndustry)}
-              disabled={team.memberIds.length === 0}
+            <span
               className="staff-chip-btn text-[10px] whitespace-nowrap"
-              data-active={team.open ? 'true' : 'false'}
+              data-active={team.memberIds.length > 0 ? 'true' : 'false'}
               style={{
-                color: team.open ? undefined : team.memberIds.length === 0 ? '#8aa2c8' : '#6e4638',
-                cursor: team.memberIds.length === 0 ? 'not-allowed' : 'pointer',
+                color: team.memberIds.length > 0 ? undefined : '#8aa2c8',
                 padding: '1px 8px',
               }}
             >
-              {team.open ? '開放接案' : team.memberIds.length === 0 ? '未解鎖' : '已關閉'}
-            </button>
+              {team.memberIds.length > 0 ? '營業中' : '休業中'}
+            </span>
           </div>
 
           

@@ -1,4 +1,4 @@
-import type { Dog, ProjectCategory, Tool, ToolGrade, ToolTraitId } from '@/types';
+import type { Dog, ProjectCategory, Team, Tool, ToolGrade, ToolTraitId } from '@/types';
 import {
   LUCKY_CHARM_BONUS,
   TOOL_GRADE_PROB,
@@ -57,7 +57,6 @@ const ALL_TRAIT_IDS: ToolTraitId[] = [
   'antiFatigue',
   'chainBoost',
   'highTierExpert',
-  'expGain',
   'luckyCharm',
   'guardian',
   'precision',
@@ -223,13 +222,6 @@ export function getToolFatigueAccumMul(toolMap: Map<string, Tool>, dogId: string
   return 0.85;
 }
 
-// expGain：經驗 ×1.20
-export function getToolExpMul(toolMap: Map<string, Tool>, dogId: string): number {
-  const tool = toolMap.get(dogId);
-  if (!tool || !tool.traits.includes('expGain')) return 1;
-  return 1.2;
-}
-
 // luckyCharm：每位戴此 trait 的指派員工讓掉落機率 +5%
 export function getTeamLuckyBonus(toolMap: Map<string, Tool>, dogIds: string[]): number {
   let bonus = 0;
@@ -238,4 +230,103 @@ export function getTeamLuckyBonus(toolMap: Map<string, Tool>, dogIds: string[]):
     if (t?.traits.includes('luckyCharm')) bonus += LUCKY_CHARM_BONUS;
   }
   return bonus;
+}
+
+// === 自動裝備 helpers ===
+
+export function toolPower(tool: Tool): number {
+  return tool.speedBoost + tool.qualityBoost;
+}
+
+// a 嚴格優於 b：grade 高 OR 同 grade 但 power 高。b 為 null 視為最弱。
+export function isToolStrictlyBetter(a: Tool, b: Tool | null): boolean {
+  if (!b) return true;
+  const ra = GRADE_RANK[a.grade];
+  const rb = GRADE_RANK[b.grade];
+  if (ra !== rb) return ra > rb;
+  return toolPower(a) > toolPower(b);
+}
+
+function getActiveDogIds(teams: Record<ProjectCategory, Team>): Set<string> {
+  const out = new Set<string>();
+  for (const ind of Object.keys(teams) as ProjectCategory[]) {
+    for (const id of teams[ind].memberIds) out.add(id);
+  }
+  return out;
+}
+
+// 在上陣員工中找一個可被新工具升級的人；挑現裝備最差者
+export function findAutoEquipTarget(
+  staff: Dog[],
+  teams: Record<ProjectCategory, Team>,
+  tools: Tool[],
+  newTool: Tool,
+): { dogId: string; oldToolId: string | null } | null {
+  const active = getActiveDogIds(teams);
+  const cand: { dog: Dog; equipped: Tool | null }[] = [];
+  for (const dog of staff) {
+    if (!active.has(dog.id)) continue;
+    if (getDogToolCategory(dog) !== newTool.category) continue;
+    const equipped = dog.equippedToolId
+      ? tools.find((t) => t.instanceId === dog.equippedToolId) ?? null
+      : null;
+    if (!isToolStrictlyBetter(newTool, equipped)) continue;
+    cand.push({ dog, equipped });
+  }
+  if (cand.length === 0) return null;
+  cand.sort((a, b) => {
+    const ra = a.equipped ? GRADE_RANK[a.equipped.grade] : 0;
+    const rb = b.equipped ? GRADE_RANK[b.equipped.grade] : 0;
+    if (ra !== rb) return ra - rb;
+    const pa = a.equipped ? toolPower(a.equipped) : -Infinity;
+    const pb = b.equipped ? toolPower(b.equipped) : -Infinity;
+    if (pa !== pb) return pa - pb;
+    return dogPower(b.dog) - dogPower(a.dog);
+  });
+  const pick = cand[0];
+  return { dogId: pick.dog.id, oldToolId: pick.equipped?.instanceId ?? null };
+}
+
+// inventory 中（未裝備）找比新工具差的，挑最差者擠掉
+export function findReplaceableInInventory(
+  tools: Tool[],
+  staff: Dog[],
+  newTool: Tool,
+): string | null {
+  const equipped = new Set<string>();
+  for (const d of staff) if (d.equippedToolId) equipped.add(d.equippedToolId);
+  const cand = tools.filter(
+    (t) => !equipped.has(t.instanceId) && isToolStrictlyBetter(newTool, t),
+  );
+  if (cand.length === 0) return null;
+  cand.sort(
+    (a, b) =>
+      GRADE_RANK[a.grade] - GRADE_RANK[b.grade] ||
+      toolPower(a) - toolPower(b) ||
+      a.obtainedDay - b.obtainedDay,
+  );
+  return cand[0].instanceId;
+}
+
+// 從未裝備且 category 相符的工具中，挑最佳給指定 dog
+export function pickBestUnequippedToolForDog(
+  tools: Tool[],
+  staff: Dog[],
+  dog: Dog,
+): string | null {
+  const cat = getDogToolCategory(dog);
+  if (!cat) return null;
+  const equipped = new Set<string>();
+  for (const d of staff) if (d.equippedToolId) equipped.add(d.equippedToolId);
+  const cand = tools.filter(
+    (t) => t.category === cat && !equipped.has(t.instanceId),
+  );
+  if (cand.length === 0) return null;
+  cand.sort(
+    (a, b) =>
+      GRADE_RANK[b.grade] - GRADE_RANK[a.grade] ||
+      toolPower(b) - toolPower(a) ||
+      b.obtainedDay - a.obtainedDay,
+  );
+  return cand[0].instanceId;
 }

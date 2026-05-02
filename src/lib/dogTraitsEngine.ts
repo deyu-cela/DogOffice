@@ -54,9 +54,3 @@ export function getProjectRewardMul(assignedDogs: Dog[]): number {
   return assignedDogs.some((d) => has(d, 'haggler')) ? 1.08 : 1.0;
 }
 
-// 案件層級：老師讓「同案其他隊員」exp ×1.5（隊上有 mentor 即生效，給其他人）
-export function getProjectExpMulForDog(dog: Dog, assignedDogs: Dog[]): number {
-  // 隊伍中有別人是 mentor（不是自己）
-  const hasOtherMentor = assignedDogs.some((d) => d.id !== dog.id && has(d, 'mentor'));
-  return hasOtherMentor ? 1.5 : 1.0;
-}

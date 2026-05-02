@@ -298,20 +298,10 @@ function StaffCard({ row, onClick }: { row: StaffRow; onClick: () => void }) {
           <Badge color={accent}>{grade}</Badge>
         </div>
 
-        {dog.status === 'pip' && (
-          <div
-            className="absolute right-1 top-1 z-10 px-1.5 py-0.5 text-[10px] font-black"
-            style={{ background: '#ef4444', color: '#fff' }}
-          >
-            PIP
-          </div>
-        )}
-
         {dog.pendingTraitChoice && (
           <div
             className="absolute right-1 top-1 z-10 h-5 w-5 grid place-items-center rounded-full text-[10px] font-black"
             style={{
-              transform: dog.status === 'pip' ? 'translateY(24px)' : undefined,
               background: '#a855f7',
               color: '#fff',
               boxShadow: '0 2px 6px rgba(88,28,135,0.35)',

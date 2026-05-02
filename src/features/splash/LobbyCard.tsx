@@ -2,10 +2,6 @@ import type { ReactNode } from 'react';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 
-const IPO_MONEY = 50000;
-const IPO_OFFICE_LEVEL = 4;
-const IPO_PROJECTS = 80;
-
 type Props = {
   account: string;
   companyName: string;
@@ -13,8 +9,6 @@ type Props = {
   money: number;
   officeLevel: number;
   staffCount: number;
-  projectsCompleted: number;
-  ipoAchievedAt: number | null;
   bankrupt: boolean;
   hasSave: boolean;
   loadingSave: boolean;
@@ -36,8 +30,6 @@ export function LobbyCard({
   money,
   officeLevel,
   staffCount,
-  projectsCompleted,
-  ipoAchievedAt,
   bankrupt,
   hasSave,
   loadingSave,
@@ -53,16 +45,8 @@ export function LobbyCard({
 }: Props) {
   const office = OFFICE_LEVELS[officeLevel];
   const maxStaff = office?.maxStaff ?? 0;
-  const ipoProgress = Math.min(
-    100,
-    Math.round(
-      Math.min(
-        money / IPO_MONEY,
-        (officeLevel + 1) / (IPO_OFFICE_LEVEL + 1),
-        projectsCompleted / IPO_PROJECTS,
-      ) * 100,
-    ),
-  );
+  const officeMaxLevel = OFFICE_LEVELS.length - 1;
+  const officeReached = officeLevel >= officeMaxLevel;
 
   const ctaLabel = loadingSave ? '讀取中...' : hasSave ? '繼續經營' : '開始經營';
   const ctaSub = hasSave ? 'CONTINUE' : 'START';
@@ -107,9 +91,9 @@ export function LobbyCard({
         <StatChip icon="people" label="STAFF" value={`${staffCount} / ${maxStaff}`} />
         <StatChip icon="money" label="MONEY" value={`$${money.toLocaleString()}`} />
         <StatChip
-          icon="growth"
-          label="IPO"
-          value={ipoAchievedAt ? '已上市' : `${ipoProgress}%`}
+          icon="office"
+          label="OFFICE"
+          value={officeReached ? '已達頂級' : `Lv.${officeLevel + 1}`}
         />
       </div>
 
@@ -178,7 +162,7 @@ function LobbyStatusLine({ bootstrapping, loadingSave, saveError, hasSave }: Sta
   if (hasSave) {
     return <StatusChip icon="save">已載入雲端存檔</StatusChip>;
   }
-  return <StatusChip icon="target">新公司，IPO 挑戰開始！</StatusChip>;
+  return <StatusChip icon="target">新公司，搶先升級到豪華總部！</StatusChip>;
 }
 
 function StatusChip({

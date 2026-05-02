@@ -17,20 +17,19 @@ import {
   getDogFatigueAccumMul,
   getProjectChemBoost,
   getProjectRewardMul,
-  getProjectExpMulForDog,
 } from './dogTraitsEngine';
 import {
   buildToolMap,
+  findAutoEquipTarget,
+  findReplaceableInInventory,
   getTeamChainBoost,
   getTeamLuckyBonus,
-  getToolExpMul,
   getToolFatigueAccumMul,
   getToolGuardedFatigueMul,
   getToolQualityBoost,
   getToolSelfQualityMul,
   getToolSelfSpeedMul,
   getToolSpeedBoost,
-  pickToolToReplace,
   rollTool,
 } from './toolsEngine';
 import { TOOL_CAP, TOOL_DROP_CHANCE } from '@/constants/tools';
@@ -230,10 +229,9 @@ function settleProject(
   project: Project;
   finalReward: number;
   qualityRatio: number;
-  experienceGain: number;
 } {
   if (project.workDone < project.workRequired || project.status !== 'active') {
-    return { project, finalReward: 0, qualityRatio: 0, experienceGain: 0 };
+    return { project, finalReward: 0, qualityRatio: 0 };
   }
   const avgQuality = project.workDone > 0 ? project.qualitySum / project.workDone : 0;
   const qualityRatio = avgQuality / Math.max(1, project.expectedQuality);
@@ -246,14 +244,11 @@ function settleProject(
       project.reward * payoutMul * project.rewardMul * project.qualityMul * bargain * traitReward,
     ),
   );
-  const expByTier = [0, 2, 4, 8, 14, 24];
-  const experienceGain = expByTier[project.clientTier] ?? 0;
 
   return {
     project: { ...project, status: 'done' },
     finalReward,
     qualityRatio,
-    experienceGain,
   };
 }
 
@@ -408,11 +403,8 @@ export function runProjectsDay(state: GameState): DayResult {
       const assignedIds = new Set(assignedDogs.map((d) => d.id));
       s.staff = s.staff.map((d) => {
         if (!assignedIds.has(d.id)) return d;
-        const expMul = getProjectExpMulForDog(d, assignedDogs);
-        const toolExpMul = getToolExpMul(ctx.toolMap, d.id);
         return {
           ...d,
-          experience: d.experience + Math.round(settled.experienceGain * expMul * toolExpMul),
           loyalty: clamp(d.loyalty + 2, 0, 100),
           assignedProjectId: null,
         };
@@ -436,25 +428,77 @@ export function runProjectsDay(state: GameState): DayResult {
       if (hasToyZone && Math.random() < dropChance) {
         const tool = rollTool(project.category, s.day);
         if (tool) {
-          let nextTools = s.tools;
-          let replacedTool: Tool | null = null;
-          let dropIntoBag = true;
-          if (s.tools.length >= TOOL_CAP) {
-            const removeId = pickToolToReplace(s.tools, tool, s.staff);
+          const inventoryFull = s.tools.length >= TOOL_CAP;
+          const target = findAutoEquipTarget(s.staff, s.teams, s.tools, tool);
+          let acquired = false;
+
+          if (target) {
+            // 自動裝備給上陣員工
+            const oldTool = target.oldToolId
+              ? s.tools.find((t) => t.instanceId === target.oldToolId) ?? null
+              : null;
+            let nextTools = s.tools;
+            let droppedOldMsg = '';
+            if (oldTool && inventoryFull) {
+              // 庫存滿 → 舊裝備丟掉
+              nextTools = s.tools.filter((t) => t.instanceId !== oldTool.instanceId);
+              droppedOldMsg = `（丟掉舊 ${oldTool.grade} ${oldTool.name}）`;
+            }
+            nextTools = [...nextTools, tool];
+            s.tools = nextTools;
+            s.staff = s.staff.map((d) =>
+              d.id === target.dogId ? { ...d, equippedToolId: tool.instanceId } : d,
+            );
+            const dogName = s.staff.find((d) => d.id === target.dogId)?.name ?? '';
+            const oldEquipMsg = oldTool && !inventoryFull
+              ? `（換下 ${oldTool.grade} ${oldTool.name}）`
+              : '';
+            newLogs.push({
+              day: s.day,
+              msg: `🧸 撿到 ${tool.grade} ${tool.name} → 自動裝給 ${dogName}${oldEquipMsg}${droppedOldMsg}`,
+            });
+            toast = {
+              msg: `🧸 ${tool.grade} ${tool.name} → ${dogName}`,
+              type: 'positive',
+            };
+            acquired = true;
+          } else if (!inventoryFull) {
+            // 沒人需要升級，但庫存有空 → 收入庫存
+            s.tools = [...s.tools, tool];
+            newLogs.push({
+              day: s.day,
+              msg: `🧸 撿到玩具：${tool.name}（${tool.grade}）`,
+            });
+            toast = { msg: `🧸 撿到 ${tool.grade} ${tool.name}`, type: 'positive' };
+            acquired = true;
+          } else {
+            // 沒人需要 + 庫存滿 → 嘗試擠掉庫存中更差的
+            const removeId = findReplaceableInInventory(s.tools, s.staff, tool);
             if (removeId) {
-              replacedTool = s.tools.find((t) => t.instanceId === removeId) ?? null;
-              nextTools = s.tools.filter((t) => t.instanceId !== removeId);
-            } else {
-              dropIntoBag = false;
+              const replaced = s.tools.find((t) => t.instanceId === removeId) ?? null;
+              s.tools = [
+                ...s.tools.filter((t) => t.instanceId !== removeId),
+                tool,
+              ];
               newLogs.push({
                 day: s.day,
-                msg: `🧸 撿到玩具但庫存已滿（${TOOL_CAP} 件且無可替換），${tool.name} 放生`,
+                msg: `🧸 撿到玩具：${tool.name}（${tool.grade}），擠掉 ${replaced?.grade} ${replaced?.name}`,
               });
-              toast = { msg: `玩具庫存已滿，${tool.name} 未收入`, type: 'negative' };
+              toast = {
+                msg: `🧸 撿到 ${tool.grade} ${tool.name}，擠掉 ${replaced?.name}`,
+                type: 'positive',
+              };
+              acquired = true;
+            } else {
+              newLogs.push({
+                day: s.day,
+                msg: `🧸 撿到 ${tool.grade} ${tool.name}，但所有人裝備與庫存都更好，丟棄`,
+              });
+              toast = { msg: `${tool.name} 較差，丟棄`, type: 'negative' };
             }
           }
-          if (dropIntoBag) {
-            s.tools = [...nextTools, tool];
+
+          if (acquired) {
             s.pendingToolDrops = [
               ...s.pendingToolDrops,
               {
@@ -463,19 +507,6 @@ export function runProjectsDay(state: GameState): DayResult {
                 tool,
               },
             ];
-            const replaceMsg = replacedTool
-              ? `（擠掉 ${replacedTool.grade} 級 ${replacedTool.name}）`
-              : '';
-            newLogs.push({
-              day: s.day,
-              msg: `🧸 撿到玩具：${tool.name}（${tool.grade}）${replaceMsg}`,
-            });
-            toast = {
-              msg: replacedTool
-                ? `🧸 撿到 ${tool.grade} 級 ${tool.name}，擠掉 ${replacedTool.name}`
-                : `🧸 撿到 ${tool.grade} 級玩具：${tool.name}`,
-              type: 'positive',
-            };
           }
         }
       }

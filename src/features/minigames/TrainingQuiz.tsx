@@ -38,8 +38,7 @@ export function TrainingQuiz() {
                   className="p-3 rounded-2xl text-sm text-center mb-3"
                   style={{ background: '#fff0f0', color: '#c0392b', border: '1px solid #e8c8c8' }}
                 >
-                  答對未滿 4 題，這次無法 +1 stat。<br />
-                  全員仍獲得 +{correctCount} 經驗。
+                  答對未滿 4 題，這次無法 +1 stat。
                 </div>
                 <button onClick={close} className="w-full" style={{ background: 'linear-gradient(180deg, #b6efab, #8ee28f)' }}>
                   關閉
@@ -146,7 +145,7 @@ export function TrainingQuiz() {
               </div>
             )}
             <div className="text-[11px] text-center mb-2" style={{ color: 'var(--muted)' }}>
-              答對 ≥ 4 題 → 可選 1 員工 +1 stat；答對 &lt; 4 → 全員 +經驗
+              答對 ≥ 4 題 → 可選 1 員工 +1 stat
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               <button onClick={close} style={{ background: '#dcecff' }}>

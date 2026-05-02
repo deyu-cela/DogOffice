@@ -77,11 +77,9 @@ export function generateCandidate(opts?: { role?: string }): Dog {
     image: ROLE_IMAGE_MAP[template.role] ?? '',
     isCEO: template.isCEO,
     interview: rand(INTERVIEW_QUESTIONS),
-    status: 'active',
     // 接案制欄位
     fatigue: 0,
     loyalty: 50,
-    experience: 0,
     assignedProjectId: null,
     daysAtCompany: 0,
     unhappyLeaveDays: 0,

@@ -62,11 +62,6 @@ export function DogStatusModal({ dog, onClose }: { dog: Dog; onClose: () => void
               >
                 {INDUSTRY_LABEL[industry]}
               </span>
-              {dog.status === 'pip' && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: '#fff0f0', color: '#d34a4a' }}>
-                  PIP {dog.pipDaysLeft}天
-                </span>
-              )}
             </div>
             <div className="text-xs" style={{ color: 'var(--muted)' }}>
               {dog.breed}・{dog.role}・日薪 ${dog.expectedSalary}

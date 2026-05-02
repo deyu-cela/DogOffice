@@ -5,6 +5,7 @@ import { CanvasTexture, DoubleSide, LinearFilter, LinearMipmapLinearFilter, Near
 import { JP_ASSETS } from './assets';
 import { gridToWorld } from './threeIso';
 import bgGardenUrl from '@/assets/bg-garden.jpg';
+import grokGar2Url from '@/assets/grok-gar2.jpg';
 import { useUiStore } from '@/store/uiStore';
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
@@ -845,17 +846,27 @@ function Windows3D() {
   if (windows <= 0) return null;
   return (
     <>
+      <WindowBackdrop
+        position={[-HALF + 0.015, WALL_H * 0.58, 0.5]}
+        rotationY={Math.PI / 2}
+      />
       <WallWindow
         position={[-HALF + 0.03, WALL_H * 0.58, 0.5]}
         rotationY={Math.PI / 2}
         theme={theme}
       />
       {windows >= 2 && (
-        <WallWindow
-          position={[-1, WALL_H * 0.58, -HALF + 0.03]}
-          rotationY={0}
-          theme={theme}
-        />
+        <>
+          <WindowBackdrop
+            position={[-1, WALL_H * 0.58, -HALF + 0.015]}
+            rotationY={0}
+          />
+          <WallWindow
+            position={[-1, WALL_H * 0.58, -HALF + 0.03]}
+            rotationY={0}
+            theme={theme}
+          />
+        </>
       )}
     </>
   );
@@ -1666,9 +1677,31 @@ function floorGridColorFor(theme: WindowTheme | undefined, floorCol: string): st
   return '#d9b890';                            // 預設 kawaii 淡粉棕
 }
 
+const FRAME_COLORS: Record<WindowTheme, { frame: string; hi: string; muntin: string; sill: string }> = {
+  kawaii: { frame: '#d4a574', hi: '#f3d9b0', muntin: '#e8c49b', sill: '#b88862' },
+  shibuya: { frame: '#a3896a', hi: '#c4a882', muntin: '#b89a7a', sill: '#7a6444' },
+  skyline: { frame: '#7a94a8', hi: '#a5bac9', muntin: '#94a8b8', sill: '#5a6a80' },
+  zen: { frame: '#2a1a10', hi: '#c9a064', muntin: '#8a6a40', sill: '#1a0e08' },
+};
+
+const _frameOnlyCache = new Map<WindowTheme, CanvasTexture>();
+function getFrameOnlyTexture(theme: WindowTheme): CanvasTexture {
+  const cached = _frameOnlyCache.get(theme);
+  if (cached) return cached;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 192;
+  const ctx = canvas.getContext('2d')!;
+  const c = FRAME_COLORS[theme];
+  drawWindowFrame(ctx, canvas.width, canvas.height, c.frame, c.hi, c.muntin, c.sill);
+  const tex = finalizeTex(canvas);
+  _frameOnlyCache.set(theme, tex);
+  return tex;
+}
+
 /**
- * 牆面窗戶 + 窗外花園
- * 單 plane mesh（框/窗格/窗台/風景都畫在同一張 CanvasTexture）
+ * 牆面窗戶（玻璃透明 → 後方放 WindowBackdrop 顯示窗外景）
+ * 此 plane 只畫窗框 + 窗格 + 窗台，玻璃區 alpha=0
  */
 function WallWindow({
   position,
@@ -1683,11 +1716,37 @@ function WallWindow({
   width?: number;
   height?: number;
 }) {
-  const tex = getSceneryTextureFor(theme);
+  const tex = getFrameOnlyTexture(theme);
   return (
     <mesh position={position} rotation={[0, rotationY, 0]}>
       <planeGeometry args={[width, height]} />
-      <meshBasicMaterial map={tex} side={DoubleSide} toneMapped={false} transparent />
+      <meshBasicMaterial map={tex} side={DoubleSide} toneMapped={false} transparent alphaTest={0.01} />
+    </mesh>
+  );
+}
+
+function WindowBackdrop({
+  position,
+  rotationY,
+  width = 2.8,
+  height = 2.2,
+}: {
+  position: [number, number, number];
+  rotationY: number;
+  width?: number;
+  height?: number;
+}) {
+  const tex = useTexture(grokGar2Url);
+  useMemo(() => {
+    // 放大 2x，只顯示圖片左邊中間
+    tex.repeat.set(0.5, 0.5);
+    tex.offset.set(0, 0.25);
+    tex.needsUpdate = true;
+  }, [tex]);
+  return (
+    <mesh position={position} rotation={[0, rotationY, 0]}>
+      <planeGeometry args={[width, height]} />
+      <meshBasicMaterial map={tex} side={DoubleSide} toneMapped={false} />
     </mesh>
   );
 }

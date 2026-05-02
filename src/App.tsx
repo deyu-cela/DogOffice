@@ -22,7 +22,6 @@ import { ToolPickerModal } from '@/features/staff/ToolPickerModal';
 import { GachaModal } from '@/features/recruit/GachaModal';
 import { ShopModal } from '@/features/shop/ShopModal';
 import { ProjectDetailModal } from '@/features/clients/ProjectDetailModal';
-import { VictoryModal } from '@/features/victory/VictoryModal';
 import { FrisbeeGame } from '@/features/minigames/FrisbeeGame';
 import { MemoryGame } from '@/features/minigames/MemoryGame';
 import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
@@ -135,7 +134,6 @@ export default function App() {
       <TraitChoiceModal />
       <ToolPickerModal />
       <BankLoanModal />
-      <VictoryModal />
       <ConflictModal />
       {showAchievements && <AchievementsScreen />}
       <AchievementToast />

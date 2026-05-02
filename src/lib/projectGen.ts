@@ -164,57 +164,28 @@ export function fillInbox(
     return clients.filter((c) => c.status !== 'offered');
   }
   const allowed = new Set(openIndustries);
-  // 1. 把已關閉產業的 offered 清掉（player 關了 team 就不該再有那產業 offered）
+  // 1. 把已關閉產業的 offered 清掉
   const culled = clients.filter((c) => c.status !== 'offered' || allowed.has(c.category));
   const active = culled.filter((c) => c.status === 'active');
   const offered = culled.filter((c) => c.status === 'offered');
   const liveSlotsLeft = Math.max(0, INBOX_SIZE - active.length);
-  // 2. 為每個沒有 offered 的 open 產業預留 1 個 slot，避免新開 team 等不到案子
-  const presentIndustries = new Set(offered.map((p) => p.category));
-  const starvedIndustries = openIndustries.filter((ind) => !presentIndustries.has(ind));
-  const reserved = Math.min(starvedIndustries.length, liveSlotsLeft);
-  const slotsForExisting = Math.max(0, liveSlotsLeft - reserved);
-  // 已存在 offered 的產業數量（避開 starved）
-  const existingIndustryCount = openIndustries.length - starvedIndustries.length;
-  const perIndustryCap = existingIndustryCount > 0
-    ? Math.max(1, Math.ceil(slotsForExisting / existingIndustryCount))
-    : 0;
-  const keptByIndustry = new Map<ProjectCategory, number>();
-  const keptOfferedIds = new Set<string>();
+  // 2. 每種產業只保留 1 張 offered（多張時保留最早建立的）
+  const keptByIndustry = new Map<ProjectCategory, Project>();
   for (const p of offered) {
-    const used = keptByIndustry.get(p.category) ?? 0;
-    if (used >= perIndustryCap) continue;
-    if (keptOfferedIds.size >= slotsForExisting) break;
-    keptOfferedIds.add(p.id);
-    keptByIndustry.set(p.category, used + 1);
-  }
-  const cappedClients = culled.filter((c) => c.status !== 'offered' || keptOfferedIds.has(c.id));
-  const cappedOffered = cappedClients.filter((c) => c.status === 'offered');
-  const needed = liveSlotsLeft - cappedOffered.length;
-  if (needed <= 0) return cappedClients;
-  // 3. 補新案：依 open 產業 round-robin；starved 產業（原本 0 個 offered）優先補
-  const offeredByIndustry = new Map<ProjectCategory, number>();
-  for (const c of cappedOffered) {
-    offeredByIndustry.set(c.category, (offeredByIndustry.get(c.category) ?? 0) + 1);
-  }
-  const orderedIndustries = [
-    ...starvedIndustries,
-    ...openIndustries.filter((ind) => !starvedIndustries.includes(ind)),
-  ];
-  const fresh: Project[] = [];
-  for (let i = 0; i < needed; i++) {
-    // 每輪挑「目前 offered 數量最少」的產業；ties 時 starved 在前，先選到
-    let pickedIndustry = orderedIndustries[0];
-    let minCount = Infinity;
-    for (const ind of orderedIndustries) {
-      const c = (offeredByIndustry.get(ind) ?? 0);
-      if (c < minCount) {
-        minCount = c;
-        pickedIndustry = ind;
-      }
+    const cur = keptByIndustry.get(p.category);
+    if (!cur || p.createdDay < cur.createdDay) {
+      keptByIndustry.set(p.category, p);
     }
-    offeredByIndustry.set(pickedIndustry, (offeredByIndustry.get(pickedIndustry) ?? 0) + 1);
-    fresh.push(generateProject(tierBudget, currentDay, officeLevel, rerollPenalty, undefined, pickedIndustry));
+  }
+  const keptIds = new Set(Array.from(keptByIndustry.values()).map((p) => p.id));
+  const cappedClients = culled.filter((c) => c.status !== 'offered' || keptIds.has(c.id));
+  // 3. 為缺席的 open 產業各補 1 張（受 liveSlotsLeft 限制）
+  const missingIndustries = openIndustries.filter((ind) => !keptByIndustry.has(ind));
+  const slotsAvailable = Math.max(0, liveSlotsLeft - keptByIndustry.size);
+  const toGenerate = Math.min(missingIndustries.length, slotsAvailable);
+  const fresh: Project[] = [];
+  for (let i = 0; i < toGenerate; i++) {
+    fresh.push(generateProject(tierBudget, currentDay, officeLevel, rerollPenalty, undefined, missingIndustries[i]));
   }
   return [...cappedClients, ...fresh];
 }
@@ -224,19 +195,22 @@ export function rerollCost(tierBudget: number): number {
   return Math.round(50 + 5 * tierBudget * 0.5);
 }
 
-// ---- 重 roll inbox：清掉 5 個 offered 重生成 ----
+// ---- 重 roll inbox：每個 open 產業重生成 1 張 ----
 export function rerollInbox(
   clients: Project[],
   tierBudget: number,
   currentDay: number,
   officeLevel: number,
+  openIndustries: ProjectCategory[] = [],
 ): Project[] {
   const others = clients.filter((c) => c.status !== 'offered');
+  if (openIndustries.length === 0) return others;
   const activeCount = others.filter((c) => c.status === 'active').length;
   const offeredSlots = Math.max(0, INBOX_SIZE - activeCount);
+  const toGenerate = Math.min(openIndustries.length, offeredSlots);
   const fresh: Project[] = [];
-  for (let i = 0; i < offeredSlots; i++) {
-    fresh.push(generateProject(tierBudget, currentDay, officeLevel, true));
+  for (let i = 0; i < toGenerate; i++) {
+    fresh.push(generateProject(tierBudget, currentDay, officeLevel, true, undefined, openIndustries[i]));
   }
   return [...fresh, ...others];
 }

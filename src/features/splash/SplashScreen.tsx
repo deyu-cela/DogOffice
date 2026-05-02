@@ -19,8 +19,6 @@ export function SplashScreen() {
   const money = useGameStore((s) => s.money);
   const officeLevel = useGameStore((s) => s.officeLevel);
   const staff = useGameStore((s) => s.staff);
-  const projectsCompleted = useGameStore((s) => s.projectsCompleted);
-  const ipoAchievedAt = useGameStore((s) => s.ipoAchievedAt);
   const bankrupt = useGameStore((s) => s.bankrupt);
   const authStatus = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
@@ -89,8 +87,6 @@ export function SplashScreen() {
             money={money}
             officeLevel={officeLevel}
             staffCount={staff.length}
-            projectsCompleted={projectsCompleted}
-            ipoAchievedAt={ipoAchievedAt}
             bankrupt={bankrupt}
             hasSave={hasSave}
             loadingSave={loadingSave}
