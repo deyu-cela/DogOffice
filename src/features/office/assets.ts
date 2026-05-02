@@ -32,6 +32,8 @@ export const JP_ASSETS = {
   constructionDog: `${BASE}construction-dog.png`,
   gptFloor: `${BASE}gpt_floor.png`,
   gptWall: `${BASE}gpt_wall.png`,
+  gptFloorCar: `${BASE}gpt_floor_car.png`,
+  gptWallCar: `${BASE}gpt_wall_car.png`,
 } as const;
 
 export const PIXEL_IMG_STYLE: React.CSSProperties = {

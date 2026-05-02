@@ -1,5 +1,23 @@
 ﻿import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
+import { JP_ASSETS } from './assets';
+import bgCarUrl from '@/assets/gpt-bg-car.png';
+import bgGardenUrl from '@/assets/bg-garden.jpg';
+import bg3Url from '@/assets/gpt-bg-3.png';
+import bg4Url from '@/assets/gpt-bg-4.png';
+import bg5Url from '@/assets/gpt-bg-5.png';
+import wall3Url from '@/assets/gpt-wall-3.png';
+import wall4Url from '@/assets/gpt-wall-4.png';
+import wall5Url from '@/assets/gpt-wall-5.png';
+
+const SKIN_BG_BY_LEVEL = [bgCarUrl, bgGardenUrl, bg3Url, bg4Url, bg5Url];
+const SKIN_WALL_BY_LEVEL = [
+  JP_ASSETS.gptWallCar,
+  JP_ASSETS.gptWall,
+  wall3Url,
+  wall4Url,
+  wall5Url,
+];
 
 export function OfficeSkinModal({ onClose }: { onClose: () => void }) {
   const officeLevel = useGameStore((s) => s.officeLevel);
@@ -45,6 +63,8 @@ export function OfficeSkinModal({ onClose }: { onClose: () => void }) {
           {OFFICE_LEVELS.map((lv, i) => {
             const locked = i > officeLevel;
             const active = i === officeSkin;
+            const bgUrl = SKIN_BG_BY_LEVEL[i];
+            const wallUrl = SKIN_WALL_BY_LEVEL[i];
             return (
               <button
                 key={i}
@@ -57,11 +77,13 @@ export function OfficeSkinModal({ onClose }: { onClose: () => void }) {
                 }}
                 className="p-3 rounded-2xl text-left flex items-center gap-3"
                 style={{
-                  background: active
-                    ? 'linear-gradient(180deg, #d4ecca, #b6efab)'
-                    : locked
-                      ? 'rgba(240,234,222,0.5)'
-                      : 'rgba(255,255,255,0.85)',
+                  backgroundImage: locked
+                    ? undefined
+                    : `linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.55)), url(${wallUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundColor: locked ? 'rgba(240,234,222,0.5)' : 'transparent',
                   border: active
                     ? '2px solid #66bb6a'
                     : locked
@@ -71,32 +93,18 @@ export function OfficeSkinModal({ onClose }: { onClose: () => void }) {
                   cursor: locked ? 'not-allowed' : 'pointer',
                 }}
               >
-                {/* 配色預覽 */}
+                {/* 背景圖預覽 */}
                 <div
                   className="rounded-xl flex-shrink-0"
                   style={{
                     width: 56,
                     height: 56,
-                    background: `linear-gradient(135deg, ${lv.wall} 0%, ${lv.wallRight ?? lv.wall} 50%, ${lv.floor} 100%)`,
+                    backgroundImage: `url(${bgUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
                     border: '1.5px solid rgba(90,70,54,0.15)',
-                    position: 'relative',
                   }}
-                >
-                  {lv.accent && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        right: 4,
-                        bottom: 4,
-                        width: 14,
-                        height: 14,
-                        borderRadius: '50%',
-                        background: lv.accent,
-                        border: '1.5px solid white',
-                      }}
-                    />
-                  )}
-                </div>
+                />
 
                 {/* 文字 */}
                 <div className="flex-1 min-w-0">

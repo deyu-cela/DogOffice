@@ -5,6 +5,22 @@ import { CanvasTexture, DoubleSide, LinearFilter, LinearMipmapLinearFilter, Near
 import { JP_ASSETS } from './assets';
 import { gridToWorld } from './threeIso';
 import bgGardenUrl from '@/assets/bg-garden.jpg';
+import bgCarUrl from '@/assets/gpt-bg-car.png';
+import bg3Url from '@/assets/gpt-bg-3.png';
+import bg4Url from '@/assets/gpt-bg-4.png';
+import bg5Url from '@/assets/gpt-bg-5.png';
+import floor3Url from '@/assets/gpt-floor-3.png';
+import wall3Url from '@/assets/gpt-wall-3.png';
+import floor4Url from '@/assets/gpt-floor-4.png';
+import wall4Url from '@/assets/gpt-wall-4.png';
+import floor5Url from '@/assets/gpt-floor-5.png';
+import wall5Url from '@/assets/gpt-wall-5.png';
+import gptWindowUrl from '@/assets/gpt-window.png';
+import window2Url from '@/assets/gpt-window-2.png';
+import window4Url from '@/assets/gpt-window-4.png';
+import window4RUrl from '@/assets/gpt-window-4-r.png';
+import window5LUrl from '@/assets/gpt-window-5-l.png';
+import window5RUrl from '@/assets/gpt-window-5-r.png';
 import grokGar2Url from '@/assets/grok-gar2.jpg';
 import { useUiStore } from '@/store/uiStore';
 import { useGameStore } from '@/store/gameStore';
@@ -45,6 +61,8 @@ const PRELOAD_URLS = [
   JP_ASSETS.sakuraPetal,
   JP_ASSETS.gptFloor,
   JP_ASSETS.gptWall,
+  JP_ASSETS.gptFloorCar,
+  JP_ASSETS.gptWallCar,
   JP_ASSETS.lanternRed,
 ];
 
@@ -65,10 +83,17 @@ function usePixelTexture(src: string): Texture {
 // 用 BoxGeometry 做厚度，頂面貼圖、側面給偏暗粉色（模仿 kawaii home shop 浮起地板的立體感）
 const FLOOR_THICKNESS = 0.5;
 const FLOOR_SIDE_TINT = '#dca997'; // 以地板貼圖乘上稍深色調，當地板側邊
+const FLOOR_CAR_SIDE_TINT = '#bfc0bd';
 // 地板要延伸到牆外緣下方（-x 和 -z 各多一個 WALL_THICKNESS），讓牆看起來是站在地板上
 // 只向左後擴，前與右邊（-x/-z 視為後左，+x/+z 視為前右）保持 HALF 不變
-function FloorImageMesh() {
-  const tex = usePixelTexture(JP_ASSETS.gptFloor);
+function FloorImageMesh({
+  src = JP_ASSETS.gptFloor,
+  sideTint = FLOOR_SIDE_TINT,
+}: {
+  src?: string;
+  sideTint?: string;
+} = {}) {
+  const tex = usePixelTexture(src);
   useLayoutEffect(() => {
     tex.repeat.set(996 / 1536, 1020 / 1024);
     tex.offset.set(270 / 1536, 2 / 1024);
@@ -80,12 +105,12 @@ function FloorImageMesh() {
     <mesh position={[floorCx, -FLOOR_THICKNESS / 2, floorCx]}>
       <boxGeometry args={[floorW, FLOOR_THICKNESS, floorW]} />
       {/* BoxGeometry 面序：[+x, -x, +y(top), -y, +z, -z] */}
-      <meshBasicMaterial attach="material-0" map={tex} color={FLOOR_SIDE_TINT} />
-      <meshBasicMaterial attach="material-1" map={tex} color={FLOOR_SIDE_TINT} />
+      <meshBasicMaterial attach="material-0" map={tex} color={sideTint} />
+      <meshBasicMaterial attach="material-1" map={tex} color={sideTint} />
       <meshBasicMaterial attach="material-2" map={tex} />
-      <meshBasicMaterial attach="material-3" map={tex} color={FLOOR_SIDE_TINT} />
-      <meshBasicMaterial attach="material-4" map={tex} color={FLOOR_SIDE_TINT} />
-      <meshBasicMaterial attach="material-5" map={tex} color={FLOOR_SIDE_TINT} />
+      <meshBasicMaterial attach="material-3" map={tex} color={sideTint} />
+      <meshBasicMaterial attach="material-4" map={tex} color={sideTint} />
+      <meshBasicMaterial attach="material-5" map={tex} color={sideTint} />
     </mesh>
   );
 }
@@ -94,8 +119,17 @@ function FloorImageMesh() {
 // 兩面牆共用同一個 useTexture 來源，需 clone 才能各自設定 repeat/offset
 const WALL_THICKNESS = 0.5;
 const WALL_CAP_TINT = '#f7dfd0'; // 牆面 cap（頂 + 端）保留牆貼圖，只稍微壓暗做厚度
-function WallImageMesh({ variant }: { variant: 'left' | 'right' }) {
-  const baseTex = usePixelTexture(JP_ASSETS.gptWall);
+const WALL_CAR_CAP_TINT = '#d8d8d9';
+function WallImageMesh({
+  variant,
+  src = JP_ASSETS.gptWall,
+  capTint = WALL_CAP_TINT,
+}: {
+  variant: 'left' | 'right';
+  src?: string;
+  capTint?: string;
+}) {
+  const baseTex = usePixelTexture(src);
   const tex = useMemo(() => baseTex.clone(), [baseTex]);
   useLayoutEffect(() => {
     if (variant === 'right') {
@@ -115,11 +149,11 @@ function WallImageMesh({ variant }: { variant: 'left' | 'right' }) {
         <boxGeometry args={[WALL_THICKNESS, WALL_H, ROOM]} />
         {/* [+x, -x, +y, -y, +z, -z] */}
         <meshBasicMaterial attach="material-0" map={tex} />
-        <meshBasicMaterial attach="material-1" map={tex} color={WALL_CAP_TINT} />
-        <meshBasicMaterial attach="material-2" map={tex} color={WALL_CAP_TINT} />
-        <meshBasicMaterial attach="material-3" map={tex} color={WALL_CAP_TINT} />
-        <meshBasicMaterial attach="material-4" map={tex} color={WALL_CAP_TINT} />
-        <meshBasicMaterial attach="material-5" map={tex} color={WALL_CAP_TINT} />
+        <meshBasicMaterial attach="material-1" map={tex} color={capTint} />
+        <meshBasicMaterial attach="material-2" map={tex} color={capTint} />
+        <meshBasicMaterial attach="material-3" map={tex} color={capTint} />
+        <meshBasicMaterial attach="material-4" map={tex} color={capTint} />
+        <meshBasicMaterial attach="material-5" map={tex} color={capTint} />
       </mesh>
     );
   }
@@ -127,12 +161,63 @@ function WallImageMesh({ variant }: { variant: 'left' | 'right' }) {
   return (
     <mesh position={[0, WALL_H / 2, -HALF - WALL_THICKNESS / 2]}>
       <boxGeometry args={[ROOM, WALL_H, WALL_THICKNESS]} />
-      <meshBasicMaterial attach="material-0" map={tex} color={WALL_CAP_TINT} />
-      <meshBasicMaterial attach="material-1" map={tex} color={WALL_CAP_TINT} />
-      <meshBasicMaterial attach="material-2" map={tex} color={WALL_CAP_TINT} />
-      <meshBasicMaterial attach="material-3" map={tex} color={WALL_CAP_TINT} />
+      <meshBasicMaterial attach="material-0" map={tex} color={capTint} />
+      <meshBasicMaterial attach="material-1" map={tex} color={capTint} />
+      <meshBasicMaterial attach="material-2" map={tex} color={capTint} />
+      <meshBasicMaterial attach="material-3" map={tex} color={capTint} />
       <meshBasicMaterial attach="material-4" map={tex} />
-      <meshBasicMaterial attach="material-5" map={tex} color={WALL_CAP_TINT} />
+      <meshBasicMaterial attach="material-5" map={tex} color={capTint} />
+    </mesh>
+  );
+}
+
+function FloorColorMesh({ floorCol, theme }: { floorCol: string; theme?: WindowTheme }) {
+  const floorTex = getFloorTexture(floorCol, floorGridColorFor(theme, floorCol));
+  const sideDim = '#d7d7d7';
+  const bottomDim = '#c8c8c8';
+  const floorW = ROOM + WALL_THICKNESS;
+  const floorCx = -WALL_THICKNESS / 2;
+  return (
+    <mesh position={[floorCx, -FLOOR_THICKNESS / 2, floorCx]}>
+      <boxGeometry args={[floorW, FLOOR_THICKNESS, floorW]} />
+      <meshBasicMaterial attach="material-0" map={floorTex} color={sideDim} />
+      <meshBasicMaterial attach="material-1" map={floorTex} color={sideDim} />
+      <meshBasicMaterial attach="material-2" map={floorTex} />
+      <meshBasicMaterial attach="material-3" map={floorTex} color={bottomDim} />
+      <meshBasicMaterial attach="material-4" map={floorTex} color={sideDim} />
+      <meshBasicMaterial attach="material-5" map={floorTex} color={sideDim} />
+    </mesh>
+  );
+}
+
+function WallColorMesh({ variant, wallCol }: { variant: 'left' | 'right'; wallCol: string }) {
+  const wallTex = getWallTexture(wallCol);
+  const capDim = '#e1e1e1';
+  const shadowDim = '#d2d2d2';
+
+  if (variant === 'left') {
+    return (
+      <mesh position={[-HALF - WALL_THICKNESS / 2, WALL_H / 2, 0]}>
+        <boxGeometry args={[WALL_THICKNESS, WALL_H, ROOM]} />
+        <meshBasicMaterial attach="material-0" map={wallTex} />
+        <meshBasicMaterial attach="material-1" map={wallTex} color={shadowDim} />
+        <meshBasicMaterial attach="material-2" map={wallTex} color={capDim} />
+        <meshBasicMaterial attach="material-3" map={wallTex} color={shadowDim} />
+        <meshBasicMaterial attach="material-4" map={wallTex} color={capDim} />
+        <meshBasicMaterial attach="material-5" map={wallTex} color={capDim} />
+      </mesh>
+    );
+  }
+
+  return (
+    <mesh position={[0, WALL_H / 2, -HALF - WALL_THICKNESS / 2]}>
+      <boxGeometry args={[ROOM, WALL_H, WALL_THICKNESS]} />
+      <meshBasicMaterial attach="material-0" map={wallTex} color={capDim} />
+      <meshBasicMaterial attach="material-1" map={wallTex} color={capDim} />
+      <meshBasicMaterial attach="material-2" map={wallTex} color={capDim} />
+      <meshBasicMaterial attach="material-3" map={wallTex} color={shadowDim} />
+      <meshBasicMaterial attach="material-4" map={wallTex} />
+      <meshBasicMaterial attach="material-5" map={wallTex} color={shadowDim} />
     </mesh>
   );
 }
@@ -335,7 +420,7 @@ export function ThreeRoom() {
       ref={containerRef}
       className="absolute inset-0"
       style={{
-        backgroundImage: `linear-gradient(180deg, rgba(220,238,255,0.18) 0%, rgba(220,238,255,0.08) 60%, rgba(255,247,220,0.12) 100%), url(${bgGardenUrl})`,
+        backgroundImage: `linear-gradient(180deg, rgba(220,238,255,0.18) 0%, rgba(220,238,255,0.08) 60%, rgba(255,247,220,0.12) 100%), url(${officeSkin === 0 ? bgCarUrl : officeSkin === 2 ? bg3Url : officeSkin === 3 ? bg4Url : officeSkin === 4 ? bg5Url : bgGardenUrl})`,
         backgroundSize: 'cover, cover',
         backgroundPosition: 'center, center',
         backgroundRepeat: 'no-repeat, no-repeat',
@@ -378,39 +463,59 @@ export function ThreeRoom() {
         {/* DemandPulse 用於 useFrame 動畫（如櫻花），目前都關閉了不需要持續觸發 */}
         {/* <DemandPulse rate={15} /> */}
 
-        {/* 地板：kawaii 主題用 gpt_floor.png 貼圖，其他主題保留程式繪製 */}
+        {/* 地板：所有主題都用 BoxGeometry 保留立體厚度 */}
         {level?.theme === 'kawaii' ? (
-          <FloorImageMesh />
+          <FloorImageMesh
+            src={officeSkin === 0 ? JP_ASSETS.gptFloorCar : JP_ASSETS.gptFloor}
+            sideTint={officeSkin === 0 ? FLOOR_CAR_SIDE_TINT : FLOOR_SIDE_TINT}
+          />
+        ) : officeSkin === 2 ? (
+          <FloorImageMesh src={floor3Url} sideTint="#c89a72" />
+        ) : officeSkin === 3 ? (
+          <FloorImageMesh src={floor4Url} sideTint="#5a6878" />
+        ) : officeSkin === 4 ? (
+          <FloorImageMesh src={floor5Url} sideTint="#e8dcc4" />
         ) : (
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-            <planeGeometry args={[ROOM, ROOM]} />
-            <meshBasicMaterial map={getFloorTexture(floorCol, floorGridColorFor(level?.theme, floorCol))} />
-          </mesh>
+          <FloorColorMesh floorCol={floorCol} theme={level?.theme} />
         )}
 
         {/* 左後牆（依 officeLevel 變色） */}
         {level?.theme === 'kawaii' ? (
-          <WallImageMesh variant="left" />
+          <WallImageMesh
+            variant="left"
+            src={officeSkin === 0 ? JP_ASSETS.gptWallCar : JP_ASSETS.gptWall}
+            capTint={officeSkin === 0 ? WALL_CAR_CAP_TINT : WALL_CAP_TINT}
+          />
+        ) : officeSkin === 2 ? (
+          <WallImageMesh variant="left" src={wall3Url} capTint="#d8b890" />
+        ) : officeSkin === 3 ? (
+          <WallImageMesh variant="left" src={wall4Url} capTint="#7a86a0" />
+        ) : officeSkin === 4 ? (
+          <WallImageMesh variant="left" src={wall5Url} capTint="#f4ecd8" />
         ) : (
-          <mesh position={[-HALF, WALL_H / 2, 0]} rotation={[0, Math.PI / 2, 0]}>
-            <planeGeometry args={[ROOM, WALL_H]} />
-            <meshBasicMaterial map={getWallTexture(wallLeft)} side={DoubleSide} />
-          </mesh>
+          <WallColorMesh variant="left" wallCol={wallLeft} />
         )}
 
         {/* 右後牆（kawaii 主題水平鏡像避免和左牆完全一樣） */}
         {level?.theme === 'kawaii' ? (
-          <WallImageMesh variant="right" />
+          <WallImageMesh
+            variant="right"
+            src={officeSkin === 0 ? JP_ASSETS.gptWallCar : JP_ASSETS.gptWall}
+            capTint={officeSkin === 0 ? WALL_CAR_CAP_TINT : WALL_CAP_TINT}
+          />
+        ) : officeSkin === 2 ? (
+          <WallImageMesh variant="right" src={wall3Url} capTint="#d8b890" />
+        ) : officeSkin === 3 ? (
+          <WallImageMesh variant="right" src={wall4Url} capTint="#7a86a0" />
+        ) : officeSkin === 4 ? (
+          <WallImageMesh variant="right" src={wall5Url} capTint="#f4ecd8" />
         ) : (
-          <mesh position={[0, WALL_H / 2, -HALF]}>
-            <planeGeometry args={[ROOM, WALL_H]} />
-            <meshBasicMaterial map={getWallTexture(wallRight)} side={DoubleSide} />
-          </mesh>
+          <WallColorMesh variant="right" wallCol={wallRight} />
         )}
 
 
         {/* Accent 橫帶（中型以上有：左牆 + 右牆各一條） */}
-        {accent && (
+        {accent && officeSkin !== 2 && officeSkin !== 3 && officeSkin !== 4 && (
           <>
             <mesh position={[-HALF + 0.01, WALL_H * 0.86, 0]} rotation={[0, Math.PI / 2, 0]}>
               <planeGeometry args={[ROOM, 0.25]} />
@@ -624,6 +729,7 @@ function WallPolicy3D() {
     <mesh
       position={[-HALF + 0.04, WALL_H * 0.55, -3]}
       rotation={[0, Math.PI / 2, 0]}
+      renderOrder={10}
       onClick={(e) => {
         e.stopPropagation();
         openFacilityInfo('policy');
@@ -637,7 +743,7 @@ function WallPolicy3D() {
       }}
     >
       <planeGeometry args={[1.3, 1.8]} />
-      <meshBasicMaterial map={texture} transparent alphaTest={0.1} side={DoubleSide} />
+      <meshBasicMaterial map={texture} transparent alphaTest={0.1} side={DoubleSide} depthTest={false} />
     </mesh>
   );
 }
@@ -843,28 +949,91 @@ function Windows3D() {
   const level = OFFICE_LEVELS[officeSkin];
   const windows = level?.windows ?? 0;
   const theme = (level?.theme as WindowTheme | undefined) ?? 'kawaii';
+  const useGptWindow = officeSkin === 2;
+  const windowY = WALL_H * (useGptWindow ? 0.6 : 0.58);
+  const windowW = useGptWindow ? 3.55 : 2.8;
+  const windowH = useGptWindow ? 3.55 : 2.2;
   if (windows <= 0) return null;
+  if (officeSkin === 4) {
+    return (
+      <>
+        <FloorToCeilingWindow
+          position={[-HALF + 0.035, WALL_H * 0.5, 0]}
+          rotationY={Math.PI / 2}
+          width={ROOM - 0.7}
+          height={7.55}
+          theme={theme}
+          viewSrc={window5LUrl}
+          paneCount={7}
+          luxury
+        />
+        <FloorToCeilingWindow
+          position={[0, WALL_H * 0.5, -HALF + 0.035]}
+          rotationY={0}
+          width={ROOM - 0.7}
+          height={7.55}
+          theme={theme}
+          viewSrc={window5RUrl}
+          paneCount={7}
+          luxury
+        />
+      </>
+    );
+  }
+  if (officeSkin === 3) {
+    return (
+      <>
+        <FloorToCeilingWindow
+          position={[-HALF + 0.035, WALL_H * 0.48, 0.35]}
+          rotationY={Math.PI / 2}
+          width={6.0}
+          height={6.7}
+          theme={theme}
+        />
+        <FloorToCeilingWindow
+          position={[0.35, WALL_H * 0.48, -HALF + 0.035]}
+          rotationY={0}
+          width={6.8}
+          height={6.7}
+          theme={theme}
+          viewSrc={window4RUrl}
+        />
+      </>
+    );
+  }
   return (
     <>
       <WindowBackdrop
-        position={[-HALF + 0.015, WALL_H * 0.58, 0.5]}
-        rotationY={Math.PI / 2}
-      />
-      <WallWindow
-        position={[-HALF + 0.03, WALL_H * 0.58, 0.5]}
+        position={[-HALF + 0.015, windowY, 0.5]}
         rotationY={Math.PI / 2}
         theme={theme}
+        width={windowW}
+        height={windowH}
+      />
+      <WallWindow
+        position={[-HALF + 0.03, windowY, 0.5]}
+        rotationY={Math.PI / 2}
+        theme={theme}
+        useGptWindow={useGptWindow}
+        width={windowW}
+        height={windowH}
       />
       {windows >= 2 && (
         <>
           <WindowBackdrop
-            position={[-1, WALL_H * 0.58, -HALF + 0.015]}
-            rotationY={0}
-          />
-          <WallWindow
-            position={[-1, WALL_H * 0.58, -HALF + 0.03]}
+            position={[-1, windowY, -HALF + 0.015]}
             rotationY={0}
             theme={theme}
+            width={windowW}
+            height={windowH}
+          />
+          <WallWindow
+            position={[-1, windowY, -HALF + 0.03]}
+            rotationY={0}
+            theme={theme}
+            useGptWindow={useGptWindow}
+            width={windowW}
+            height={windowH}
           />
         </>
       )}
@@ -1679,10 +1848,69 @@ function floorGridColorFor(theme: WindowTheme | undefined, floorCol: string): st
 
 const FRAME_COLORS: Record<WindowTheme, { frame: string; hi: string; muntin: string; sill: string }> = {
   kawaii: { frame: '#d4a574', hi: '#f3d9b0', muntin: '#e8c49b', sill: '#b88862' },
-  shibuya: { frame: '#a3896a', hi: '#c4a882', muntin: '#b89a7a', sill: '#7a6444' },
+  shibuya: { frame: '#4a2a16', hi: '#c9a064', muntin: '#6a3e22', sill: '#2a1408' },
   skyline: { frame: '#7a94a8', hi: '#a5bac9', muntin: '#94a8b8', sill: '#5a6a80' },
   zen: { frame: '#2a1a10', hi: '#c9a064', muntin: '#8a6a40', sill: '#1a0e08' },
 };
+
+// 歐中風格拱形窗（深木 + 金色高光 + 拱頂 keystone + 4 格分割）
+function drawEuroChineseFrame(
+  ctx: CanvasRenderingContext2D,
+  W: number, H: number,
+  frameCol: string, frameHi: string, muntinCol: string, sillCol: string,
+) {
+  const frameT = 12;
+  const muntinT = 3;
+  const sillH = 8;
+  const cx = W / 2;
+  const archCy = cx; // 拱心 y = 半寬，拱形佔上半畫布
+  const innerR = cx - frameT;
+  const glassBot = H - sillH - frameT;
+
+  // 拱形頂部外環（外圓 - 內圓）
+  ctx.fillStyle = frameCol;
+  ctx.beginPath();
+  ctx.arc(cx, archCy, cx, Math.PI, 0);
+  ctx.arc(cx, archCy, innerR, 0, Math.PI, true);
+  ctx.closePath();
+  ctx.fill();
+
+  // 左右兩側立柱（拱腳到 sill 上緣）
+  ctx.fillRect(0, archCy, frameT, H - sillH - archCy);
+  ctx.fillRect(W - frameT, archCy, frameT, H - sillH - archCy);
+  // 下方橫樑
+  ctx.fillRect(0, glassBot, W, frameT);
+
+  // 內側金色高光線
+  ctx.fillStyle = frameHi;
+  ctx.fillRect(frameT, archCy, 2, glassBot - archCy);
+  ctx.fillRect(W - frameT - 2, archCy, 2, glassBot - archCy);
+  // 拱形內邊金線
+  ctx.beginPath();
+  ctx.arc(cx, archCy, innerR + 1, Math.PI, 0);
+  ctx.arc(cx, archCy, innerR - 1, 0, Math.PI, true);
+  ctx.closePath();
+  ctx.fill();
+
+  // 中央 keystone（拱頂裝飾石）
+  ctx.fillStyle = sillCol;
+  ctx.fillRect(cx - 7, 0, 14, frameT + 8);
+  ctx.fillStyle = frameHi;
+  ctx.fillRect(cx - 5, 2, 10, 2);
+
+  // 直向 muntin（從拱頂下到 sill）
+  ctx.fillStyle = muntinCol;
+  ctx.fillRect(cx - muntinT / 2, frameT + 8, muntinT, glassBot - frameT - 8);
+  // 橫向 muntin（拱腳處作為四格分界）
+  ctx.fillRect(frameT, archCy - muntinT / 2, W - frameT * 2, muntinT);
+
+  // sill（窗台，比下框更深）
+  ctx.fillStyle = sillCol;
+  ctx.fillRect(0, H - sillH, W, sillH);
+  // sill 前緣金線
+  ctx.fillStyle = frameHi;
+  ctx.fillRect(0, H - sillH, W, 1);
+}
 
 const _frameOnlyCache = new Map<WindowTheme, CanvasTexture>();
 function getFrameOnlyTexture(theme: WindowTheme): CanvasTexture {
@@ -1693,7 +1921,11 @@ function getFrameOnlyTexture(theme: WindowTheme): CanvasTexture {
   canvas.height = 192;
   const ctx = canvas.getContext('2d')!;
   const c = FRAME_COLORS[theme];
-  drawWindowFrame(ctx, canvas.width, canvas.height, c.frame, c.hi, c.muntin, c.sill);
+  if (theme === 'shibuya') {
+    drawEuroChineseFrame(ctx, canvas.width, canvas.height, c.frame, c.hi, c.muntin, c.sill);
+  } else {
+    drawWindowFrame(ctx, canvas.width, canvas.height, c.frame, c.hi, c.muntin, c.sill);
+  }
   const tex = finalizeTex(canvas);
   _frameOnlyCache.set(theme, tex);
   return tex;
@@ -1707,42 +1939,196 @@ function WallWindow({
   position,
   rotationY,
   theme = 'kawaii',
-  width = 2.8,
-  height = 2.2,
+  useGptWindow = false,
+  width = 3.55,
+  height = 3.55,
 }: {
   position: [number, number, number];
   rotationY: number;
   theme?: WindowTheme;
+  useGptWindow?: boolean;
   width?: number;
   height?: number;
 }) {
-  const tex = getFrameOnlyTexture(theme);
+  const gptTex = usePixelTexture(gptWindowUrl);
+  const frameTex = getFrameOnlyTexture(theme);
+  if (!useGptWindow) {
+    return (
+      <mesh position={position} rotation={[0, rotationY, 0]}>
+        <planeGeometry args={[width, height]} />
+        <meshBasicMaterial map={frameTex} side={DoubleSide} toneMapped={false} transparent alphaTest={0.01} />
+      </mesh>
+    );
+  }
+
+  const frameDepth = 0.14;
+  const frameT = 0.16;
+  const sillH = 0.18;
+  const frameCol = '#5a321c';
+  const muntinCol = '#7a4a2a';
+  const sillCol = '#3a1f10';
+  const hiCol = '#d8a35f';
+  const stoneCol = '#d8c2a2';
+
   return (
-    <mesh position={position} rotation={[0, rotationY, 0]}>
-      <planeGeometry args={[width, height]} />
-      <meshBasicMaterial map={tex} side={DoubleSide} toneMapped={false} transparent alphaTest={0.01} />
+    <group position={position} rotation={[0, rotationY, 0]}>
+      <mesh position={[0, -0.05, -0.045]}>
+        <boxGeometry args={[width + 0.18, height + 0.16, 0.08]} />
+        <meshBasicMaterial color="#4a3425" />
+      </mesh>
+      <mesh position={[0, 0, 0.01]}>
+        <planeGeometry args={[width - frameT * 2, height - frameT * 2 - sillH]} />
+        <meshBasicMaterial map={gptTex} side={DoubleSide} toneMapped={false} />
+      </mesh>
+
+      <WindowBar x={0} y={height / 2 + 0.04} w={width + 0.34} h={0.12} d={0.08} color={stoneCol} z={0.015} />
+      <WindowBar x={-width / 2 - 0.055} y={-0.02} w={0.1} h={height - 0.04} d={0.08} color={stoneCol} z={0.015} />
+      <WindowBar x={width / 2 + 0.055} y={-0.02} w={0.1} h={height - 0.04} d={0.08} color={stoneCol} z={0.015} />
+
+      <WindowBar x={0} y={height / 2 - frameT / 2} w={width} h={frameT} d={frameDepth} color={frameCol} />
+      <WindowBar x={0} y={-height / 2 + sillH + frameT / 2} w={width} h={frameT} d={frameDepth} color={frameCol} />
+      <WindowBar x={-width / 2 + frameT / 2} y={0} w={frameT} h={height} d={frameDepth} color={frameCol} />
+      <WindowBar x={width / 2 - frameT / 2} y={0} w={frameT} h={height} d={frameDepth} color={frameCol} />
+      <WindowBar x={0} y={0.02} w={0.05} h={height - frameT * 2 - sillH} d={frameDepth + 0.03} color={muntinCol} z={0.055} />
+      <WindowBar x={0} y={height * 0.08} w={width - frameT * 2} h={0.05} d={frameDepth + 0.03} color={muntinCol} z={0.055} />
+      <WindowBar x={0} y={-height / 2 + sillH / 2} w={width + 0.28} h={sillH} d={frameDepth + 0.18} color={sillCol} z={0.085} />
+      <WindowBar x={0} y={height / 2 - frameT - 0.035} w={width - frameT * 2} h={0.035} d={frameDepth + 0.04} color={hiCol} z={0.065} />
+    </group>
+  );
+}
+
+function WindowBar({
+  x,
+  y,
+  w,
+  h,
+  d,
+  color,
+  z = 0.035,
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  d: number;
+  color: string;
+  z?: number;
+}) {
+  return (
+    <mesh position={[x, y, z]}>
+      <boxGeometry args={[w, h, d]} />
+      <meshBasicMaterial color={color} />
     </mesh>
+  );
+}
+
+function FloorToCeilingWindow({
+  position,
+  rotationY,
+  width,
+  height,
+  theme,
+  viewSrc,
+  paneCount = 4,
+  luxury = false,
+}: {
+  position: [number, number, number];
+  rotationY: number;
+  width: number;
+  height: number;
+  theme: WindowTheme;
+  viewSrc?: string;
+  paneCount?: number;
+  luxury?: boolean;
+}) {
+  const window4Tex = usePixelTexture(viewSrc ?? window4Url);
+  const sceneryTex = getSceneryTextureFor(theme);
+  const viewTex = viewSrc ? window4Tex : theme === 'skyline' ? window4Tex : sceneryTex;
+  const frameCol = luxury ? '#d8d2c6' : theme === 'skyline' ? '#536b7d' : '#3d5263';
+  const railCol = luxury ? '#c3b8a8' : theme === 'skyline' ? '#405566' : '#2f414f';
+  const hiCol = luxury ? '#f5eee2' : theme === 'skyline' ? '#cfe4ef' : '#b9d5e4';
+  const paneW = width / paneCount;
+  const barT = luxury ? 0.045 : 0.075;
+  const frameT = luxury ? 0.095 : 0.14;
+  const railH = luxury ? 0.12 : 0.18;
+  const paneSlots = Array.from({ length: Math.max(0, paneCount - 1) }, (_, i) => i + 1 - paneCount / 2);
+  const highlightSlots = Array.from({ length: paneCount }, (_, i) => i + 0.5 - paneCount / 2);
+
+  return (
+    <group position={position} rotation={[0, rotationY, 0]}>
+      <mesh position={[0, 0, -0.12]}>
+        <boxGeometry args={[width + 0.18, height + 0.18, 0.08]} />
+        <meshBasicMaterial color={luxury ? '#eee7da' : '#263744'} />
+      </mesh>
+      <mesh position={[0, 0, -0.015]}>
+        <planeGeometry args={[width - frameT * 2, height - railH * 2]} />
+        <meshBasicMaterial map={viewTex} side={DoubleSide} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 0, 0.008]}>
+        <planeGeometry args={[width - frameT * 2, height - railH * 2]} />
+        <meshBasicMaterial color={luxury ? '#fff0c9' : '#d8f3ff'} transparent opacity={luxury ? 0.13 : 0.18} side={DoubleSide} toneMapped={false} />
+      </mesh>
+
+      <WindowBar x={0} y={height / 2 - railH / 2} w={width} h={railH} d={luxury ? 0.1 : 0.16} color={railCol} z={0.04} />
+      <WindowBar x={0} y={-height / 2 + railH / 2} w={width} h={railH} d={luxury ? 0.12 : 0.2} color={railCol} z={0.06} />
+      <WindowBar x={-width / 2 + frameT / 2} y={0} w={frameT} h={height} d={luxury ? 0.1 : 0.16} color={frameCol} z={0.04} />
+      <WindowBar x={width / 2 - frameT / 2} y={0} w={frameT} h={height} d={luxury ? 0.1 : 0.16} color={frameCol} z={0.04} />
+
+      {highlightSlots.map((slot) => (
+        <WindowBar
+          key={`pane-hi-${slot}`}
+          x={slot * paneW + paneW * 0.34}
+          y={0.25}
+          w={luxury ? 0.022 : 0.035}
+          h={height - railH * 2.6}
+          d={luxury ? 0.055 : 0.08}
+          color={hiCol}
+          z={0.075}
+        />
+      ))}
+      {paneSlots.map((slot) => (
+        <WindowBar
+          key={`pane-bar-${slot}`}
+          x={slot * paneW}
+          y={0}
+          w={barT}
+          h={height - railH * 2}
+          d={luxury ? 0.105 : 0.18}
+          color={frameCol}
+          z={0.075}
+        />
+      ))}
+      <WindowBar x={0} y={-height * 0.18} w={width - frameT * 2} h={luxury ? 0.035 : 0.06} d={luxury ? 0.08 : 0.14} color={hiCol} z={0.08} />
+    </group>
   );
 }
 
 function WindowBackdrop({
   position,
   rotationY,
-  width = 2.8,
-  height = 2.2,
+  width = 3.45,
+  height = 2.75,
+  theme = 'kawaii',
 }: {
   position: [number, number, number];
   rotationY: number;
   width?: number;
   height?: number;
+  theme?: WindowTheme;
 }) {
-  const tex = useTexture(grokGar2Url);
+  const src = theme === 'shibuya' ? bg3Url : theme === 'kawaii' ? window2Url : grokGar2Url;
+  const tex = useTexture(src);
   useMemo(() => {
-    // 放大 2x，只顯示圖片左邊中間
-    tex.repeat.set(0.5, 0.5);
-    tex.offset.set(0, 0.25);
+    if (theme === 'shibuya' || theme === 'kawaii') {
+      tex.repeat.set(1, 1);
+      tex.offset.set(0, 0);
+    } else {
+      // 放大 2x，只顯示圖片左邊中間
+      tex.repeat.set(0.5, 0.5);
+      tex.offset.set(0, 0.25);
+    }
     tex.needsUpdate = true;
-  }, [tex]);
+  }, [tex, theme]);
   return (
     <mesh position={position} rotation={[0, rotationY, 0]}>
       <planeGeometry args={[width, height]} />
