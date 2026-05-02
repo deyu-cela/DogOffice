@@ -1,13 +1,22 @@
 ﻿import { useGameStore } from '@/store/gameStore';
 import { TUTORIAL_STEPS } from '@/constants/questions';
+import { displayCompanyName } from '@/lib/companyName';
 
 export function Tutorial() {
   const step = useGameStore((s) => s.tutorialStep);
   const advance = useGameStore((s) => s.advanceTutorial);
   const skip = useGameStore((s) => s.skipTutorial);
+  const companyName = useGameStore((s) => s.companyName);
 
   if (step <= 0 || step > TUTORIAL_STEPS.length) return null;
-  const current = TUTORIAL_STEPS[step - 1];
+  const raw = TUTORIAL_STEPS[step - 1];
+  const name = displayCompanyName(companyName);
+  const current = {
+    ...raw,
+    title: raw.title.replace(/\{COMPANY\}/g, name),
+    text: raw.text.replace(/\{COMPANY\}/g, name),
+    tip: raw.tip ? raw.tip.replace(/\{COMPANY\}/g, name) : raw.tip,
+  };
   const total = TUTORIAL_STEPS.length;
   const isLast = step === total;
 

@@ -35,6 +35,7 @@ import { StarterPackBanner } from '@/features/starterPack/StarterPackBanner';
 import { useUiStore } from '@/store/uiStore';
 import { SvgIcon } from '@/components/SvgIcon';
 import { BgmController, type BgmScene } from '@/components/BgmController';
+import { displayCompanyName } from '@/lib/companyName';
 
 const STARTER_PACK_SESSION_KEY = 'dogoffice:starter-pack-shown';
 
@@ -75,6 +76,7 @@ export default function App() {
   const day = useGameStore((s) => s.day);
   const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
+  const companyName = useGameStore((s) => s.companyName);
   const restart = useGameStore((s) => s.restart);
   const showAchievements = useUiStore((s) => s.showAchievements);
   const bgmScene: BgmScene = showAchievements ? 'memories' : showSplash ? 'splash' : 'office';
@@ -145,7 +147,7 @@ export default function App() {
             <div className="mx-auto mb-3 w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: '#fff7f7', border: '1px solid rgba(255,112,112,0.24)' }}>
               <SvgIcon name="warning" size={38} />
             </div>
-            <div className="text-3xl font-extrabold mb-3">公司破產了...</div>
+            <div className="text-3xl font-extrabold mb-3">{displayCompanyName(companyName)}破產了...</div>
             <div className="text-base mb-4" style={{ color: 'var(--muted)' }}>
               狗狗們含著眼淚收拾行李離開了辦公室...
               <br />

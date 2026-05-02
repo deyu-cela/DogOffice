@@ -87,11 +87,31 @@ body {
   margin: 0;
   font-family: var(--font-rounded);
   background:
-    radial-gradient(circle at 8% 0%, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0) 34%),
-    radial-gradient(circle at 85% 12%, rgba(158, 213, 255, 0.58) 0%, rgba(158, 213, 255, 0) 30%),
-    linear-gradient(180deg, #dceeff 0%, #f7fbff 58%, #edf6ff 100%);
+    radial-gradient(circle at 8% 12%, rgba(255, 255, 255, 0.9) 0 0.28rem, transparent 0.32rem),
+    radial-gradient(circle at 88% 18%, rgba(244, 126, 145, 0.2) 0 0.34rem, transparent 0.38rem),
+    radial-gradient(circle at 22% 84%, rgba(122, 184, 154, 0.14) 0 0.4rem, transparent 0.44rem),
+    linear-gradient(135deg, rgba(255, 202, 209, 0.26) 25%, transparent 25%) 0 0 / 26px 26px,
+    linear-gradient(45deg, rgba(255, 255, 255, 0.55) 25%, transparent 25%) 0 0 / 32px 32px,
+    linear-gradient(180deg, #fff0ed 0%, #ffe3e6 48%, #fff7ef 100%);
   background-attachment: fixed;
   color: var(--text);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    radial-gradient(circle at 18% 24%, rgba(242, 128, 145, 0.18) 0 2px, transparent 3px),
+    radial-gradient(circle at 18.7% 23.3%, rgba(242, 128, 145, 0.18) 0 2px, transparent 3px),
+    radial-gradient(circle at 17.3% 23.3%, rgba(242, 128, 145, 0.18) 0 2px, transparent 3px),
+    radial-gradient(circle at 18% 22.5%, rgba(242, 128, 145, 0.18) 0 2px, transparent 3px),
+    radial-gradient(circle at 62% 12%, rgba(242, 128, 145, 0.14) 0 2px, transparent 3px),
+    radial-gradient(circle at 62.7% 11.3%, rgba(242, 128, 145, 0.14) 0 2px, transparent 3px),
+    radial-gradient(circle at 61.3% 11.3%, rgba(242, 128, 145, 0.14) 0 2px, transparent 3px),
+    radial-gradient(circle at 62% 10.5%, rgba(242, 128, 145, 0.14) 0 2px, transparent 3px);
 }
 
 button,

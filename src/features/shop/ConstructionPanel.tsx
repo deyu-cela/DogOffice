@@ -12,9 +12,6 @@ const OFFICE_TIER_CAP = [3, 3, 4, 4, 5];
 function upgradeBenefits(curLv: number): string[] {
   const next = curLv + 1;
   const benefits: string[] = [];
-  const curMax = OFFICE_LEVELS[curLv].maxStaff;
-  const nextMax = OFFICE_LEVELS[next].maxStaff;
-  if (nextMax > curMax) benefits.push(`員工上限 +${nextMax - curMax}（→${nextMax}）`);
   const curBonus = OFFICE_TIER_BONUS[curLv] ?? 0;
   const nextBonus = OFFICE_TIER_BONUS[next] ?? 0;
   if (nextBonus > curBonus) benefits.push(`稀有度 +${nextBonus - curBonus}`);
@@ -71,7 +68,7 @@ export function ConstructionPanel() {
           <span>目前辦公室：{curLv.name}（等級 {officeLevel + 1}）</span>
         </div>
         <div className="text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
-          員工上限 {curLv.maxStaff}・稀有度加成 +{OFFICE_TIER_BONUS[officeLevel] ?? 0}・最高 {OFFICE_TIER_CAP[officeLevel] ?? 3} 級案件
+          稀有度加成 +{OFFICE_TIER_BONUS[officeLevel] ?? 0}・最高 {OFFICE_TIER_CAP[officeLevel] ?? 3} 級案件
         </div>
       </div>
 

@@ -9,6 +9,8 @@ import { LeaderboardPanel } from '@/features/leaderboard/LeaderboardPanel';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { LoginScrapbook } from './LoginScrapbook';
+import { CompanyNameModal } from './CompanyNameModal';
+import { displayCompanyName } from '@/lib/companyName';
 
 const IPO_MONEY = 50000;
 const IPO_OFFICE_LEVEL = 4;
@@ -16,6 +18,8 @@ const IPO_PROJECTS = 80;
 
 export function SplashScreen() {
   const startGame = useGameStore((s) => s.startGame);
+  const setCompanyName = useGameStore((s) => s.setCompanyName);
+  const companyName = useGameStore((s) => s.companyName);
   const day = useGameStore((s) => s.day);
   const money = useGameStore((s) => s.money);
   const officeLevel = useGameStore((s) => s.officeLevel);
@@ -37,6 +41,7 @@ export function SplashScreen() {
   const base = import.meta.env.BASE_URL;
   const [lbOpen, setLbOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [namingOpen, setNamingOpen] = useState(false);
 
   const authed = authStatus === 'authed' && !!user;
   const bootstrapping = authStatus === 'bootstrapping';
@@ -54,6 +59,20 @@ export function SplashScreen() {
       document.body.style.overflow = bodyOverflow;
     };
   }, []);
+
+  function handleStart() {
+    if (!companyName || companyName.trim() === '') {
+      setNamingOpen(true);
+      return;
+    }
+    startGame();
+  }
+
+  function handleConfirmName(name: string) {
+    setCompanyName(name);
+    setNamingOpen(false);
+    startGame();
+  }
 
   async function onLogout() {
     if (loggingOut) return;
@@ -102,7 +121,8 @@ export function SplashScreen() {
           saveError={saveError}
           bootstrapping={bootstrapping}
           loggingOut={loggingOut}
-          onStart={startGame}
+          companyName={displayCompanyName(companyName)}
+          onStart={handleStart}
           onLogout={onLogout}
           onLeaderboard={() => setLbOpen(true)}
           onAchievements={openAchievements}
@@ -112,6 +132,7 @@ export function SplashScreen() {
       )}
 
       {lbOpen && <LeaderboardPanel onClose={() => setLbOpen(false)} />}
+      {namingOpen && <CompanyNameModal onConfirm={handleConfirmName} />}
     </div>
   );
 }
@@ -181,6 +202,7 @@ function UnauthedSplashShell({ children }: { children: ReactNode }) {
 type AuthedSplashShellProps = {
   base: string;
   account: string;
+  companyName: string;
   day: number;
   money: number;
   officeLevel: number;
@@ -208,6 +230,7 @@ type AuthedSplashShellProps = {
 function AuthedSplashShell({
   base,
   account,
+  companyName,
   day,
   money,
   officeLevel,
@@ -232,7 +255,6 @@ function AuthedSplashShell({
   totalAchievements,
 }: AuthedSplashShellProps) {
   const office = OFFICE_LEVELS[officeLevel];
-  const maxStaff = office?.maxStaff ?? 0;
   const ipoProgress = Math.min(
     100,
     Math.round(
@@ -256,7 +278,7 @@ function AuthedSplashShell({
           backdropFilter: 'blur(16px) saturate(135%)',
         }}
       >
-        <LogoLockup />
+        <LogoLockup title={companyName} />
       </header>
 
       <main className="authed-main relative z-10 h-[calc(100vh-94px)] grid grid-cols-1 xl:grid-cols-[1fr_520px] items-stretch">
@@ -275,7 +297,7 @@ function AuthedSplashShell({
             <div className="inline-flex items-center gap-4">
               <SvgIcon name="appDog" size={58} />
               <h1 className="text-5xl md:text-6xl font-extrabold leading-none" style={{ color: '#173b78', textShadow: '0 3px 0 rgba(255,255,255,0.9)' }}>
-                狗狗公司
+                {companyName}
               </h1>
             </div>
             <p className="mt-3 text-lg md:text-xl font-extrabold" style={{ color: '#355c96' }}>
@@ -339,7 +361,7 @@ function AuthedSplashShell({
               </div>
               <div className="dashboard-flow dashboard-flow-2 grid grid-cols-2 gap-3 mb-5">
                 <StatTile icon="log" value={`第 ${day} 天`} label="DAY" />
-                <StatTile icon="people" value={`${staffCount} 位員工`} label={`STAFF / ${maxStaff}`} />
+                <StatTile icon="people" value={`${staffCount} 位員工`} label="STAFF" />
               </div>
 
               <div className="dashboard-flow dashboard-flow-3">
@@ -658,12 +680,12 @@ function AuthedSplashShell({
   );
 }
 
-function LogoLockup() {
+function LogoLockup({ title = '狗狗公司' }: { title?: string }) {
   return (
     <div className="flex items-center gap-3">
       <SvgIcon name="appDog" size={48} />
       <div className="text-left">
-        <div className="text-3xl md:text-4xl font-extrabold leading-none" style={{ color: '#173b78' }}>狗狗公司</div>
+        <div className="text-3xl md:text-4xl font-extrabold leading-none" style={{ color: '#173b78' }}>{title}</div>
         <div className="text-[11px] font-extrabold tracking-[0.18em]" style={{ color: '#2f8df4' }}>DOGGO CORP</div>
       </div>
     </div>

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { SvgIcon } from '@/components/SvgIcon';
 import { useGameStore } from '@/store/gameStore';
+import { displayCompanyName } from '@/lib/companyName';
 
 export function SubmitRecordModal() {
   const snap = useGameStore((s) => s.leaderboardSubmitModal);
   const submitOfficeRecord = useGameStore((s) => s.submitOfficeRecord);
   const closeLeaderboardSubmit = useGameStore((s) => s.closeLeaderboardSubmit);
-  const [nickname, setNickname] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -15,7 +15,7 @@ export function SubmitRecordModal() {
   const handleSubmit = async () => {
     if (submitting) return;
     setSubmitting(true);
-    await submitOfficeRecord(nickname.trim() || undefined);
+    await submitOfficeRecord();
     setSubmitted(true);
     setSubmitting(false);
   };
@@ -48,18 +48,15 @@ export function SubmitRecordModal() {
 
         {!submitted ? (
           <>
-            <label className="block text-[11px] font-bold mb-1" style={{ color: '#9a6a1a' }}>
-              暱稱（最多 20 字，可留空）
-            </label>
-            <input
-              type="text"
-              value={nickname}
-              maxLength={20}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="輸入你的署名"
-              className="w-full px-3 py-2 rounded-lg text-sm mb-3"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #f0c97a' }}
-            />
+            <div
+              className="px-3 py-2 rounded-lg text-sm mb-3 text-center"
+              style={{ backgroundColor: '#fff7ec', border: '1px solid #f0c97a', color: '#9a6a1a' }}
+            >
+              <div className="text-[11px] font-bold mb-0.5">將以這個名字上榜</div>
+              <div className="text-base font-extrabold truncate" title={displayCompanyName(snap.companyName)}>
+                {displayCompanyName(snap.companyName)}
+              </div>
+            </div>
             <div className="flex gap-2">
               <button
                 type="button"

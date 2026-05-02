@@ -57,7 +57,7 @@ const IPO_OFFICE_LEVEL = 4;
 const IPO_PROJECTS = 80;
 
 // === 辦公室固定每日支出 ===
-const OFFICE_DAILY_EXPENSE = [5, 8, 14, 22, 35];
+export const OFFICE_DAILY_EXPENSE = [5, 8, 14, 22, 35];
 
 // === 重構：產業 / 抽卡 / 強化 ===
 export const INDUSTRIES: ProjectCategory[] = ['tech', 'design', 'marketing', 'service'];
@@ -173,7 +173,6 @@ type Actions = {
   setSpeed: (s: number) => void;
   tick: (dt: number) => void;
 
-  hireCandidate: () => void;
   rejectCandidate: () => void;
 
   buyShopItem: (id: ShopItemEffectKey) => void;
@@ -206,7 +205,7 @@ type Actions = {
   flipMemoryCard: (id: number) => void;
   finishMemory: () => void;
 
-  submitOfficeRecord: (nickname?: string) => Promise<LeaderboardEntry | null>;
+  submitOfficeRecord: () => Promise<LeaderboardEntry | null>;
   closeLeaderboardSubmit: () => void;
 
   openTraining: () => void;
@@ -216,6 +215,7 @@ type Actions = {
 
   setActiveTab: (tab: 'shop' | 'staff') => void;
   setShowSplash: (show: boolean) => void;
+  setCompanyName: (name: string) => void;
   applySave: (data: GameSaveData) => void;
   resetToInitialGame: () => void;
   restart: () => void;
@@ -225,8 +225,6 @@ type Actions = {
   dismissIpo: () => void;
 
   toggleRecruitment: () => void;
-
-  requestTargetedCandidate: (role: string) => void;
 
   takeBankLoan: () => void;
   dismissLoanModal: () => void;
@@ -323,6 +321,7 @@ function initialInbox(): Project[] {
 }
 
 const initialState: GameState = {
+  companyName: '',
   day: 1,
   money: 800,
   tierBudget: 0, // 沒員工 → 0；招到第一隻會 trigger computeTierBudget
@@ -554,14 +553,6 @@ function applyAutoAccept(state: GameState): GameState {
   return s;
 }
 
-function maxStaff(state: GameState): number {
-  return OFFICE_LEVELS[state.officeLevel].maxStaff;
-}
-
-function atCapacity(state: GameState): boolean {
-  return state.staff.length >= maxStaff(state);
-}
-
 function hasOverlayOpen(state: GameState): boolean {
   return (
     !!state.miniGame ||
@@ -770,46 +761,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   dismissToast: () => set({ toast: null }),
   dismissDailySummary: () => set({ dailySummary: null }),
 
-  hireCandidate: () => {
-    const s = get();
-    if (!s.current || atCapacity(s)) return;
-    const prevStaffCount = s.staff.length;
-    const dog: Dog = {
-      ...s.current,
-      status: 'active',
-      pipDaysLeft: 0,
-      pipScore: 0,
-      pipTasks: [],
-      severance: Math.max(18, s.current.expectedSalary * 2),
-      fatigue: 0,
-      loyalty: 50,
-      experience: 0,
-      assignedProjectId: null,
-      daysAtCompany: 0,
-      unhappyLeaveDays: 0,
-      onLeaveDay: null,
-      learnedTraits: s.current.learnedTraits ?? [],
-      pendingTraitChoice: s.current.pendingTraitChoice ?? null,
-    };
-    let next: GameState = {
-      ...s,
-      staff: [...s.staff, dog],
-      money: Math.max(0, s.money - dog.expectedSalary * 2),
-      current: null,
-    };
-    next = pushLog(
-      next,
-      dog.isCEO
-        ? ` 傳說中的 CEO ${dog.name} 加入了！全公司都沸騰了！`
-        : `錄用了 ${dog.name}（${dog.breed} ${dog.role} ${dog.grade}級），${dog.flavor}`,
-    );
-    next = refillCurrent(next);
-    next.tierBudget = recomputeTierBudget(next);
-    next = applyAutoAccept(next);
-    set(next as Partial<GameStore>);
-    get().checkAchievements('hire', { dog, prevStaffCount });
-  },
-
   rejectCandidate: () => {
     const s = get();
     if (!s.current) return;
@@ -918,6 +869,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         days: next.day,
         money: next.money,
         staffCount: next.staff.length,
+        companyName: next.companyName,
       };
     }
     set(next as Partial<GameStore>);
@@ -1311,16 +1263,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set(next as Partial<GameStore>);
   },
 
-  submitOfficeRecord: async (nickname) => {
+  submitOfficeRecord: async () => {
     const s = get();
     const snap = s.leaderboardSubmitModal;
     if (!snap) return null;
+    const companyName = (s.companyName ?? '').trim();
     const entry: LeaderboardEntry = {
       days: snap.days,
       money: snap.money,
       staffCount: snap.staffCount,
       date: new Date().toISOString(),
-      nickname: nickname || undefined,
+      companyName: companyName || undefined,
     };
     saveLocalEntry(entry);
     set({ leaderboardSubmitModal: null });
@@ -1329,7 +1282,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         days: entry.days,
         money: entry.money,
         staff_count: entry.staffCount,
-        nickname: entry.nickname,
+        company_name: entry.companyName,
       });
     } catch (err) {
       if (!isIgnorableApiError(err)) {
@@ -1414,6 +1367,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setShowSplash: (show) => set({ showSplash: show }),
+  setCompanyName: (name) => set({ companyName: name }),
 
   resetToInitialGame: () => {
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
@@ -1445,6 +1399,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ? rebuildBuffsFromPurchases(purchases)
       : loadedBuffs;
     set({
+      companyName: data.companyName ?? '',
       day: data.day,
       money: data.money,
       tierBudget: data.tierBudget ?? 0,
@@ -1501,8 +1456,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   restart: () => {
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
-    set(() => ({
+    set((s) => ({
       ...initialState,
+      // 同帳號 once-and-done：保留公司名，重開新局不再命名
+      companyName: s.companyName,
       staff: [],
       clients: initialInbox(),
       teams: emptyTeams(),
@@ -1637,26 +1594,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
   dismissLoanModal: () => set({ loanModalOpen: false }),
-
-  requestTargetedCandidate: (role: string) => {
-    const TARGETED_COST = 40;
-    const s = get();
-    if (s.money < TARGETED_COST) return;
-    if (s.recruitmentClosed) return;
-    if (atCapacity(s)) return;
-    const dog = generateCandidate({ role });
-    set({
-      money: s.money - TARGETED_COST,
-      current: dog,
-      candidatePatience: dog.patience,
-      vacancy: false,
-      vacancyTimer: 0,
-      log: [
-        ...s.log,
-        { day: s.day, msg: ` 花 $${TARGETED_COST} 指定招聘 ${role}：${dog.name}（${dog.grade} 級）來面試！` },
-      ].slice(-30),
-    });
-  },
 
   unlockAchievement: (id, silent = false) => {
     const s = get();

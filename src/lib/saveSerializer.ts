@@ -73,6 +73,7 @@ function serializeStaff(state: GameState): GameSaveData['staff'] {
 
 export function serialize(state: GameState): GameSaveData {
   return {
+    companyName: state.companyName,
     day: state.day,
     money: state.money,
     reputation: estimateReputation(state),
@@ -165,6 +166,7 @@ export function deserialize(raw: unknown): GameSaveData | null {
     : []) as GameSaveData['clients'];
 
   return {
+    companyName: typeof d.companyName === 'string' ? d.companyName : '',
     day: asNum(d.day, 1),
     money: asNum(d.money, 800),
     reputation: asNum(d.reputation, 55),

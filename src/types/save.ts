@@ -13,6 +13,7 @@ export const SAVE_VERSION = 2;
 
 // v2: 接案制版本（plan §6 對應）
 export type GameSaveData = {
+  companyName?: string;  // 公司名稱（v6 起；舊存檔沒有 → 載入後為空字串，玩家會被導向命名 modal）
   day: number;
   money: number;
   reputation?: number;

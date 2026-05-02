@@ -1,16 +1,23 @@
-import { useGameStore } from '@/store/gameStore';
+import { useGameStore, OFFICE_DAILY_EXPENSE } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { BASE_DAY_MS } from '@/constants/officeLevels';
 import { moneyShort } from '@/lib/utils';
+import { displayCompanyName } from '@/lib/companyName';
 import { SvgIcon } from '@/components/SvgIcon';
 import { UserBadge } from './UserBadge';
 
 export function MoneyDayCluster() {
   const day = useGameStore((s) => s.day);
   const money = useGameStore((s) => s.money);
+  const companyName = useGameStore((s) => s.companyName);
   const dayElapsed = useGameStore((s) => s.dayElapsed);
   const speedMultiplier = useGameStore((s) => s.speedMultiplier);
   const setSpeed = useGameStore((s) => s.setSpeed);
+  const officeLevel = useGameStore((s) => s.officeLevel);
+  const salaryCost = useGameStore((s) =>
+    s.staff.filter((d) => d.assignedProjectId != null).reduce((n, d) => n + d.expectedSalary, 0),
+  );
+  const dailyCost = (OFFICE_DAILY_EXPENSE[officeLevel] ?? 0) + salaryCost;
 
   const remainingSec = (Math.max(0, BASE_DAY_MS - dayElapsed) / speedMultiplier / 1000).toFixed(1);
   const cycleSpeed = () => setSpeed(speedMultiplier >= 3 ? 1 : speedMultiplier + 1);
@@ -40,8 +47,12 @@ export function MoneyDayCluster() {
             <SvgIcon name="appDog" size={26} />
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="font-extrabold leading-none" style={{ color: 'var(--ink)', fontSize: 14, letterSpacing: '0.01em' }}>
-              狗狗公司
+            <span
+              className="font-extrabold leading-none truncate max-w-[140px]"
+              style={{ color: 'var(--ink)', fontSize: 14, letterSpacing: '0.01em' }}
+              title={displayCompanyName(companyName)}
+            >
+              {displayCompanyName(companyName)}
             </span>
             <span
               data-money-target
@@ -50,6 +61,13 @@ export function MoneyDayCluster() {
               title={`$${money.toLocaleString()}`}
             >
               💰 ${moneyShort(money)}
+            </span>
+            <span
+              className="font-bold leading-none tabular-nums"
+              style={{ color: '#c0392b', fontSize: 11 }}
+              title={`每日支出：辦公室 $${OFFICE_DAILY_EXPENSE[officeLevel] ?? 0} + 派案薪資 $${salaryCost}`}
+            >
+              📉 -${moneyShort(dailyCost)}/天
             </span>
           </div>
         </div>

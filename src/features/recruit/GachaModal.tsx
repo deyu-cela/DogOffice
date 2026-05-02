@@ -5,7 +5,7 @@ import { useGameStore, GACHA_COST, type GachaResult } from '@/store/gameStore';
 import { useUiStore } from '@/store/uiStore';
 import { GachaCard } from './GachaCard';
 
-type Phase = 'home' | 'pulling' | 'results';
+type Phase = 'home' | 'pulling';
 
 const GRADE_LABEL: Record<string, string> = {
   U: 'CEO 彩蛋',
@@ -113,22 +113,20 @@ export function GachaModal() {
               results={results}
               revealed={revealed}
               allRevealed={allRevealed}
-              onReveal={(i) => setRevealed((prev) => new Set(prev).add(i))}
-              onRevealAll={() => setRevealed(new Set(results.map((_, i) => i)))}
-              onNext={() => setPhase('results')}
-            />
-          )}
-          {phase === 'results' && (
-            <ResultsView
-              results={results}
               money={money}
               onePullCost={onePullCost}
               tenPullCost={tenPullCost}
+              onReveal={(i) => setRevealed((prev) => new Set(prev).add(i))}
+              onRevealAll={() => setRevealed(new Set(results.map((_, i) => i)))}
               onAgain={() => {
                 if (results.length > 1) handleTen();
                 else handleOne();
               }}
-              onClose={handleClose}
+              onConfirm={() => {
+                setPhase('home');
+                setResults([]);
+                setRevealed(new Set());
+              }}
             />
           )}
         </div>
@@ -314,24 +312,33 @@ function PullingView({
   results,
   revealed,
   allRevealed,
+  money,
+  onePullCost,
+  tenPullCost,
   onReveal,
   onRevealAll,
-  onNext,
+  onAgain,
+  onConfirm,
 }: {
   results: GachaResult[];
   revealed: Set<number>;
   allRevealed: boolean;
+  money: number;
+  onePullCost: number;
+  tenPullCost: number;
   onReveal: (index: number) => void;
   onRevealAll: () => void;
-  onNext: () => void;
+  onAgain: () => void;
+  onConfirm: () => void;
 }) {
   const isTen = results.length > 1;
   const cardSize = isTen ? 106 : 180;
+  const canAgain = money >= (isTen ? tenPullCost : onePullCost);
 
   return (
     <div className="relative flex flex-col items-center justify-center p-6" style={{ minHeight: 520, background: 'radial-gradient(circle at 50% 45%, #264f9e, #08142d 70%)' }}>
       {!allRevealed && (
-        <button type="button" onClick={onRevealAll} className="absolute right-4 top-4 rounded-md px-3 py-1.5 text-xs font-black" style={{ color: 'white', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.35)' }}>
+        <button type="button" onClick={onRevealAll} className="absolute right-4 bottom-4 rounded-md px-3 py-1.5 text-xs font-black" style={{ color: 'white', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.35)' }}>
           全部揭曉
         </button>
       )}
@@ -342,97 +349,44 @@ function PullingView({
         ))}
       </div>
       {allRevealed && (
-        <button type="button" onClick={onNext} className="mt-7 rounded-lg px-8 py-3 font-black" style={{ color: '#523400', background: 'linear-gradient(180deg, #ffe58a, #f0aa22)', boxShadow: '0 8px 22px rgba(0,0,0,0.28)' }}>
-          查看結果
-        </button>
-      )}
-    </div>
-  );
-}
-
-function ResultsView({
-  results,
-  money,
-  onePullCost,
-  tenPullCost,
-  onAgain,
-  onClose,
-}: {
-  results: GachaResult[];
-  money: number;
-  onePullCost: number;
-  tenPullCost: number;
-  onAgain: () => void;
-  onClose: () => void;
-}) {
-  const isTen = results.length > 1;
-  const cardSize = isTen ? 82 : 150;
-  const canAgain = money >= (isTen ? tenPullCost : onePullCost);
-
-  return (
-    <div
-      className="relative flex max-h-[92vh] flex-col"
-      style={{
-        minHeight: 620,
-        background:
-          'radial-gradient(circle at 54% 18%, rgba(229,236,246,0.95), rgba(255,255,255,0) 32%), linear-gradient(180deg, #edf2f7, #f8fbff)',
-      }}
-    >
-      <div
-        aria-hidden="true"
-        className="absolute right-12 top-5 h-20 w-28 opacity-40"
-        style={{
-          backgroundImage: 'radial-gradient(circle, #8da3ba 1px, transparent 1px)',
-          backgroundSize: '8px 8px',
-        }}
-      />
-      <div className="relative flex-1 overflow-y-auto px-6 pb-4 pt-9">
-        <div
-          className={isTen ? 'grid justify-center' : 'flex justify-center'}
-          style={isTen ? { gridTemplateColumns: 'repeat(5, auto)', gap: 10, rowGap: 14 } : undefined}
-        >
-          {results.map((result, index) => (
-            <GachaCard key={index} result={result} revealed flyDelay={0} size={cardSize} onReveal={() => {}} />
-          ))}
-        </div>
-      </div>
-      <div className="relative grid grid-cols-2 gap-4 px-14 pb-7 pt-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="py-2.5 font-black text-white"
-          style={{
-            borderRadius: 2,
-            background: 'linear-gradient(180deg, #272727, #141414)',
-            boxShadow: '0 3px 10px rgba(0,0,0,0.24)',
-            color: '#ffffff',
-          }}
-        >
-          確認
-        </button>
-        <button
-          type="button"
-          disabled={!canAgain}
-          onClick={onAgain}
-          className="py-2.5 font-black text-white"
-          style={{
-            borderRadius: 2,
-            background: 'linear-gradient(180deg, #27c8ff, #0797d5)',
-            boxShadow: '0 3px 12px rgba(0,154,216,0.34)',
-            opacity: canAgain ? 1 : 0.52,
-            cursor: canAgain ? 'pointer' : 'not-allowed',
-          }}
-        >
-          再招募
-          <span
-            className="mx-auto mt-1 flex w-fit items-center gap-1 px-2 text-[10px]"
-            style={{ borderRadius: 999, background: 'rgba(0,0,0,0.28)' }}
+        <div className="mt-7 grid w-full max-w-md grid-cols-2 gap-4 px-14">
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="py-2.5 font-black text-white"
+            style={{
+              borderRadius: 2,
+              background: 'linear-gradient(180deg, #272727, #141414)',
+              boxShadow: '0 3px 10px rgba(0,0,0,0.24)',
+              color: '#ffffff',
+            }}
           >
-            <span>$</span>
-            <span>{(isTen ? tenPullCost : onePullCost).toLocaleString()}</span>
-          </span>
-        </button>
-      </div>
+            確認
+          </button>
+          <button
+            type="button"
+            disabled={!canAgain}
+            onClick={onAgain}
+            className="py-2.5 font-black text-white"
+            style={{
+              borderRadius: 2,
+              background: 'linear-gradient(180deg, #27c8ff, #0797d5)',
+              boxShadow: '0 3px 12px rgba(0,154,216,0.34)',
+              opacity: canAgain ? 1 : 0.52,
+              cursor: canAgain ? 'pointer' : 'not-allowed',
+            }}
+          >
+            再招募
+            <span
+              className="mx-auto mt-1 flex w-fit items-center gap-1 px-2 text-[10px]"
+              style={{ borderRadius: 999, background: 'rgba(0,0,0,0.28)' }}
+            >
+              <span>$</span>
+              <span>{(isTen ? tenPullCost : onePullCost).toLocaleString()}</span>
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

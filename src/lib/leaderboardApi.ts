@@ -5,7 +5,8 @@ import { apiFetch, ApiError, NetworkError, TimeoutError } from './api';
 type ServerEntry = {
   id?: number;
   user_id?: number;
-  nickname?: string;
+  nickname?: string;        // 舊欄位保留，新版不顯示
+  company_name?: string;    // v6 新欄位：公司名（顯示用）
   days?: number;
   money?: number;
   staff_count?: number;
@@ -28,7 +29,7 @@ export type SubmitPayload = {
   days: number;
   money: number;
   staff_count: number;
-  nickname?: string;
+  company_name?: string;
 };
 
 export type MyBestResult = {
@@ -42,6 +43,7 @@ function toClient(e: ServerEntry): LeaderboardEntry {
     money: typeof e.money === 'number' ? e.money : 0,
     staffCount: typeof e.staff_count === 'number' ? e.staff_count : 0,
     date: e.submitted_at ?? new Date().toISOString(),
+    companyName: e.company_name,
     nickname: e.nickname,
   };
 }
