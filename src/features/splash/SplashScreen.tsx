@@ -8,6 +8,7 @@ import { AuthScreen } from '@/features/auth/AuthScreen';
 import { LeaderboardPanel } from '@/features/leaderboard/LeaderboardPanel';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
+import { LoginScrapbook } from './LoginScrapbook';
 
 const IPO_MONEY = 50000;
 const IPO_OFFICE_LEVEL = 4;
@@ -67,18 +68,20 @@ export function SplashScreen() {
   return (
     <div
       className="fixed inset-0 z-[1000] overflow-hidden"
-      style={{
-        backgroundImage: unauthenticated
-          ? `linear-gradient(90deg, rgba(255,255,255,0.18), rgba(234,244,255,0.32)), url('${base}assets/start-screen.png')`
-          : `linear-gradient(180deg, rgba(255,255,255,0.82), rgba(239,248,255,0.74)), url('${base}assets/start-screen.png')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
+      style={
+        unauthenticated
+          ? undefined
+          : {
+              backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.82), rgba(239,248,255,0.74)), url('${base}assets/start-screen.png')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }
+      }
     >
       {unauthenticated ? (
-        <UnauthedSplashShell>
+        <LoginScrapbook base={base}>
           <AuthScreen />
-        </UnauthedSplashShell>
+        </LoginScrapbook>
       ) : (
         <AuthedSplashShell
           base={base}

@@ -1,0 +1,521 @@
+.login-scrapbook {
+  background: #fff5f2;
+}
+.login-scrapbook-bg {
+  background:
+    radial-gradient(rgba(232, 180, 195, 0.12) 1px, transparent 1.5px) 0 0 / 24px 24px,
+    radial-gradient(circle at 15% 16%, rgba(255, 221, 232, 0.56), transparent 34%),
+    radial-gradient(circle at 88% 82%, rgba(255, 232, 220, 0.42), transparent 38%),
+    linear-gradient(180deg, #fff8f7 0%, #ffeef2 58%, #ffe0df 100%);
+}
+
+/* === 背景散落裝飾（粉/藍/黃彩色膠帶） === */
+.login-bg-decor {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+.login-bg-tape {
+  position: absolute;
+  width: 96px;
+  height: 26px;
+  box-shadow: 0 3px 6px rgba(120, 75, 56, 0.18);
+  border-radius: 1px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+}
+.login-bg-tape::before, .login-bg-tape::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+}
+.login-bg-tape::before {
+  left: -2px;
+  background: inherit;
+  clip-path: polygon(0 0, 100% 25%, 80% 50%, 100% 75%, 0 100%);
+  opacity: 0.85;
+}
+.login-bg-tape::after {
+  right: -2px;
+  background: inherit;
+  clip-path: polygon(100% 0, 0 25%, 20% 50%, 0 75%, 100% 100%);
+  opacity: 0.85;
+}
+/* 右紅：與左藍 tape-5 並排在中央上方 */
+.login-bg-tape-2 {
+  right: 40%; top: 4%; transform: rotate(13deg);
+  background: var(--kawaii-tape-stripe-pink);
+  width: 100px;
+}
+.login-bg-tape-3 {
+  left: 3%; bottom: 16%; transform: rotate(-9deg);
+  background: linear-gradient(180deg, rgba(255, 235, 160, 0.8), rgba(248, 218, 120, 0.6));
+  width: 80px; height: 22px;
+}
+.login-bg-tape-4 {
+  right: 4%; bottom: 22%; transform: rotate(7deg);
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.24) 0 8px, transparent 8px 16px),
+    linear-gradient(180deg, rgba(255, 178, 198, 0.7), rgba(255, 145, 175, 0.5));
+  width: 78px; height: 22px;
+}
+/* 左藍：與右紅 tape-2 並排在中央上方 */
+.login-bg-tape-5 {
+  left: 40%; top: 4%; transform: rotate(-9deg);
+  background: var(--kawaii-tape-stripe-blue);
+  width: 100px; height: 26px;
+}
+
+/* === 桌機鎖 1024x641 等比 scale === */
+.login-scaled-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+@media (min-width: 1024px) {
+  .login-scaled-stage {
+    width: 1024px;
+    height: 608px;
+    position: absolute;
+    top: var(--login-stage-top, 0);
+    left: 50%;
+    transform: translateX(-50%) scale(var(--login-scale, 1));
+    transform-origin: top center;
+  }
+  .login-scrapbook-main {
+    height: 544px;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+    padding-left: 35px;
+    padding-right: 14px;
+  }
+  .login-photo-stage {
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding-top: 32px;
+  }
+  .login-polaroid {
+    max-width: 510px;
+  }
+  .login-card-stage {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-top: 32px;
+  }
+  .login-card {
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* === Header / Brand === */
+.login-scrapbook-header {
+  flex-shrink: 0;
+  height: 64px !important;
+  align-items: flex-start !important;
+  padding: 18px 18px 0 !important;
+}
+.login-brand-logo {
+  display: block;
+  width: auto;
+  height: 58px;
+  max-width: 150px;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 6px 12px rgba(120, 75, 56, 0.22));
+}
+
+/* === Polaroid 相片 === */
+.login-photo-stage {
+  min-height: 0;
+}
+.login-polaroid {
+  position: relative;
+  background: linear-gradient(180deg, #ffffff, #fcfaf6);
+  padding: 16px 16px 54px;
+  border-radius: 10px;
+  box-shadow:
+    0 22px 38px rgba(120, 75, 56, 0.22),
+    0 5px 12px rgba(120, 75, 56, 0.14),
+    inset 0 0 0 1px rgba(180, 140, 100, 0.06);
+  transform: rotate(-0.9deg);
+  max-width: min(540px, 100%);
+  width: 100%;
+}
+.login-polaroid-photo {
+  position: relative;
+  aspect-ratio: 1.12 / 1;
+  background: linear-gradient(180deg, #f3e6d4, #e6cfb1);
+  overflow: hidden;
+  border-radius: 8px;
+}
+.login-polaroid-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.login-polaroid-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #946642;
+  background: linear-gradient(180deg, #f6e5cc, #ead4b4);
+}
+.login-polaroid-fallback span { font-size: 56px; }
+.login-polaroid-fallback p { font-size: 22px; font-weight: 900; margin: 0; }
+.login-polaroid-fallback small { font-size: 12px; font-weight: 700; }
+.login-photo-title {
+  display: none;
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Fredoka', 'Quicksand', 'PingFang TC', sans-serif;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.55), 0 0 1px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.3px;
+  text-align: right;
+}
+.login-season-badge {
+  position: absolute;
+  right: -16px;
+  top: 16px;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffe0c2, #ffc88c);
+  color: #7b3b13;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.05;
+  transform: rotate(-9deg);
+  box-shadow:
+    0 8px 14px rgba(170, 96, 34, 0.2),
+    inset 0 -3px 0 rgba(120, 50, 5, 0.1),
+    inset 0 2px 0 rgba(255, 255, 255, 0.55);
+  border: 2px solid #fff7e3;
+}
+.login-season-badge strong { font-size: 11px; letter-spacing: 1.5px; }
+.login-season-badge span { font-size: 21px; }
+.login-season-badge small { font-size: 9px; letter-spacing: 1px; margin-top: 1px; }
+
+/* === Polaroid 膠帶（粉/藍彩色） === */
+.login-tape {
+  position: absolute;
+  width: 120px;
+  height: 32px;
+  z-index: 6;
+  box-shadow: 0 3px 8px rgba(120, 75, 56, 0.28);
+}
+.login-tape::before, .login-tape::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: inherit;
+}
+.login-tape::before {
+  left: -3px;
+  clip-path: polygon(0 0, 100% 25%, 80% 50%, 100% 75%, 0 100%);
+}
+.login-tape::after {
+  right: -3px;
+  clip-path: polygon(100% 0, 0 25%, 20% 50%, 0 75%, 100% 100%);
+}
+.login-tape-l {
+  left: 50px; top: -14px;
+  transform: rotate(-16deg);
+  background: var(--kawaii-tape-stripe-pink);
+}
+.login-tape-r {
+  right: 40px; top: -14px;
+  transform: rotate(16deg);
+  background: var(--kawaii-tape-stripe-blue);
+}
+
+/* === 黃色便箋紙條 === */
+.login-polaroid-caption {
+  position: absolute;
+  left: 28px;
+  bottom: 18px;
+  max-width: 56%;
+  padding: 8px 13px 9px;
+  background: linear-gradient(180deg, #fff5b8 0%, #ffe87a 100%);
+  border-radius: 2px;
+  transform: rotate(-1.6deg);
+  box-shadow:
+    0 12px 20px rgba(150, 120, 30, 0.24),
+    0 2px 5px rgba(150, 120, 30, 0.16),
+    inset 0 -1px 0 rgba(196, 156, 28, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b3c2b;
+  font-family: var(--font-handwritten);
+}
+.login-caption-heart {
+  font-size: 14px;
+  color: #e26680;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+.login-caption-text {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.login-polaroid-caption strong {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.login-polaroid-caption small {
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.78;
+}
+
+/* === 登入卡 === */
+.login-card-stage { min-height: 0; position: relative; }
+.login-card-tape {
+  position: absolute;
+  top: 20px;
+  z-index: 6;
+  width: 92px;
+  height: 24px;
+  opacity: 0.82;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow: 0 3px 8px rgba(120, 75, 56, 0.16);
+  pointer-events: none;
+  border-radius: 1px;
+}
+.login-card-tape-l {
+  left: 22px;
+  width: 84px;
+  transform: rotate(-16deg);
+  background: var(--kawaii-tape-stripe-pink);
+}
+.login-card-tape-r {
+  right: 18px;
+  width: 86px;
+  transform: rotate(16deg);
+  background: var(--kawaii-tape-stripe-blue);
+}
+.login-card-tape-b {
+  top: auto;
+  bottom: -8px;
+  left: 38px;
+  width: 70px;
+  height: 22px;
+  transform: rotate(-12deg);
+  background: linear-gradient(180deg, rgba(255, 232, 122, 0.92), rgba(248, 218, 120, 0.78));
+  opacity: 0.9;
+}
+.login-card {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background:
+    radial-gradient(rgba(228, 160, 170, 0.10) 1px, transparent 1.6px) 0 0 / 9px 9px,
+    repeating-linear-gradient(0deg, rgba(186, 121, 82, 0.05) 0 1px, transparent 1px 16px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 247, 247, 0.97));
+  border: 1px solid rgba(236, 181, 185, 0.48);
+  border-radius: 8px;
+  padding: 18px 20px 16px;
+  transform: rotate(-0.4deg);
+  box-shadow:
+    0 22px 36px rgba(160, 90, 60, 0.20),
+    0 7px 12px rgba(160, 90, 60, 0.12),
+    0 1px 0 rgba(180, 140, 100, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -2px 0 rgba(180, 140, 100, 0.08);
+}
+.login-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.32) 0%, transparent 18%, transparent 82%, rgba(180, 140, 100, 0.06) 100%);
+  pointer-events: none;
+}
+.login-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: radial-gradient(rgba(140, 90, 75, 0.04) 0.5px, transparent 1px);
+  background-size: 3px 3px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+/* 把表單抬到 ::before/::after 紙感層之上，否則會被蓋住 */
+.login-card > .auth-pawder-shell {
+  position: relative;
+  z-index: 1;
+}
+
+/* === Polaroid 內貼便利貼（隨 stage 一起 scale）=== */
+.login-polaroid-sticky {
+  position: absolute;
+  z-index: 5;
+  max-width: 130px;
+  padding: 9px 12px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.45;
+  color: #6b3c2b;
+  font-family: var(--font-handwritten);
+  border-radius: 2px;
+  box-shadow:
+    0 8px 14px rgba(150, 120, 30, 0.22),
+    0 2px 5px rgba(150, 120, 30, 0.14),
+    inset 0 -1px 0 rgba(196, 156, 28, 0.14);
+  pointer-events: none;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.login-polaroid-sticky strong {
+  flex: 0 0 auto;
+  color: #d8456c;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+.login-polaroid-sticky::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-4deg);
+  width: 42px;
+  height: 11px;
+  background:
+    var(--kawaii-tape-gingham-overlay),
+    rgba(255, 178, 198, 0.78);
+  background-size: 8px 8px;
+  opacity: 0.86;
+  box-shadow: 0 2px 4px rgba(120, 75, 56, 0.14);
+}
+/* 露出 polaroid 右邊 18px，看起來像「貼出去」的便利貼 */
+.login-polaroid-sticky-br {
+  right: -18px;
+  bottom: 14px;
+  transform: rotate(4deg);
+  background: linear-gradient(180deg, #ffe0e8 0%, #ffc4d2 100%);
+  max-width: 116px;
+}
+.login-polaroid-sticky-br strong {
+  color: #ff5f80;
+}
+
+/* === 頁尾（全 viewport 寬，不被 stage 縮放） === */
+.login-scrapbook-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 38px;
+  background: linear-gradient(180deg, rgba(255, 245, 242, 0.0), rgba(255, 245, 242, 0.96) 50%);
+  color: #946642;
+  font-weight: 700;
+  backdrop-filter: blur(3px);
+}
+.login-footer-copyright { font-weight: 800; }
+.login-footer-dot { opacity: 0.55; }
+.login-footer-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+  color: #946642;
+  font-weight: 700;
+  cursor: pointer;
+}
+.login-footer-link:hover { color: #5a2f3a; text-decoration: underline; }
+.login-footer-version {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #b07a7e;
+  font-weight: 800;
+}
+
+/* === 行動版（< 1024px）：維持 fluid RWD === */
+@media (max-width: 1023px) {
+  .login-scrapbook {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .login-scrapbook-main {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 18px;
+    padding-bottom: 90px;
+    height: auto;
+  }
+  .login-photo-stage { padding: 24px 0 28px; }
+  .login-polaroid { max-width: 380px; margin: 0 auto; }
+  .login-polaroid-caption { max-width: 86%; }
+  .login-card-stage { padding-top: 24px; }
+  .login-scrapbook-footer {
+    padding: 0 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .login-bg-tape { display: none; }
+  .login-polaroid-sticky { display: none; }
+  /* 卡片在手機歪掉視覺成本高，正回來；小元素隱藏避免擠 form */
+  .login-card { transform: none; }
+  .login-card-tape-b { display: none; }
+}
+@media (max-width: 640px) {
+  .login-scrapbook-header {
+    padding-left: 14px;
+    padding-right: 14px;
+    height: 64px;
+  }
+  .login-brand-logo { height: 56px; max-width: 138px; }
+  .login-scrapbook-main {
+    padding: 14px 14px 90px;
+    gap: 18px;
+  }
+  .login-polaroid {
+    padding: 12px 12px 60px;
+    max-width: 100%;
+  }
+  .login-photo-title { font-size: 22px; }
+  .login-season-badge {
+    width: 72px; height: 72px; right: -10px; top: 32%;
+  }
+  .login-season-badge span { font-size: 18px; }
+  .login-card { padding: 22px 18px 22px; border-radius: 18px; }
+  /* 行動下 chip 換到 footer 上方獨立列 */
+  .login-scrapbook-footer {
+    height: auto;
+    padding: 50px 12px 12px;
+  }
+}
