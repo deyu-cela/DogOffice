@@ -3,8 +3,10 @@ import { DogAvatar } from '@/components/DogAvatar';
 import { dogPrimaryIndustry } from '@/store/gameStore';
 import { useGameStore } from '@/store/gameStore';
 import type { Dog, ProjectCategory } from '@/types';
-import { dogGrade, dogPower, dogPowerStars, type DogGradeUI } from '@/lib/utils';
+import { dogGrade, dogPowerStars, type DogGradeUI } from '@/lib/utils';
+import { dogPowerWithTools } from '@/lib/toolsEngine';
 import { TeamEditModal } from './TeamEditModal';
+import './staff.css';
 
 type FilterKey = 'all' | 'I' | 'II' | 'III';
 type SortKey = 'power' | 'level' | 'grade' | 'loyalty' | 'fatigue';
@@ -49,13 +51,22 @@ const CARD_ACCENT: Record<DogGradeUI, string> = {
   D: '#8d96a6',
 };
 
-const FRAME_BG: Record<DogGradeUI, string> = {
-  U: 'linear-gradient(145deg, #ff83dd, #ffe56f 34%, #78dbff 68%, #b875ff)',
-  S: 'linear-gradient(145deg, #fff1a8, #f7b71f 42%, #9d5b09)',
-  A: 'linear-gradient(145deg, #ecd1ff, #ad5ce2 48%, #4c196f)',
-  B: 'linear-gradient(145deg, #d9ffe8, #38bf71 48%, #145b34)',
-  C: 'linear-gradient(145deg, #d8ebff, #3b78de 48%, #122d62)',
-  D: 'linear-gradient(145deg, #f0f2f5, #9aa2b0 48%, #343b49)',
+const GRADE_BAND_BG: Record<DogGradeUI, string> = {
+  U: 'linear-gradient(90deg, #ff83dd, #ffe56f 34%, #78dbff 68%, #b875ff)',
+  S: 'linear-gradient(180deg, #ffd95a, #f0a818)',
+  A: 'linear-gradient(180deg, #c9a4f0, #8a4ce0)',
+  B: 'linear-gradient(180deg, #a4f0bd, #28b964)',
+  C: 'linear-gradient(180deg, #c8d8e8, #6a8aa8)',
+  D: 'linear-gradient(180deg, #d2d6dd, #7a8290)',
+};
+
+const GRADE_BAND_TEXT: Record<DogGradeUI, string> = {
+  U: '#40143f',
+  S: '#5a3d05',
+  A: '#24152f',
+  B: '#0a3a1f',
+  C: '#fff',
+  D: '#fff',
 };
 
 function rankClass(dog: Dog): Exclude<FilterKey, 'all'> {
@@ -98,6 +109,7 @@ type StaffRow = {
 
 export function StaffList() {
   const staff = useGameStore((s) => s.staff);
+  const tools = useGameStore((s) => s.tools);
   const playMini = useGameStore((s) => s.openPlayMiniGame);
   const openTraining = useGameStore((s) => s.openTraining);
   const openStaffAction = useGameStore((s) => s.openStaffAction);
@@ -112,9 +124,9 @@ export function StaffList() {
       index,
       grade: dogGrade(dog),
       rank: rankClass(dog),
-      power: dogPower(dog),
+      power: dogPowerWithTools(dog, tools),
     }));
-  }, [staff]);
+  }, [staff, tools]);
 
   const visibleRows = useMemo(() => {
     return rows
@@ -131,33 +143,12 @@ export function StaffList() {
   }
 
   return (
-    <section
-      className="relative overflow-hidden rounded-xl"
-      style={{
-        background:
-          'linear-gradient(180deg, rgba(255,255,255,0.66), rgba(255,247,239,0.72)), repeating-linear-gradient(0deg, rgba(186,121,82,0.05) 0 1px, transparent 1px 16px), rgba(247,214,191,0.46)',
-        border: '1px solid rgba(208,130,105,0.34)',
-        boxShadow: '0 8px 16px rgba(166,91,85,0.08), inset 0 0 0 1px rgba(255,255,255,0.42)',
-        backdropFilter: 'blur(7px) saturate(1.02)',
-        WebkitBackdropFilter: 'blur(7px) saturate(1.02)',
-      }}
-    >
+    <section className="staff-scrapbook-surface relative overflow-hidden">
       <div
-        className="flex items-center justify-between gap-2 px-3 py-2"
-        style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,232,233,0.56))',
-          borderBottom: '1px solid rgba(190,117,105,0.36)',
-        }}
+        className="staff-scrapbook-header flex items-center justify-between gap-2 px-3 py-2"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <div
-            className="h-8 w-8 grid place-items-center font-black text-sm"
-            style={{
-              color: '#20bae8',
-              background: '#f7fbff',
-              clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-            }}
-          >
+          <div className="staff-scrapbook-mark font-black text-sm">
             N
           </div>
           <div className="min-w-0">
@@ -186,15 +177,8 @@ export function StaffList() {
                 key={item.key}
                 type="button"
                 onClick={() => setFilter(item.key)}
-                className="h-10 min-w-10 px-3 rounded-md font-black text-sm"
-                style={{
-                  color: active ? '#fffdf8' : '#6e4638',
-                  background: active
-                    ? 'linear-gradient(180deg, #f7b267, #c87e78)'
-                    : 'linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,247,239,0.58))',
-                  border: active ? '1px solid rgba(208,130,105,0.46)' : '1px solid rgba(208,130,105,0.28)',
-                  boxShadow: active ? '0 0 0 1px rgba(255,255,255,0.28) inset' : '0 4px 10px rgba(166,91,85,0.08)',
-                }}
+                className="staff-filter-btn h-10 min-w-10 px-3 font-black text-sm"
+                data-active={active ? 'true' : 'false'}
               >
                 {item.label}
               </button>
@@ -205,22 +189,13 @@ export function StaffList() {
             type="button"
             aria-label="切換排序方向"
             onClick={() => setDesc((value) => !value)}
-            className="h-10 w-10 rounded-md font-black text-lg"
-            style={{
-              color: '#6e4638',
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,247,239,0.58))',
-              border: '1px solid rgba(208,130,105,0.28)',
-            }}
+            className="staff-sort-toggle h-10 w-10 font-black text-lg"
           >
             {desc ? '↻' : '↺'}
           </button>
 
           <label
-            className="h-10 rounded-md flex items-center px-2"
-            style={{
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,247,239,0.58))',
-              border: '1px solid rgba(208,130,105,0.28)',
-            }}
+            className="staff-sort-select h-10 flex items-center px-2"
           >
             <select
               value={sortKey}
@@ -237,12 +212,12 @@ export function StaffList() {
           </label>
         </div>
 
-        <div className="text-[11px] mb-2 text-center font-bold" style={{ color: '#886153' }}>
+        <div className="staff-count-chip text-[11px] font-bold">
           {visibleRows.length} / {staff.length} 名員工
         </div>
 
         {visibleRows.length === 0 ? (
-          <div className="text-center text-sm py-8" style={{ color: 'var(--muted)' }}>
+          <div className="staff-paper-empty text-center text-sm py-8" style={{ color: '#886153' }}>
             這個篩選沒有員工
           </div>
         ) : (
@@ -279,15 +254,8 @@ function HeaderButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="h-9 px-3 rounded-sm text-xs font-black"
-      style={{
-        color: disabled ? '#a98a80' : '#fffdf8',
-        background: disabled
-          ? 'rgba(255,240,237,0.58)'
-          : 'linear-gradient(180deg, #f7b267, #c87e78)',
-        border: '1px solid rgba(208,130,105,0.32)',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-      }}
+      className="staff-kawaii-btn h-9 px-3 text-xs font-black"
+      style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
     >
       {children}
     </button>
@@ -304,29 +272,21 @@ function StaffCard({ row, onClick }: { row: StaffRow; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="group relative w-full overflow-hidden text-left"
+      className="staff-card-frame group relative w-full overflow-hidden text-left"
       style={{
         aspectRatio: '0.68',
-        minHeight: 136,
+        minHeight: 126,
         padding: 3,
-        background: FRAME_BG[grade],
-        border: `1px solid ${accent}`,
-        boxShadow: `0 8px 16px rgba(15,23,42,0.16), inset 0 0 0 1px rgba(255,255,255,0.35)`,
       }}
       title={`${dog.name} ${dog.role} 戰鬥力 ${power}`}
     >
       <div
-        className="relative h-full overflow-hidden"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(226,232,240,0.7) 42%, rgba(25,28,34,0.68) 100%)',
-          border: '1px solid rgba(255,255,255,0.7)',
-        }}
+        className="staff-card-inner relative h-full overflow-hidden"
       >
         <div
-          className="absolute inset-x-0 top-0 h-[72%]"
+          className="absolute inset-x-0 top-0 h-[62%]"
           style={{
-            background: `radial-gradient(circle at 50% 22%, ${accent}33, transparent 52%)`,
+            background: `radial-gradient(circle at 50% 22%, ${accent}24, transparent 54%)`,
           }}
         />
 
@@ -361,7 +321,7 @@ function StaffCard({ row, onClick }: { row: StaffRow; onClick: () => void }) {
           </div>
         )}
 
-        <div className="absolute inset-x-0 top-3 bottom-8 flex items-center justify-center px-2">
+        <div className="absolute inset-x-0 top-2 bottom-[48px] flex items-center justify-center px-2">
           {dog.image ? (
             <img
               src={dog.image}
@@ -375,23 +335,21 @@ function StaffCard({ row, onClick }: { row: StaffRow; onClick: () => void }) {
         </div>
 
         <div
-          className="absolute inset-x-0 bottom-0 px-1.5 pb-1 pt-4"
-          style={{
-            background: 'linear-gradient(180deg, transparent 0%, rgba(20,22,27,0.9) 34%, rgba(20,22,27,0.98) 100%)',
-          }}
+          className="staff-rarity-band absolute inset-x-0 bottom-0 px-1.5 py-1.5"
+          style={{ background: GRADE_BAND_BG[grade], color: GRADE_BAND_TEXT[grade] }}
         >
           <div className="flex items-end justify-between gap-1">
-            <div className="text-[10px] font-black leading-none" style={{ color: '#f7d35b' }}>
+            <div className="relative text-[10px] font-black leading-none">
               Lv.{dog.level}
             </div>
-            <div className="text-[10px] leading-none" style={{ color: '#ffd34e' }}>
+            <div className="relative text-[10px] leading-none">
               {'★'.repeat(stars)}
             </div>
           </div>
-          <div className="mt-0.5 truncate text-[11px] font-black leading-tight" style={{ color: '#ffffff' }}>
+          <div className="relative mt-0.5 truncate text-[11px] font-black leading-tight">
             {dog.name}
           </div>
-          <div className="truncate text-[9px] font-bold leading-tight" style={{ color: '#cbd5e1' }}>
+          <div className="relative truncate text-[9px] font-bold leading-tight" style={{ opacity: 0.9 }}>
             {dog.role} · {power}
           </div>
         </div>

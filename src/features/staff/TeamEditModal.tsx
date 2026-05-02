@@ -3,9 +3,11 @@ import { createPortal } from 'react-dom';
 import { useGameStore, teamMaxMembers, dogPrimaryIndustry } from '@/store/gameStore';
 import { DogAvatar } from '@/components/DogAvatar';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
-import { dogPower, dogPowerStars, dogGrade, type DogGradeUI } from '@/lib/utils';
-import type { Dog, Project, ProjectCategory } from '@/types';
+import { dogPowerStars, dogGrade, type DogGradeUI } from '@/lib/utils';
+import { dogPowerWithTools } from '@/lib/toolsEngine';
+import type { Dog, Project, ProjectCategory, Tool } from '@/types';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
+import './staff.css';
 
 const INDUSTRIES: ProjectCategory[] = ['tech', 'design', 'marketing', 'service'];
 
@@ -82,12 +84,6 @@ const RARITY_BG: Record<DogGradeUI, string> = {
 
 const GRADE_ORDER: Record<DogGradeUI, number> = { U: 0, S: 1, A: 2, B: 3, C: 4, D: 5 };
 
-function industryGlassBg(industry: ProjectCategory): string {
-  const c = INDUSTRY_COLOR[industry];
-  // 玻璃感：上方白光 + 產業色透明漸層
-  return `linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 30%), linear-gradient(135deg, ${c}88 0%, ${c}40 100%)`;
-}
-
 function industryTint(industry: ProjectCategory): string {
   const c = INDUSTRY_COLOR[industry];
   return `linear-gradient(180deg, ${c}33 0%, transparent 70%)`;
@@ -122,9 +118,24 @@ function activeChemistryForTeam(dogs: Dog[], category: ProjectCategory) {
   });
 }
 
+function chemistryBonusText(bonus: {
+  qualityMul?: number;
+  speedMul?: number;
+  moraleAdd?: number;
+  revenueMul?: number;
+}) {
+  const parts: string[] = [];
+  if (bonus.qualityMul !== undefined) parts.push(`品質 ×${bonus.qualityMul}`);
+  if (bonus.speedMul !== undefined) parts.push(`速度 ×${bonus.speedMul}`);
+  if (bonus.revenueMul !== undefined) parts.push(`收入 ×${bonus.revenueMul}`);
+  if (bonus.moraleAdd !== undefined) parts.push(`士氣 ${bonus.moraleAdd > 0 ? '+' : ''}${bonus.moraleAdd}`);
+  return parts.join(' / ');
+}
+
 export function TeamEditModal({ onClose }: { onClose: () => void }) {
   const teams = useGameStore((s) => s.teams);
   const staff = useGameStore((s) => s.staff);
+  const tools = useGameStore((s) => s.tools);
   const clients = useGameStore((s) => s.clients);
   const officeLevel = useGameStore((s) => s.officeLevel);
   const addDog = useGameStore((s) => s.addDogToTeam);
@@ -180,13 +191,13 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
     const base = filter === 'all' ? staff : staff.filter((d) => d.role === filter);
     return [...base].sort((a, b) => {
       switch (sortKey) {
-        case 'power': return dogPower(b) - dogPower(a);
+        case 'power': return dogPowerWithTools(b, tools) - dogPowerWithTools(a, tools);
         case 'level': return b.level - a.level;
         case 'grade': return GRADE_ORDER[dogGrade(a)] - GRADE_ORDER[dogGrade(b)];
         case 'name': return a.name.localeCompare(b.name);
       }
     });
-  }, [staff, filter, sortKey]);
+  }, [staff, tools, filter, sortKey]);
 
   // 動態列出目前員工有的職業（依固定順序）
   const visibleRoles = useMemo(() => {
@@ -206,36 +217,29 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
     .map((id) => staffById.get(id))
     .filter((d): d is Dog => !!d);
   const activeChemistry = activeChemistryForTeam(teamMembers, activeIndustry);
-  const teamTotalPower = teamMembers.reduce((n, d) => n + dogPower(d), 0);
+  const teamTotalPower = teamMembers.reduce((n, d) => n + dogPowerWithTools(d, tools), 0);
   const teamAvgLevel = teamMembers.length
     ? teamMembers.reduce((n, d) => n + d.level, 0) / teamMembers.length
     : 0;
   const teamTotalStars = teamMembers.length
-    ? Math.round(teamMembers.reduce((n, d) => n + dogPowerStars(dogPower(d)), 0) / teamMembers.length)
+    ? Math.round(teamMembers.reduce((n, d) => n + dogPowerStars(dogPowerWithTools(d, tools)), 0) / teamMembers.length)
     : 0;
 
   const modal = (
     <div
-      className="fixed inset-0 z-[860] flex items-center justify-center p-4"
-      style={{ background: 'rgba(91,56,45,0.32)', backdropFilter: 'blur(6px)' }}
+      className="staff-scrapbook-backdrop fixed inset-0 z-[860] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        className="rounded-xl flex flex-col w-full"
+        className="staff-scrapbook-modal flex flex-col w-full"
         style={{
           maxWidth: 1440,
           height: 'min(92vh, 860px)',
-          background:
-            'linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,247,239,0.9)), repeating-linear-gradient(0deg, rgba(186,121,82,0.06) 0 1px, transparent 1px 18px), #f7d6bf',
-          border: '1px solid rgba(208,130,105,0.38)',
-          boxShadow: '0 24px 70px rgba(72,40,34,0.24)',
-          backdropFilter: 'blur(10px) saturate(1.04)',
-          WebkitBackdropFilter: 'blur(10px) saturate(1.04)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: industry tabs (高度 -40%) */}
-        <div className="px-3 pt-3 pb-1.5 flex items-center gap-1 flex-wrap" style={{ borderBottom: '1px solid var(--line)' }}>
+        <div className="staff-scrapbook-header px-3 pt-3 pb-1.5 flex items-center gap-1 flex-wrap">
           {INDUSTRIES.map((ind) => {
             const active = ind === activeIndustry;
             const color = INDUSTRY_COLOR[ind];
@@ -245,12 +249,9 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
                 key={ind}
                 type="button"
                 onClick={() => setActiveIndustry(ind)}
-                className="text-[11px] rounded-md font-extrabold inline-flex items-center gap-1"
+                className="staff-tab-btn text-[11px] inline-flex items-center gap-1"
+                data-active={active ? 'true' : 'false'}
                 style={{
-                  background: active ? color : '#ffffff',
-                  color: active ? 'white' : '#446da8',
-                  border: `1.5px solid ${active ? color : 'var(--line)'}`,
-                  boxShadow: active ? `0 3px 8px ${color}55` : 'none',
                   padding: '3px 8px',
                   lineHeight: 1.2,
                 }}
@@ -265,8 +266,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="ml-auto text-[11px] px-2 py-[2px] rounded-full"
-            style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
+            className="staff-close-pill ml-auto text-[11px] px-2 py-[2px] font-bold"
           >
             X
           </button>
@@ -294,11 +294,9 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={() => setEditMode((v) => !v)}
-              className="text-[10px] rounded-full font-extrabold whitespace-nowrap"
+              className="staff-chip-btn text-[10px] whitespace-nowrap"
+              data-active={editMode ? 'true' : 'false'}
               style={{
-                background: editMode ? headerColor : '#ffffff',
-                color: editMode ? 'white' : headerColor,
-                border: `1px solid ${headerColor}`,
                 padding: '1px 8px',
               }}
             >
@@ -307,11 +305,11 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={() => autoFillTeam(activeIndustry)}
-              className="text-[10px] rounded-full font-extrabold whitespace-nowrap"
+              className="staff-chip-btn text-[10px] whitespace-nowrap"
               style={{
-                background: '#ffffff',
                 color: headerColor,
-                border: `1px dashed ${headerColor}`,
+                borderColor: `${headerColor}88`,
+                borderStyle: 'dashed',
                 padding: '1px 8px',
               }}
               title="根據能力與化學反應自動填入最佳組合"
@@ -322,11 +320,10 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={() => toggleTeam(activeIndustry)}
               disabled={team.memberIds.length === 0}
-              className="text-[10px] rounded-full font-extrabold whitespace-nowrap"
+              className="staff-chip-btn text-[10px] whitespace-nowrap"
+              data-active={team.open ? 'true' : 'false'}
               style={{
-                background: team.open ? headerColor : team.memberIds.length === 0 ? '#e9f1ff' : '#ffffff',
-                color: team.open ? 'white' : team.memberIds.length === 0 ? '#8aa2c8' : '#446da8',
-                border: `1px solid ${team.open ? headerColor : 'var(--line)'}`,
+                color: team.open ? undefined : team.memberIds.length === 0 ? '#8aa2c8' : '#6e4638',
                 cursor: team.memberIds.length === 0 ? 'not-allowed' : 'pointer',
                 padding: '1px 8px',
               }}
@@ -337,38 +334,41 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
 
           
 
-          <div
-            className="mt-2 px-3 py-2 rounded-lg"
-            style={{
-              background: activeChemistry.length > 0 ? '#ffffff' : '#f7fbff',
-              border: `1px solid ${activeChemistry.length > 0 ? `${headerColor}55` : 'var(--line)'}`,
-            }}
-          >
-            <div className="text-[11px] font-black mb-1" style={{ color: '#173b78' }}>
+          <div className="staff-team-summary-row mt-2">
+          <div className="staff-reaction-card px-3 py-1 flex items-center gap-2 flex-wrap">
+            <div className="text-[11px] font-black shrink-0" style={{ color: '#5b382d' }}>
               化學反應
             </div>
             {activeChemistry.length === 0 ? (
-              <div className="text-[11px]" style={{ color: 'var(--muted)' }}>
+              <div className="text-[11px]" style={{ color: '#886153' }}>
                 目前沒有觸發化學反應
               </div>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1">
                 {activeChemistry.map((combo) => (
                   <span
                     key={`${combo.roles.join('-')}-${combo.category ?? 'any'}`}
-                    className="text-[11px] px-2 py-1 rounded-md font-bold"
-                    style={{
-                      background: combo.type === 'positive' ? '#eefaf7' : '#fff1f1',
-                      color: combo.type === 'positive' ? '#16845f' : '#c44242',
-                      border: `1px solid ${combo.type === 'positive' ? 'rgba(51,194,154,0.28)' : 'rgba(239,68,68,0.24)'}`,
-                    }}
+                    className="staff-reaction-pill text-[11px] px-2 py-0.5 font-bold"
+                    data-tone={combo.type === 'positive' ? 'positive' : 'negative'}
                     title={combo.msg}
                   >
-                    {combo.type === 'positive' ? '正向' : '負面'}：{combo.roles.join(' + ')}
+                    {combo.type === 'positive' ? '正向' : '負面'}：{combo.roles.join(' + ')} · {chemistryBonusText(combo.bonus)}
                   </span>
                 ))}
               </div>
             )}
+          </div>
+          <div className="staff-total-card px-3 py-1 flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-bold" style={{ color: '#6b3c2b' }}>團隊總能力</span>
+            <span className="text-[14px] font-black" style={{ color: '#7a4a1c' }}>💼 {teamTotalPower}</span>
+            <span style={{ fontSize: 12, letterSpacing: 1 }}>
+              <span style={{ color: '#f0a818' }}>{'⭐'.repeat(teamTotalStars)}</span>
+              <span style={{ color: '#d0d8e4' }}>{'⭐'.repeat(5 - teamTotalStars)}</span>
+            </span>
+            <span className="text-[11px]" style={{ color: '#886153' }}>
+              {teamMembers.length > 0 ? `平均 Lv.${teamAvgLevel.toFixed(1)} · ${teamMembers.length}/${maxMembers} 名` : '尚未配置成員'}
+            </span>
+          </div>
           </div>
 {/* Team slots */}
           <div
@@ -386,6 +386,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
                 <div key={i} style={{ gridColumnStart: startColumn }}>
                   <SlotCell
                     dog={dog ?? null}
+                    tools={tools}
                     color={headerColor}
                     editMode={editMode}
                     onShowDetails={() => dog && showDetails(dog.id)}
@@ -397,22 +398,14 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Team total power */}
-          <div
-            className="mt-2 px-3 py-1.5 rounded-lg flex items-center gap-3 flex-wrap"
-            style={{
-              background: industryGlassBg(activeIndustry),
-              backgroundOrigin: 'border-box',
-              border: `1.5px solid ${headerColor}66`,
-              boxShadow: `0 0 0 1px ${headerColor}22, 0 2px 6px ${headerColor}33`,
-            }}
-          >
-            <span className="text-[11px] font-bold" style={{ color: '#173b78' }}>團隊總能力</span>
+          <div className="hidden">
+            <span className="text-[11px] font-bold" style={{ color: '#6b3c2b' }}>團隊總能力</span>
             <span className="text-[14px] font-black" style={{ color: '#7a4a1c' }}>💼 {teamTotalPower}</span>
             <span style={{ fontSize: 12, letterSpacing: 1 }}>
               <span style={{ color: '#f0a818' }}>{'★'.repeat(teamTotalStars)}</span>
               <span style={{ color: '#d0d8e4' }}>{'★'.repeat(5 - teamTotalStars)}</span>
             </span>
-            <span className="text-[11px] ml-auto" style={{ color: 'var(--muted)' }}>
+            <span className="text-[11px] ml-auto" style={{ color: '#886153' }}>
               {teamMembers.length > 0 ? `平均 Lv.${teamAvgLevel.toFixed(1)} ・ ${teamMembers.length}/${maxMembers} 員` : '尚未編組'}
             </span>
           </div>
@@ -425,10 +418,10 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        <hr style={{ border: 'none', borderTop: '1px solid var(--line)' }} />
+        <hr style={{ border: 'none', borderTop: '1.5px dashed rgba(190,117,105,0.34)' }} />
 
         {/* Filter row + sort（依職業分） */}
-        <div className="px-4 pt-1.5 pb-1 flex items-center gap-1 flex-wrap">
+        <div className="staff-filter-bar mx-4 px-3 pt-3 pb-2 flex items-center gap-1 flex-wrap">
           <FilterChip label="全部" active={filter === 'all'} onClick={() => setFilter('all')} count={staff.length} />
           {visibleRoles.map((role) => {
             const industry = dogPrimaryIndustry(role);
@@ -447,11 +440,8 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={() => setSortMenuOpen((v) => !v)}
-              className="text-[11px] font-bold tracking-wide rounded-md inline-flex items-center gap-1"
+              className="staff-soft-btn text-[11px] font-bold tracking-wide inline-flex items-center gap-1"
               style={{
-                background: '#ffffff',
-                color: '#446da8',
-                border: '1px solid var(--line)',
                 padding: '2px 8px',
               }}
             >
@@ -460,11 +450,8 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
             </button>
             {sortMenuOpen && (
               <div
-                className="absolute right-0 top-full mt-1 rounded-md overflow-hidden z-20"
+                className="staff-popover absolute right-0 top-full mt-1 overflow-hidden z-20"
                 style={{
-                  background: 'white',
-                  border: '1px solid var(--line)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
                   minWidth: 140,
                 }}
               >
@@ -473,11 +460,10 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
                     key={k}
                     type="button"
                     onClick={() => { setSortKey(k); setSortMenuOpen(false); }}
-                    className="block w-full text-left text-[11px] font-bold tracking-wide"
+                    className="staff-menu-btn block text-left text-[11px] font-bold tracking-wide"
+                    data-active={sortKey === k ? 'true' : 'false'}
                     style={{
                       padding: '6px 12px',
-                      background: sortKey === k ? '#eef6ff' : 'white',
-                      color: sortKey === k ? 'var(--blue)' : '#446da8',
                     }}
                   >
                     {SORT_LABEL[k]}
@@ -510,6 +496,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
                   <StaffCell
                     key={d.id}
                     dog={d}
+                    tools={tools}
                     inTeam={inCurrent}
                     inOtherTeam={inOther}
                     teamFull={team.memberIds.length >= maxMembers}
@@ -546,17 +533,16 @@ function ProjectChip({ project, color }: { project: Project; color: string }) {
   const pct = Math.round(ratio * 100);
   return (
     <div
-      className="flex items-center gap-1.5 px-2 py-0.5 rounded-md whitespace-nowrap"
+      className="staff-project-chip flex items-center gap-1.5 px-2 py-0.5 whitespace-nowrap"
       style={{
-        background: 'rgba(255,255,255,0.85)',
-        border: `1px solid ${color}55`,
+        borderColor: `${color}66`,
       }}
       title={`${project.title} ・ ${project.workDone}/${project.workRequired} (${pct}%)`}
     >
-      <span className="text-[11px] font-extrabold" style={{ color: '#173b78', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <span className="text-[11px] font-extrabold" style={{ color: '#6e4638', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {project.title}
       </span>
-      <div className="rounded-full overflow-hidden" style={{ width: 50, height: 5, background: '#e4eefc' }}>
+      <div className="staff-mini-track rounded-full overflow-hidden" style={{ width: 50, height: 5 }}>
         <div className="h-full" style={{ width: `${pct}%`, background: color }} />
       </div>
       <span className="text-[10px] font-bold" style={{ color }}>
@@ -599,12 +585,14 @@ function PowerStars({ count, size = 11 }: { count: number; size?: number }) {
 
 function SlotCell({
   dog,
+  tools,
   color,
   editMode,
   onShowDetails,
   onRemove,
 }: {
   dog: Dog | null;
+  tools: Tool[];
   color: string;
   editMode: boolean;
   onShowDetails: () => void;
@@ -634,7 +622,7 @@ function SlotCell({
   }
 
   const grade = dogGrade(dog);
-  const power = dogPower(dog);
+  const power = dogPowerWithTools(dog, tools);
   const stars = dogPowerStars(power);
   const industry = dogPrimaryIndustry(dog.role);
   const isU = grade === 'U';
@@ -822,6 +810,7 @@ function SparkleOverlay() {
 
 function StaffCell({
   dog,
+  tools,
   inTeam,
   inOtherTeam,
   teamFull,
@@ -831,6 +820,7 @@ function StaffCell({
   onToggleTeam,
 }: {
   dog: Dog;
+  tools: Tool[];
   inTeam: boolean;
   inOtherTeam: ProjectCategory | null;
   teamFull: boolean;
@@ -841,7 +831,7 @@ function StaffCell({
 }) {
   const industry = dogPrimaryIndustry(dog.role);
   const grade = dogGrade(dog);
-  const power = dogPower(dog);
+  const power = dogPowerWithTools(dog, tools);
   const stars = dogPowerStars(power);
   const isU = grade === 'U';
   const ringColor = GRADE_RING_COLOR[grade];
@@ -1059,13 +1049,12 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className="text-[11px] font-bold tracking-wide rounded-full transition"
+      className="staff-chip-btn text-[11px] tracking-wide transition"
+      data-active={active ? 'true' : 'false'}
       style={{
-        background: active ? accent : '#ffffff',
-        color: active ? 'white' : accent,
-        border: `1px solid ${active ? accent : 'var(--line)'}`,
+        color: active ? undefined : accent,
+        borderColor: active ? undefined : `${accent}66`,
         padding: '2px 10px',
-        boxShadow: active ? `0 2px 6px ${accent}55` : 'none',
       }}
     >
       {label} <span className="opacity-75">({count})</span>

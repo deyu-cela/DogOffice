@@ -62,7 +62,7 @@ function usePixelTexture(src: string): Texture {
 // 原圖 1536x1024，pattern 實際在 x=270~1266（~996 寬、置中），左右是深棕邊框
 // 用 BoxGeometry 做厚度，頂面貼圖、側面給偏暗粉色（模仿 kawaii home shop 浮起地板的立體感）
 const FLOOR_THICKNESS = 0.5;
-const FLOOR_SIDE_COLOR = '#dca997'; // 稍深的奶茶粉，當地板側邊
+const FLOOR_SIDE_TINT = '#dca997'; // 以地板貼圖乘上稍深色調，當地板側邊
 // 地板要延伸到牆外緣下方（-x 和 -z 各多一個 WALL_THICKNESS），讓牆看起來是站在地板上
 // 只向左後擴，前與右邊（-x/-z 視為後左，+x/+z 視為前右）保持 HALF 不變
 function FloorImageMesh() {
@@ -78,12 +78,12 @@ function FloorImageMesh() {
     <mesh position={[floorCx, -FLOOR_THICKNESS / 2, floorCx]}>
       <boxGeometry args={[floorW, FLOOR_THICKNESS, floorW]} />
       {/* BoxGeometry 面序：[+x, -x, +y(top), -y, +z, -z] */}
-      <meshBasicMaterial attach="material-0" color={FLOOR_SIDE_COLOR} />
-      <meshBasicMaterial attach="material-1" color={FLOOR_SIDE_COLOR} />
+      <meshBasicMaterial attach="material-0" map={tex} color={FLOOR_SIDE_TINT} />
+      <meshBasicMaterial attach="material-1" map={tex} color={FLOOR_SIDE_TINT} />
       <meshBasicMaterial attach="material-2" map={tex} />
-      <meshBasicMaterial attach="material-3" color={FLOOR_SIDE_COLOR} />
-      <meshBasicMaterial attach="material-4" color={FLOOR_SIDE_COLOR} />
-      <meshBasicMaterial attach="material-5" color={FLOOR_SIDE_COLOR} />
+      <meshBasicMaterial attach="material-3" map={tex} color={FLOOR_SIDE_TINT} />
+      <meshBasicMaterial attach="material-4" map={tex} color={FLOOR_SIDE_TINT} />
+      <meshBasicMaterial attach="material-5" map={tex} color={FLOOR_SIDE_TINT} />
     </mesh>
   );
 }
@@ -91,7 +91,7 @@ function FloorImageMesh() {
 // kawaii 主題牆壁：BoxGeometry 向外延伸出厚度，iso 視角會看到牆頂和側邊的立體邊
 // 兩面牆共用同一個 useTexture 來源，需 clone 才能各自設定 repeat/offset
 const WALL_THICKNESS = 0.5;
-const WALL_CAP_COLOR = '#ebc9b4'; // 牆面 cap（頂 + 端）顏色，比貼圖底色稍深
+const WALL_CAP_TINT = '#f7dfd0'; // 牆面 cap（頂 + 端）保留牆貼圖，只稍微壓暗做厚度
 function WallImageMesh({ variant }: { variant: 'left' | 'right' }) {
   const baseTex = usePixelTexture(JP_ASSETS.gptWall);
   const tex = useMemo(() => baseTex.clone(), [baseTex]);
@@ -113,11 +113,11 @@ function WallImageMesh({ variant }: { variant: 'left' | 'right' }) {
         <boxGeometry args={[WALL_THICKNESS, WALL_H, ROOM]} />
         {/* [+x, -x, +y, -y, +z, -z] */}
         <meshBasicMaterial attach="material-0" map={tex} />
-        <meshBasicMaterial attach="material-1" color={WALL_CAP_COLOR} />
-        <meshBasicMaterial attach="material-2" color={WALL_CAP_COLOR} />
-        <meshBasicMaterial attach="material-3" color={WALL_CAP_COLOR} />
-        <meshBasicMaterial attach="material-4" color={WALL_CAP_COLOR} />
-        <meshBasicMaterial attach="material-5" color={WALL_CAP_COLOR} />
+        <meshBasicMaterial attach="material-1" map={tex} color={WALL_CAP_TINT} />
+        <meshBasicMaterial attach="material-2" map={tex} color={WALL_CAP_TINT} />
+        <meshBasicMaterial attach="material-3" map={tex} color={WALL_CAP_TINT} />
+        <meshBasicMaterial attach="material-4" map={tex} color={WALL_CAP_TINT} />
+        <meshBasicMaterial attach="material-5" map={tex} color={WALL_CAP_TINT} />
       </mesh>
     );
   }
@@ -125,12 +125,12 @@ function WallImageMesh({ variant }: { variant: 'left' | 'right' }) {
   return (
     <mesh position={[0, WALL_H / 2, -HALF - WALL_THICKNESS / 2]}>
       <boxGeometry args={[ROOM, WALL_H, WALL_THICKNESS]} />
-      <meshBasicMaterial attach="material-0" color={WALL_CAP_COLOR} />
-      <meshBasicMaterial attach="material-1" color={WALL_CAP_COLOR} />
-      <meshBasicMaterial attach="material-2" color={WALL_CAP_COLOR} />
-      <meshBasicMaterial attach="material-3" color={WALL_CAP_COLOR} />
+      <meshBasicMaterial attach="material-0" map={tex} color={WALL_CAP_TINT} />
+      <meshBasicMaterial attach="material-1" map={tex} color={WALL_CAP_TINT} />
+      <meshBasicMaterial attach="material-2" map={tex} color={WALL_CAP_TINT} />
+      <meshBasicMaterial attach="material-3" map={tex} color={WALL_CAP_TINT} />
       <meshBasicMaterial attach="material-4" map={tex} />
-      <meshBasicMaterial attach="material-5" color={WALL_CAP_COLOR} />
+      <meshBasicMaterial attach="material-5" map={tex} color={WALL_CAP_TINT} />
     </mesh>
   );
 }

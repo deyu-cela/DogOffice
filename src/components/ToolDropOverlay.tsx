@@ -147,9 +147,16 @@ function ToolFlightStyles() {
         position: fixed;
         width: 48px;
         height: 48px;
-        border-radius: 12px;
-        background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95), rgba(255,255,255,0.3) 70%, transparent);
-        box-shadow: var(--glow);
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at 35% 28%, rgba(255,255,255,0.96) 0 22%, transparent 24%),
+          linear-gradient(180deg, #ffd0db, #ffa0b8);
+        border: 1.5px solid rgba(255,255,255,0.72);
+        box-shadow:
+          var(--glow),
+          0 6px 14px rgba(214,60,100,0.26),
+          inset 0 -2px 0 rgba(180,80,100,0.14),
+          inset 0 1px 0 rgba(255,255,255,0.72);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -173,17 +180,22 @@ function ToolFlightStyles() {
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 10px;
+        padding: 6px 12px;
         border-radius: 999px;
-        background: rgba(20,22,27,0.92);
-        color: #fff;
+        background:
+          radial-gradient(rgba(228,160,170,0.08) 0.5px, transparent 1px) 0 0 / 4px 4px,
+          linear-gradient(180deg, #fffdfb 0%, #fff5f5 100%);
+        color: #5b382d;
+        border: 1.5px dashed rgba(214,145,150,0.48);
         font-weight: 900;
         font-size: 13px;
         white-space: nowrap;
         animation: toolRewardFloat 1700ms cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
         pointer-events: none;
         z-index: 9999;
-        box-shadow: 0 6px 20px rgba(15,23,42,0.45);
+        box-shadow:
+          0 10px 20px rgba(166,91,85,0.18),
+          inset 0 1px 0 rgba(255,255,255,0.68);
       }
       .tool-reward-grade {
         font-size: 11px;
@@ -196,7 +208,7 @@ function ToolFlightStyles() {
       }
       .tool-reward-trait {
         font-size: 11px;
-        opacity: 0.85;
+        color: #d8456c;
       }
       @keyframes toolTargetPop {
         0% { transform: scale(1); }

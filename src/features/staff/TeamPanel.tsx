@@ -3,6 +3,7 @@ import { useGameStore, TEAM_MAX_MEMBERS, dogPrimaryIndustry } from '@/store/game
 import { DogAvatar } from '@/components/DogAvatar';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 import type { Dog, ProjectCategory } from '@/types';
+import './staff.css';
 
 const INDUSTRIES: ProjectCategory[] = ['tech', 'design', 'marketing', 'service'];
 
@@ -82,15 +83,9 @@ function TeamCard({
 
   return (
     <div
-      className="rounded-xl p-3"
+      className="staff-paper-card p-3"
       style={{
-        background: team.open
-          ? 'linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,247,239,0.66))'
-          : 'rgba(255,240,237,0.46)',
-        border: team.open ? `1.5px solid ${color}` : '1px solid rgba(208,130,105,0.3)',
-        boxShadow: '0 8px 16px rgba(166,91,85,0.08), inset 0 0 0 1px rgba(255,255,255,0.42)',
-        backdropFilter: 'blur(6px) saturate(1.02)',
-        WebkitBackdropFilter: 'blur(6px) saturate(1.02)',
+        borderColor: team.open ? `${color}88` : undefined,
       }}
     >
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -114,11 +109,11 @@ function TeamCard({
           type="button"
           onClick={() => toggle(industry)}
           disabled={!canOpen}
-          className="text-[11px] px-2.5 py-1 rounded-full font-extrabold"
+          className="staff-soft-btn text-[11px] px-2.5 py-1 font-extrabold"
+          data-active={team.open ? 'true' : 'false'}
           style={{
-            background: team.open ? color : canOpen ? '#ffffff' : '#e9f1ff',
-            color: team.open ? 'white' : canOpen ? '#446da8' : '#8aa2c8',
-            border: `1px solid ${team.open ? color : 'var(--line)'}`,
+            color: team.open ? undefined : canOpen ? '#6e4638' : '#8aa2c8',
+            borderColor: team.open ? `${color}88` : undefined,
             cursor: canOpen ? 'pointer' : 'not-allowed',
           }}
           title={canOpen ? (team.open ? '關閉接案' : '開啟接案') : '需要至少 1 隻該產業的狗'}
@@ -138,8 +133,8 @@ function TeamCard({
               key={d.id}
               type="button"
               onClick={() => removeDog(industry, d.id)}
-              className="text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"
-              style={{ background: '#ffffff', border: '1px solid var(--line)', color: 'var(--blue)' }}
+              className="staff-soft-btn text-[11px] px-2 py-0.5 font-bold flex items-center gap-1"
+              style={{ color: '#6e4638' }}
               title={`點擊移出 ${d.name}`}
             >
               <DogAvatar role={d.role} breed={d.breed} size={16} />
@@ -156,8 +151,8 @@ function TeamCard({
           <button
             type="button"
             onClick={() => setEditing((v) => !v)}
-            className="text-[11px] px-2 py-1 rounded-full font-bold"
-            style={{ background: '#eef6ff', color: '#446da8', border: '1px solid var(--line)' }}
+            className="staff-soft-btn text-[11px] px-2 py-1 font-bold"
+            style={{ color: '#6e4638' }}
           >
             {editing ? '收合' : `+ 加入候選人（${availableToAdd.length}）`}
           </button>
@@ -171,8 +166,8 @@ function TeamCard({
                     addDog(industry, d.id);
                     if (team.memberIds.length + 1 >= TEAM_MAX_MEMBERS) setEditing(false);
                   }}
-                  className="text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"
-                  style={{ background: '#ffffff', border: '1px dashed var(--line)', color: 'var(--blue)' }}
+                  className="staff-soft-btn text-[11px] px-2 py-0.5 font-bold flex items-center gap-1"
+                  style={{ color: '#6e4638' }}
                 >
                   <DogAvatar role={d.role} breed={d.breed} size={16} />
                   <span>{d.name}</span>

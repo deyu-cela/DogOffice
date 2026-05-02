@@ -9,6 +9,7 @@ This file provides guidance to Claude Code when working with this repository.
 - No sycophantic openers or closing fluff.
 - No emojis or em-dashes.
 - Do not guess APIs, versions, flags, commit SHAs, or package names. Verify by reading code or docs before asserting.
+- 規劃plan時 除非我要求給我看code 不然只要顯示整體架構就好
 
 ## Language
 

@@ -4,9 +4,14 @@ export function rand<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export function dogPower(dog: Dog): number {
+export function dogPower(
+  dog: Dog,
+  toolBoost?: { speed: number; quality: number },
+): number {
   const { speed, quality, patience } = dog.stats;
-  return Math.round((speed + quality + patience) * dog.level);
+  const s = speed + (toolBoost?.speed ?? 0);
+  const q = quality + (toolBoost?.quality ?? 0);
+  return Math.round((s + q + patience) * dog.level);
 }
 
 export function dogPowerStars(power: number): number {

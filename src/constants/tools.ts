@@ -3,6 +3,9 @@ import type { ProjectCategory, ToolDef, ToolGrade, ToolTraitId } from '@/types';
 // 案件完成基礎掉落機率
 export const TOOL_DROP_CHANCE = 0.2;
 
+// 工具庫存上限
+export const TOOL_CAP = 50;
+
 // 等級獨立骰
 export const TOOL_GRADE_PROB: Record<ToolGrade, number> = {
   B: 0.6,

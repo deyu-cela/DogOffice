@@ -75,7 +75,7 @@ export function MoneyDayCluster() {
   const dailyCost = (OFFICE_DAILY_EXPENSE[officeLevel] ?? 0) + salaryCost;
   const remainingSec = (Math.max(0, BASE_DAY_MS - dayElapsed) / speedMultiplier / 1000).toFixed(1);
   const cycleSpeed = () => setSpeed(speedMultiplier >= 3 ? 1 : speedMultiplier + 1);
-  const displayName = authedUser?.account ?? displayCompanyName(companyName);
+  const displayName = displayCompanyName(companyName);
   const avatarSrc = `${import.meta.env.BASE_URL}assets/dog-profiles/ceo.png`;
 
   async function onLogout() {

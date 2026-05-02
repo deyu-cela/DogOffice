@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import type { GachaResult } from '@/store/gameStore';
 import { dogStarStyle } from './gachaStyles';
 import { DogAvatar } from '@/components/DogAvatar';
@@ -16,16 +15,6 @@ export function GachaCard({ result, revealed, flyDelay, onReveal, size = 120 }: 
   const dog = result.dog;
   const height = size * 1.45;
 
-  const [showPillar, setShowPillar] = useState(false);
-
-  useEffect(() => {
-    if (revealed) {
-      const t = setTimeout(() => setShowPillar(true), 180);
-      return () => clearTimeout(t);
-    }
-    setShowPillar(false);
-  }, [revealed]);
-
   const stars = '★'.repeat(star.tier);
 
   return (
@@ -37,15 +26,6 @@ export function GachaCard({ result, revealed, flyDelay, onReveal, size = 120 }: 
         animationDelay: `${flyDelay}s`,
       }}
     >
-      {showPillar && (
-        <div
-          className="gacha-pillar"
-          style={{
-            background: `linear-gradient(0deg, ${star.pillarTo} 0%, ${star.pillarFrom} 50%, ${star.pillarTo} 100%)`,
-          }}
-        />
-      )}
-
       <button
         type="button"
         className={`gacha-card ${revealed ? 'revealed' : ''}`}
@@ -61,16 +41,16 @@ export function GachaCard({ result, revealed, flyDelay, onReveal, size = 120 }: 
           className="gacha-card-face gacha-card-back"
           style={{
             background:
-              'linear-gradient(135deg, #5fb3ff 0%, #2080d6 50%, #1a4d99 100%)',
-            border: '2px solid #ffffff',
-            boxShadow: `0 0 16px ${star.glow}, inset 0 0 10px rgba(255,255,255,0.18)`,
+              'radial-gradient(rgba(228,160,170,0.16) 1px, transparent 1.6px) 0 0 / 9px 9px, linear-gradient(180deg, #fffdfb 0%, #ffe8e9 100%)',
+            border: '2px dashed rgba(214,145,150,0.58)',
+            boxShadow: `0 8px 18px rgba(166,91,85,0.18), 0 0 16px ${star.glow}`,
           }}
         >
           <div
             style={{
               position: 'absolute',
               inset: 6,
-              border: '1.5px solid rgba(255,255,255,0.4)',
+              border: '1.5px dashed rgba(214,145,150,0.34)',
               borderRadius: 8,
               pointerEvents: 'none',
             }}
@@ -90,7 +70,7 @@ export function GachaCard({ result, revealed, flyDelay, onReveal, size = 120 }: 
               left: 0,
               right: 0,
               textAlign: 'center',
-              color: 'rgba(255,255,255,0.85)',
+              color: '#886153',
               fontSize: 10,
               letterSpacing: 2,
               fontWeight: 800,
@@ -106,7 +86,7 @@ export function GachaCard({ result, revealed, flyDelay, onReveal, size = 120 }: 
           style={{
             background: `linear-gradient(180deg, ${star.bgFrom} 0%, ${star.bgTo} 100%)`,
             border: `2px solid ${star.border}`,
-            boxShadow: `0 0 18px ${star.glow}`,
+            boxShadow: `0 8px 18px rgba(166,91,85,0.18), 0 0 18px ${star.glow}`,
           }}
         >
           <div

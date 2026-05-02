@@ -4,6 +4,7 @@ import { getDogToolCategory } from '@/lib/toolsEngine';
 import { TOOL_TRAIT_DEFS } from '@/constants/tools';
 import { SvgIcon } from '@/components/SvgIcon';
 import type { ProjectCategory, Tool, ToolGrade } from '@/types';
+import './tool.css';
 
 const CATEGORY_LABEL: Record<ProjectCategory, string> = {
   tech: '工程',
@@ -55,31 +56,29 @@ export function ToolPickerModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[880] flex items-center justify-center p-4"
-      style={{
-        background: 'rgba(8,32,77,0.55)',
-        backdropFilter: 'blur(10px) saturate(1.1)',
-        WebkitBackdropFilter: 'blur(10px) saturate(1.1)',
-      }}
+      className="tool-scrapbook-backdrop fixed inset-0 z-[880] flex items-center justify-center p-4"
       onClick={close}
     >
       <div
-        className="bx-panel bx-stripe p-5 rounded-xl max-w-lg w-full max-h-[88vh] overflow-y-auto"
-        style={{ animation: 'bxFadeUp 0.32s cubic-bezier(0.2,0.8,0.2,1)' }}
+        className="tool-scrapbook-panel max-w-lg w-full max-h-[88vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div>
+        <div className="tool-scrapbook-header flex items-center justify-between gap-3 px-4 py-3 mb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="tool-scrapbook-mark">
+              <SvgIcon name="tool" size={18} />
+            </span>
+            <div className="min-w-0">
             <div className="text-base font-extrabold">{dog.name} 的裝備</div>
             <div className="text-xs" style={{ color: 'var(--muted)' }}>
-              {CATEGORY_LABEL[dogCategory]} 產業工具
+              {CATEGORY_LABEL[dogCategory]} 產業玩具
+            </div>
             </div>
           </div>
           <button
             type="button"
             onClick={close}
-            className="px-3 py-1 rounded-lg text-sm font-bold"
-            style={{ background: '#fff', border: '1px solid var(--line)', color: 'var(--blue)' }}
+            className="tool-close-btn px-3 py-1 text-sm font-bold"
           >
             關閉
           </button>
@@ -87,41 +86,33 @@ export function ToolPickerModal() {
 
         {equippedTool && (
           <div
-            className="rounded-lg p-3 mb-3"
-            style={{
-              background: 'linear-gradient(135deg, #fff7d6, #fff)',
-              border: '1px solid rgba(240,168,24,0.4)',
-            }}
+            className="tool-equipped-card p-3 mb-3 mx-4"
           >
             <div className="text-[11px] font-bold mb-2" style={{ color: '#7a4a1c' }}>已裝備</div>
             <ToolCard tool={equippedTool} />
             <button
               type="button"
               onClick={() => unequip(dog.id)}
-              className="mt-2 w-full py-2 rounded-lg font-bold text-sm"
-              style={{
-                background: 'linear-gradient(180deg, #ff8d8d, #e24c4c)',
-                color: '#fff',
-              }}
+              className="tool-action-danger mt-2 w-full py-2 font-bold text-sm"
             >
               卸下
             </button>
           </div>
         )}
 
-        <div className="text-[11px] font-bold mb-2" style={{ color: 'var(--muted)' }}>
-          可用工具（{candidates.length}）
+        <div className="tool-count-chip text-[11px] font-bold">
+          可用玩具（{candidates.length}）
         </div>
 
         {candidates.length === 0 ? (
           <div
-            className="text-sm text-center py-8 rounded-lg"
-            style={{ color: 'var(--muted)', background: '#f7fbff', border: '1px dashed var(--line)' }}
+            className="tool-paper-empty text-sm text-center py-8 mx-4"
+            style={{ color: '#886153' }}
           >
-            該產業還沒撿到工具，多接案吧！
+            該產業還沒撿到玩具，多接案吧！
           </div>
         ) : (
-          <div className="grid gap-2">
+          <div className="grid gap-2 px-4 pb-4">
             {candidates.map((tool) => {
               const isEquipped = tool.instanceId === dog.equippedToolId;
               return (
@@ -133,10 +124,8 @@ export function ToolPickerModal() {
                     close();
                   }}
                   disabled={isEquipped}
-                  className="text-left rounded-lg p-2"
+                  className="tool-list-card"
                   style={{
-                    background: isEquipped ? '#eef6ff' : '#fff',
-                    border: '1px solid var(--line)',
                     cursor: isEquipped ? 'default' : 'pointer',
                     opacity: isEquipped ? 0.5 : 1,
                   }}
@@ -154,8 +143,8 @@ export function ToolPickerModal() {
 
 function ToolCard({ tool }: { tool: Tool }) {
   return (
-    <div className="flex items-start gap-2">
-      <div className="grid place-items-center" style={{ width: 32, height: 32 }}>
+    <div className="tool-mini-card">
+      <div className="tool-mini-icon">
         <SvgIcon name={tool.iconName} size={28} />
       </div>
       <div className="flex-1 min-w-0">
@@ -181,8 +170,7 @@ function ToolCard({ tool }: { tool: Tool }) {
               return (
                 <span
                   key={tid}
-                  className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                  style={{ background: '#eef6ff', border: '1px solid var(--line)', color: 'var(--blue)' }}
+                  className="tool-trait-pill text-[10px] px-1.5 py-0.5 font-bold"
                   title={def.desc}
                 >
                   {def.emoji} {def.name}

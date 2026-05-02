@@ -2,6 +2,7 @@ import { DogAvatar } from '@/components/DogAvatar';
 import { SvgIcon } from '@/components/SvgIcon';
 import { DOG_TRAITS_MAP, type DogTraitId } from '@/constants/dogTraits';
 import { useGameStore } from '@/store/gameStore';
+import './staff.css';
 
 export function TraitChoiceModal() {
   const modal = useGameStore((s) => s.traitChoiceModal);
@@ -17,26 +18,21 @@ export function TraitChoiceModal() {
   const roundsLeft = dog.pendingTraitChoice.roundsLeft ?? 1;
 
   return (
-    <div className="fixed inset-0 z-[880] flex items-center justify-center bg-[#08204d]/60 backdrop-blur-sm p-4">
+    <div className="staff-scrapbook-backdrop fixed inset-0 z-[880] flex items-center justify-center p-4">
       <div
-        className="p-5 rounded-xl max-w-sm w-full"
-        style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
-          border: '1px solid var(--line)',
-          boxShadow: '0 24px 70px rgba(30,90,180,0.28)',
-        }}
+        className="staff-scrapbook-modal p-5 max-w-sm w-full"
       >
         <div className="flex items-center gap-2 mb-2">
           <SvgIcon name="quality" size={25} />
           <span className="text-base font-extrabold">挑一項特性</span>
           {roundsLeft > 1 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md ml-auto" style={{ background: '#eef6ff', color: 'var(--blue)', border: '1px solid var(--line)' }}>
+            <span className="staff-chip-btn text-[10px] px-1.5 py-0.5 ml-auto">
               還有 {roundsLeft - 1} 輪
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2.5 p-2.5 rounded-lg mb-3" style={{ background: '#f7fbff', border: '1px solid var(--line)' }}>
+        <div className="staff-paper-card flex items-center gap-2.5 p-2.5 mb-3">
           <div className="rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ width: 40, height: 40, border: '2px solid white', background: '#eef6ff' }}>
             <DogAvatar role={dog.role} breed={dog.breed} size={40} />
           </div>
@@ -62,8 +58,7 @@ export function TraitChoiceModal() {
                 key={id}
                 type="button"
                 onClick={() => choose(dog.id, id)}
-                className="p-3 rounded-lg text-left"
-                style={{ background: 'linear-gradient(180deg, #ffffff, #eef6ff)', border: '1px solid var(--line)' }}
+                className="staff-paper-card p-3 text-left"
               >
                 <div className="text-sm font-bold mb-0.5 flex items-center gap-1.5">
                   <SvgIcon name="quality" size={18} />
@@ -78,8 +73,7 @@ export function TraitChoiceModal() {
         <button
           type="button"
           onClick={close}
-          className="w-full py-1.5 rounded-lg text-xs font-bold"
-          style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
+          className="staff-soft-btn w-full py-1.5 text-xs font-bold"
         >
           稍後再決定
         </button>

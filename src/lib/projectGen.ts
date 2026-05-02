@@ -169,22 +169,44 @@ export function fillInbox(
   const active = culled.filter((c) => c.status === 'active');
   const offered = culled.filter((c) => c.status === 'offered');
   const liveSlotsLeft = Math.max(0, INBOX_SIZE - active.length);
-  const keptOfferedIds = new Set(offered.slice(0, liveSlotsLeft).map((p) => p.id));
+  // 2. 為每個沒有 offered 的 open 產業預留 1 個 slot，避免新開 team 等不到案子
+  const presentIndustries = new Set(offered.map((p) => p.category));
+  const starvedIndustries = openIndustries.filter((ind) => !presentIndustries.has(ind));
+  const reserved = Math.min(starvedIndustries.length, liveSlotsLeft);
+  const slotsForExisting = Math.max(0, liveSlotsLeft - reserved);
+  // 已存在 offered 的產業數量（避開 starved）
+  const existingIndustryCount = openIndustries.length - starvedIndustries.length;
+  const perIndustryCap = existingIndustryCount > 0
+    ? Math.max(1, Math.ceil(slotsForExisting / existingIndustryCount))
+    : 0;
+  const keptByIndustry = new Map<ProjectCategory, number>();
+  const keptOfferedIds = new Set<string>();
+  for (const p of offered) {
+    const used = keptByIndustry.get(p.category) ?? 0;
+    if (used >= perIndustryCap) continue;
+    if (keptOfferedIds.size >= slotsForExisting) break;
+    keptOfferedIds.add(p.id);
+    keptByIndustry.set(p.category, used + 1);
+  }
   const cappedClients = culled.filter((c) => c.status !== 'offered' || keptOfferedIds.has(c.id));
   const cappedOffered = cappedClients.filter((c) => c.status === 'offered');
   const needed = liveSlotsLeft - cappedOffered.length;
   if (needed <= 0) return cappedClients;
-  // 2. 補新案：依 open 產業 round-robin，確保每個 open team 都有案子吃
+  // 3. 補新案：依 open 產業 round-robin；starved 產業（原本 0 個 offered）優先補
   const offeredByIndustry = new Map<ProjectCategory, number>();
   for (const c of cappedOffered) {
     offeredByIndustry.set(c.category, (offeredByIndustry.get(c.category) ?? 0) + 1);
   }
+  const orderedIndustries = [
+    ...starvedIndustries,
+    ...openIndustries.filter((ind) => !starvedIndustries.includes(ind)),
+  ];
   const fresh: Project[] = [];
   for (let i = 0; i < needed; i++) {
-    // 每輪挑「目前 offered 數量最少」的產業，平均分配
-    let pickedIndustry = openIndustries[0];
+    // 每輪挑「目前 offered 數量最少」的產業；ties 時 starved 在前，先選到
+    let pickedIndustry = orderedIndustries[0];
     let minCount = Infinity;
-    for (const ind of openIndustries) {
+    for (const ind of orderedIndustries) {
       const c = (offeredByIndustry.get(ind) ?? 0);
       if (c < minCount) {
         minCount = c;

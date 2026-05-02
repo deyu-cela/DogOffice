@@ -5,11 +5,12 @@ import {
   dogLevelUpFragmentCost,
   DOG_LEVEL_MAX,
 } from '@/store/gameStore';
-import { dogPower, dogPowerStars, dogGrade } from '@/lib/utils';
+import { dogPowerStars, dogGrade } from '@/lib/utils';
 import { DOG_TRAITS_MAP, type DogTraitId } from '@/constants/dogTraits';
-import { getDogToolCategory, getDogToolStatBoost } from '@/lib/toolsEngine';
+import { dogPowerWithTools, getDogToolCategory, getDogToolStatBoost } from '@/lib/toolsEngine';
 import { SvgIcon } from '@/components/SvgIcon';
 import type { ToolGrade } from '@/types';
+import './staff.css';
 
 const TOOL_GRADE_BG: Record<ToolGrade, string> = {
   S: 'linear-gradient(180deg, #ffd95a, #f0a818)',
@@ -18,7 +19,7 @@ const TOOL_GRADE_BG: Record<ToolGrade, string> = {
 };
 const TOOL_GRADE_TEXT: Record<ToolGrade, string> = {
   S: '#5a3d05',
-  A: '#fff',
+  A: '#24152f',
   B: '#fff',
 };
 
@@ -77,7 +78,7 @@ export function StaffActionModal() {
   if (!dog) return null;
   const idx = modal.staffIndex;
   const grade = dogGrade(dog);
-  const power = dogPower(dog);
+  const power = dogPowerWithTools(dog, tools);
   const stars = dogPowerStars(power);
   const powerPct = Math.round((power / 400) * 100);
 
@@ -91,17 +92,11 @@ export function StaffActionModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[870] flex items-center justify-center p-4"
-      style={{
-        background: 'rgba(8,32,77,0.55)',
-        backdropFilter: 'blur(10px) saturate(1.1)',
-        WebkitBackdropFilter: 'blur(10px) saturate(1.1)',
-      }}
+      className="staff-scrapbook-backdrop fixed inset-0 z-[870] flex items-center justify-center p-4"
       onClick={close}
     >
       <div
-        className="bx-panel bx-stripe p-5 rounded-xl max-w-lg w-full max-h-[92vh] overflow-y-auto"
-        style={{ animation: 'bxFadeUp 0.32s cubic-bezier(0.2,0.8,0.2,1)' }}
+        className="staff-scrapbook-modal p-5 max-w-lg w-full max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* A. Header */}
@@ -150,13 +145,11 @@ export function StaffActionModal() {
                   <button
                     type="button"
                     onClick={() => openToolPicker(dog.id)}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold"
+                    className="staff-chip-btn flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-bold"
                     style={{
-                      background: equipped ? '#fff7e6' : '#f0f4f8',
-                      border: '1px solid var(--line)',
                       color: equipped ? '#7a4a1c' : '#6b7a8a',
                     }}
-                    title={equipped ? `${equipped.name}（${equipped.grade}）` : '裝備工具'}
+                    title={equipped ? `${equipped.name}（${equipped.grade}）` : '裝備玩具'}
                   >
                     <SvgIcon name="tool" size={14} />
                     {equipped ? (
@@ -207,10 +200,11 @@ export function StaffActionModal() {
 
         {/* B. Power */}
         <div
-          className="rounded-lg p-3 mb-3"
+            className="staff-paper-card p-3 mb-3"
           style={{
-            background: 'linear-gradient(135deg, #fff7d6, #fff)',
-            border: '1px solid rgba(240,168,24,0.4)',
+              background:
+                'repeating-linear-gradient(0deg, rgba(186,121,82,0.06) 0 1px, transparent 1px 16px), linear-gradient(180deg, #fff5b8 0%, #ffe87a 100%)',
+              borderColor: 'rgba(196,156,28,0.55)',
           }}
         >
           <div className="flex items-baseline gap-2">
@@ -221,7 +215,7 @@ export function StaffActionModal() {
               <span style={{ color: '#d0d8e4' }}>{'★'.repeat(5 - stars)}</span>
             </span>
           </div>
-          <div className="mt-1.5 h-2 rounded-full overflow-hidden" style={{ background: '#f4ede0' }}>
+          <div className="staff-meter-track mt-1.5 h-2 rounded-full overflow-hidden">
             <div
               className="h-full"
               style={{
@@ -255,7 +249,7 @@ export function StaffActionModal() {
                           <span
                             className="font-extrabold text-[10px]"
                             style={{ color: '#16a77f' }}
-                            title="工具加成"
+                            title="玩具加成"
                           >
                             {bonusDisplay}
                           </span>
@@ -318,8 +312,8 @@ export function StaffActionModal() {
 
         {/* motto */}
         <div
-          className="text-sm mb-3 p-3 rounded-lg"
-          style={{ color: 'var(--muted)', background: '#f7fbff', border: '1px solid var(--line)' }}
+          className="staff-paper-card text-sm mb-3 p-3"
+          style={{ color: '#886153' }}
         >
           {dog.motto}
         </div>
@@ -337,7 +331,7 @@ export function StaffActionModal() {
                 type="button"
                 onClick={() => upgradeDog(dog.id)}
                 disabled={!moneyOK}
-                className="py-2 rounded-lg font-extrabold text-xs"
+                className="staff-soft-btn py-2 font-extrabold text-xs"
                 style={{
                   background: moneyOK
                     ? 'linear-gradient(180deg, #ffd95a, #f0a818)'
@@ -354,13 +348,13 @@ export function StaffActionModal() {
                 type="button"
                 onClick={() => upgradeDogFrag(dog.id)}
                 disabled={!fragOK}
-                className="py-2 rounded-lg font-extrabold text-xs"
+                className="staff-soft-btn py-2 font-extrabold text-xs"
                 style={{
                   background: fragOK
-                    ? 'linear-gradient(180deg, #c9e4ff, #6da8e8)'
-                    : '#e9f1ff',
-                  color: fragOK ? '#1c4f8a' : '#8aa2c8',
-                  border: '1px solid #5fa0e8',
+                    ? 'linear-gradient(180deg, #ff8aa3, #ff5a7a)'
+                    : 'rgba(255,240,237,0.68)',
+                  color: fragOK ? '#ffffff' : '#a98a80',
+                  border: '1px solid rgba(214,60,100,0.3)',
                   cursor: fragOK ? 'pointer' : 'not-allowed',
                 }}
                 title={fragOK ? `用 ${fragNeed} 碎片升級` : `碎片不足（${dog.fragments}/${fragNeed}）`}
@@ -376,7 +370,7 @@ export function StaffActionModal() {
           <button
             type="button"
             onClick={() => openTraitChoice(dog.id)}
-            className="mb-3 w-full py-2 rounded-lg font-extrabold text-xs"
+            className="staff-soft-btn mb-3 w-full py-2 font-extrabold text-xs"
             style={{
               background: 'linear-gradient(180deg, #fffaf0, #ffe9b3)',
               border: '1.5px solid #f0a818',
@@ -393,14 +387,13 @@ export function StaffActionModal() {
           <div className="grid grid-cols-2 gap-2.5">
             <button
               onClick={close}
-              className="py-2 rounded-lg font-bold"
-              style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
+              className="staff-soft-btn py-2 font-bold"
             >
               關閉
             </button>
             <button
               onClick={() => startPip(idx)}
-              className="py-2 rounded-lg font-bold"
+              className="staff-soft-btn py-2 font-bold"
               style={{
                 background: 'linear-gradient(180deg, #fff7f7, #ffecec)',
                 color: '#d34a4a',
@@ -417,8 +410,7 @@ export function StaffActionModal() {
               {dog.pipTasks?.map((task, ti) => (
                 <label
                   key={ti}
-                  className="flex items-center gap-2 p-2 rounded-lg"
-                  style={{ background: '#ffffff', border: '1px solid var(--line)' }}
+                  className="staff-paper-card flex items-center gap-2 p-2"
                 >
                   <input
                     type="checkbox"
@@ -433,14 +425,13 @@ export function StaffActionModal() {
             <div className="grid grid-cols-3 gap-2.5">
               <button
                 onClick={close}
-                className="py-2 rounded-lg font-bold"
-                style={{ background: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
+                className="staff-soft-btn py-2 font-bold"
               >
                 關閉
               </button>
               <button
                 onClick={() => keep(idx)}
-                className="py-2 rounded-lg font-bold"
+                className="staff-kawaii-btn py-2 font-bold"
                 style={{
                   background: 'linear-gradient(180deg, #35c59c, #16a77f)',
                   color: 'white',
@@ -450,7 +441,7 @@ export function StaffActionModal() {
               </button>
               <button
                 onClick={() => fire(idx)}
-                className="py-2 rounded-lg font-bold"
+                className="staff-kawaii-btn py-2 font-bold"
                 style={{
                   background: 'linear-gradient(180deg, #ff8d8d, #e24c4c)',
                   color: 'white',

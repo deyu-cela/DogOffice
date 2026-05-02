@@ -5,17 +5,13 @@ import {
   SPECIAL_TASK_BASE_DAYS,
 } from '@/constants/specialTasks';
 import { estimateSpecialTaskRemainingDays, teamTotalAbility, useGameStore } from '@/store/gameStore';
+import './shop.css';
 
 const OFFICE_TIER_BONUS = [0, 5, 12, 22, 35];
 const OFFICE_TIER_CAP = [3, 3, 4, 4, 5];
 
 const cardStyle: React.CSSProperties = {
-  background:
-    'linear-gradient(180deg, rgba(255,255,255,0.66), rgba(255,247,239,0.62)), repeating-linear-gradient(0deg, rgba(186,121,82,0.05) 0 1px, transparent 1px 15px)',
-  border: '1px solid rgba(208,130,105,0.32)',
-  boxShadow: '0 8px 16px rgba(166,91,85,0.08), inset 0 0 0 1px rgba(255,255,255,0.42)',
-  backdropFilter: 'blur(7px) saturate(1.02)',
-  WebkitBackdropFilter: 'blur(7px) saturate(1.02)',
+  color: '#5b382d',
 };
 
 function upgradeBenefits(curLv: number): string[] {
@@ -68,7 +64,7 @@ export function ConstructionPanel() {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="p-3 rounded-xl" style={cardStyle}>
+      <div className="shop-paper-card shop-paper-card--yellow" style={cardStyle}>
         <div className="flex items-center gap-2 text-sm font-bold" style={{ color: '#5b382d' }}>
           <SvgIcon name="office" size={20} />
           <span>目前辦公室：{curLv.name}（Lv.{officeLevel + 1}）</span>
@@ -79,14 +75,14 @@ export function ConstructionPanel() {
       </div>
 
       {atMax ? (
-        <div className="p-3 rounded-xl text-center" style={{ ...cardStyle, color: '#6f966d' }}>
+        <div className="shop-paper-card text-center" style={{ ...cardStyle, color: '#6f966d' }}>
           <strong>已達最高等級</strong>
         </div>
       ) : (
         <>
           {task && (
             <div
-              className="p-3 rounded-xl"
+              className="shop-paper-card shop-paper-card--pink"
               style={{
                 ...cardStyle,
                 background:
@@ -114,13 +110,8 @@ export function ConstructionPanel() {
                   </div>
                   <button
                     onClick={() => startSpecialTask(targetLevel)}
-                    className="mt-2 w-full text-sm font-bold py-1.5 rounded-lg"
-                    style={{
-                      background: 'linear-gradient(180deg, #f7b267, #c87e78)',
-                      color: 'white',
-                      border: '1px solid rgba(208,130,105,0.42)',
-                      cursor: 'pointer',
-                    }}
+                    className="shop-action-btn mt-2 w-full text-sm font-bold py-1.5"
+                    style={{ cursor: 'pointer' }}
                   >
                     開始任務
                   </button>
@@ -128,22 +119,11 @@ export function ConstructionPanel() {
               )}
               {taskInProgress && (
                 <>
-                  <div
-                    className="mt-2"
-                    style={{
-                      height: 8,
-                      background: 'rgba(255,255,255,0.42)',
-                      borderRadius: 999,
-                      overflow: 'hidden',
-                      border: '1px solid rgba(214,145,150,0.26)',
-                    }}
-                  >
+                  <div className="shop-progress-track mt-2">
                     <div
+                      className="shop-progress-fill"
                       style={{
-                        height: '100%',
                         width: `${progressPct}%`,
-                        background: 'linear-gradient(90deg, #f7b267, #d74e63)',
-                        transition: 'width 0.3s',
                       }}
                     />
                   </div>
@@ -164,7 +144,7 @@ export function ConstructionPanel() {
             </div>
           )}
 
-          <div className="p-3 rounded-xl" style={{ ...cardStyle, opacity: taskCompleted ? 1 : 0.82 }}>
+          <div className="shop-paper-card" style={{ ...cardStyle, opacity: taskCompleted ? 1 : 0.82 }}>
             <div className="flex justify-between items-start gap-2">
               <div className="flex-1">
                 <div className="font-bold flex items-center gap-1.5" style={{ color: '#5b382d' }}>
@@ -185,15 +165,8 @@ export function ConstructionPanel() {
               <button
                 disabled={!canUpgrade}
                 onClick={upgrade}
-                className="text-sm px-3"
-                style={{
-                  background: canUpgrade
-                    ? 'linear-gradient(180deg, #f7b267, #c87e78)'
-                    : 'rgba(255,240,237,0.58)',
-                  color: canUpgrade ? 'white' : '#a98a80',
-                  border: '1px solid rgba(208,130,105,0.32)',
-                  cursor: canUpgrade ? 'pointer' : 'not-allowed',
-                }}
+                className="shop-action-btn text-sm px-3"
+                style={{ cursor: canUpgrade ? 'pointer' : 'not-allowed' }}
               >
                 ${nextLv.upgradeCost}
               </button>

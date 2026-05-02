@@ -4,6 +4,7 @@ import { useUiStore } from '@/store/uiStore';
 import { useGameStore } from '@/store/gameStore';
 import { SvgIcon } from '@/components/SvgIcon';
 import { ShopPanel } from './ShopPanel';
+import './shop.css';
 
 export function ShopModal() {
   const open = useUiStore((s) => s.shopModalOpen);
@@ -23,31 +24,19 @@ export function ShopModal() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[850] flex items-center justify-center p-4"
-      style={{
-        background: 'rgba(91,56,45,0.32)',
-        backdropFilter: 'blur(8px) saturate(1.04)',
-        WebkitBackdropFilter: 'blur(8px) saturate(1.04)',
-      }}
+      className="shop-scrapbook-backdrop fixed inset-0 z-[850] flex items-center justify-center p-4"
       onClick={close}
     >
       <div
-        className="rounded-xl w-full overflow-hidden flex flex-col"
-        style={{
-          maxWidth: 880,
-          maxHeight: '90vh',
-          background:
-            'linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,247,239,0.9)), repeating-linear-gradient(0deg, rgba(186,121,82,0.07) 0 1px, transparent 1px 18px), #f7d6bf',
-          border: '1px solid rgba(208,130,105,0.38)',
-          boxShadow: '0 24px 70px rgba(72,40,34,0.24)',
-          backdropFilter: 'blur(10px) saturate(1.04)',
-          WebkitBackdropFilter: 'blur(10px) saturate(1.04)',
-        }}
+        className="shop-scrapbook-modal w-full overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b" style={{ borderColor: 'rgba(190,117,105,0.36)' }}>
+        <div className="shop-scrapbook-header flex items-start justify-between gap-3 px-5 pt-5 pb-3">
           <div className="flex items-center gap-2 min-w-0">
-            <SvgIcon name="shop" size={24} />
+            <span className="shop-scrapbook-pin" aria-hidden />
+            <span className="shop-scrapbook-icon">
+              <SvgIcon name="shop" size={22} />
+            </span>
             <div className="min-w-0">
               <h2 className="text-lg md:text-xl font-extrabold truncate" style={{ color: '#5b382d' }}>
                 商店
@@ -59,20 +48,14 @@ export function ShopModal() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span
-              className="text-sm font-extrabold px-3 py-1.5 rounded-xl flex items-center gap-1"
-              style={{ background: 'rgba(255,244,220,0.72)', color: '#b97428', border: '1px solid rgba(231,157,83,0.42)' }}
+              className="shop-money-chip text-sm font-extrabold px-3 py-1.5 flex items-center gap-1"
             >
               <SvgIcon name="money" size={16} />${money}
             </span>
             <button
               type="button"
               onClick={close}
-              className="text-sm px-3 py-1.5 rounded-xl whitespace-nowrap"
-              style={{
-                background: 'linear-gradient(180deg, rgba(255,254,254,0.76), rgba(255,232,233,0.62))',
-                color: '#cf405b',
-                border: '1px solid rgba(229,116,132,0.32)',
-              }}
+              className="shop-close-btn text-sm px-3 py-1.5 whitespace-nowrap"
             >
               關閉
             </button>

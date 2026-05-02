@@ -55,7 +55,8 @@ export function FacilityInfoPopup() {
   if (!item) return null;
 
   const lines = describeEffect(id, level);
-  const isMax = level >= MAX_SHOP_LEVEL;
+  const cap = item.maxLevel ?? MAX_SHOP_LEVEL;
+  const isMax = level >= cap;
 
   return createPortal(
     <div
@@ -87,7 +88,7 @@ export function FacilityInfoPopup() {
               border: '1px solid var(--line)',
             }}
           >
-            {isMax ? '滿級' : `等級 ${level}/${MAX_SHOP_LEVEL}`}
+            {isMax ? '滿級' : `等級 ${level}/${cap}`}
           </span>
         </div>
 

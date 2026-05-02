@@ -59,7 +59,7 @@ const IPO_OFFICE_LEVEL = 4;
 const IPO_PROJECTS = 80;
 
 // === 辦公室固定每日支出 ===
-export const OFFICE_DAILY_EXPENSE = [5, 8, 14, 22, 35];
+export const OFFICE_DAILY_EXPENSE = [20, 48, 129, 285, 608];
 
 // === 重構：產業 / 抽卡 / 強化 ===
 export const INDUSTRIES: ProjectCategory[] = ['tech', 'design', 'marketing', 'service'];
@@ -265,6 +265,7 @@ type Actions = {
   // === 工具系統 ===
   equipTool: (dogId: string, toolInstanceId: string) => void;
   unequipTool: (dogId: string) => void;
+  destroyTool: (toolInstanceId: string) => void;
   openToolPicker: (dogId: string) => void;
   closeToolPicker: () => void;
 };
@@ -533,6 +534,7 @@ function sanitizeProjectAssignments(state: GameState): GameState {
 
 // Team-based 自動接案
 // 對每個 open team：若該 team 沒人在做案 → 接該產業 inbox 最前面的 offered，team 成員全上工
+// 也會撿回「active 但 assignedStaffIds 被 sanitize 清空」的孤兒案
 // 在抽卡、team 開關、結算後呼叫
 function applyAutoAccept(state: GameState): GameState {
   let s = sanitizeProjectAssignments(state);
@@ -545,28 +547,42 @@ function applyAutoAccept(state: GameState): GameState {
       return dog?.assignedProjectId != null;
     });
     if (busy) continue;
-    // 找該產業最前面的 offered
-    const offered = s.clients.find((c) => c.status === 'offered' && c.category === industry);
-    if (!offered) continue;
+    // 優先撿孤兒（active 但無人指派），再找該產業最前面的 offered
+    const orphan = s.clients.find(
+      (c) => c.status === 'active' && c.category === industry && c.assignedStaffIds.length === 0,
+    );
+    const offered = orphan
+      ? null
+      : s.clients.find((c) => c.status === 'offered' && c.category === industry);
+    const target = orphan ?? offered;
+    if (!target) continue;
     // 過濾過勞 / 不存在的成員
     const validIds = team.memberIds.filter((id) => {
       const dog = s.staff.find((d) => d.id === id);
       return dog && dog.fatigue < 100;
     });
     if (validIds.length === 0) continue;
-    const projectId = offered.id;
+    const projectId = target.id;
+    const isOrphan = !!orphan;
     s = {
       ...s,
       clients: s.clients.map((c) =>
         c.id === projectId
-          ? { ...c, status: 'active', acceptedDay: s.day, assignedStaffIds: validIds }
+          ? isOrphan
+            ? { ...c, assignedStaffIds: validIds }
+            : { ...c, status: 'active', acceptedDay: s.day, assignedStaffIds: validIds }
           : c,
       ),
       staff: s.staff.map((d) =>
         validIds.includes(d.id) ? { ...d, assignedProjectId: projectId } : d,
       ),
     };
-    s = pushLog(s, ` ${industry} team 接案：${offered.title}（tier${offered.clientTier}・${validIds.length} 人）`);
+    s = pushLog(
+      s,
+      isOrphan
+        ? ` ${industry} team 接手「${target.title}」（${validIds.length} 人）`
+        : ` ${industry} team 接案：${target.title}（tier${target.clientTier}・${validIds.length} 人）`,
+    );
   }
   return s;
 }
@@ -797,7 +813,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!item) return;
     const s = get();
     const currentLevel = s.purchases[id] ?? 0;
-    if (currentLevel >= MAX_SHOP_LEVEL) return; // 已滿級
+    const cap = item.maxLevel ?? MAX_SHOP_LEVEL;
+    if (currentLevel >= cap) return; // 已滿級
     const cost = nextShopCost(item.cost, currentLevel);
     if (s.money < cost) return;
     let next: GameState = {
@@ -1770,13 +1787,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // 員工不能同時在多個 team
     const inOther = INDUSTRIES.some((ind) => ind !== industry && s.teams[ind].memberIds.includes(dogId));
     if (inOther) return;
-    const next = sanitizeProjectAssignments({
+    let next = sanitizeProjectAssignments({
       ...s,
       teams: {
         ...s.teams,
         [industry]: { ...team, memberIds: [...team.memberIds, dogId] },
       },
     });
+    next = applyAutoAccept(next);
     set(next as Partial<GameStore>);
   },
 
@@ -1791,13 +1809,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
     const picks = pickBestTeamForIndustry(candidates, industry, capacity);
     const newIds = picks.map((d) => d.id);
-    const next = sanitizeProjectAssignments({
+    let next = sanitizeProjectAssignments({
       ...s,
       teams: {
         ...s.teams,
         [industry]: { ...team, memberIds: newIds },
       },
     });
+    next = applyAutoAccept(next);
     set(next as Partial<GameStore>);
   },
 
@@ -1822,6 +1841,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const openInds = INDUSTRIES.filter((ind) => next.teams[ind].open);
       next.clients = fillInbox(next.clients, next.tierBudget, next.day, next.officeLevel, false, openInds);
     }
+    next = applyAutoAccept(next);
     set(next as Partial<GameStore>);
   },
 
@@ -1916,6 +1936,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!dog || !dog.equippedToolId) return;
     set({
       staff: s.staff.map((d) => (d.id === dogId ? { ...d, equippedToolId: null } : d)),
+    });
+  },
+
+  destroyTool: (toolInstanceId) => {
+    const s = get();
+    const equipped = s.staff.some((d) => d.equippedToolId === toolInstanceId);
+    if (equipped) return;
+    const target = s.tools.find((t) => t.instanceId === toolInstanceId);
+    if (!target) return;
+    set({
+      tools: s.tools.filter((t) => t.instanceId !== toolInstanceId),
+      log: [...s.log, { day: s.day, msg: `🗑 銷毀玩具：${target.name}（${target.grade}）` }],
     });
   },
 

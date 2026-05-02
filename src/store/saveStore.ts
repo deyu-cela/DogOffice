@@ -188,6 +188,11 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
             conflict,
             error: '雲端有更新的存檔，請選擇要保留哪一份',
           });
+        } else if (err instanceof ApiError && err.status === 400 && err.code === 4001) {
+          set({
+            status: 'error',
+            error: `後端尚未支援存檔版本 v${SAVE_VERSION}，請通知開發者升級 saves API`,
+          });
         } else {
           set({
             status: 'error',

@@ -6,11 +6,42 @@ import {
   TOOL_TRAIT_PROB,
   getToolDefsForCategory,
 } from '@/constants/tools';
-import { rand } from './utils';
+import { dogPower, rand } from './utils';
 
 let toolIdCounter = 0;
 export function nextToolId(): string {
   return `tool_${++toolIdCounter}_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e6).toString(36)}`;
+}
+
+const GRADE_RANK: Record<ToolGrade, number> = { S: 3, A: 2, B: 1 };
+
+// 找出可被新工具擠掉的舊工具 instanceId；找不到回 null
+// 規則：
+//  1. 優先：同 category 且 grade 嚴格低於 newTool 且未裝備
+//  2. 退一步：任何 category 且 grade 嚴格低於 newTool 且未裝備
+//  在候選集中：先按 grade 升序（先擠最低階），再按 obtainedDay 升序（同階則擠最舊）
+export function pickToolToReplace(
+  tools: Tool[],
+  newTool: Tool,
+  staff: Dog[],
+): string | null {
+  const equipped = new Set<string>();
+  for (const d of staff) if (d.equippedToolId) equipped.add(d.equippedToolId);
+  const newRank = GRADE_RANK[newTool.grade];
+
+  const candidates = tools.filter(
+    (t) => GRADE_RANK[t.grade] < newRank && !equipped.has(t.instanceId),
+  );
+  if (candidates.length === 0) return null;
+
+  const sameCat = candidates.filter((t) => t.category === newTool.category);
+  const pool = sameCat.length > 0 ? sameCat : candidates;
+  pool.sort(
+    (a, b) =>
+      GRADE_RANK[a.grade] - GRADE_RANK[b.grade] ||
+      a.obtainedDay - b.obtainedDay,
+  );
+  return pool[0].instanceId;
 }
 
 export function rollGrade(): ToolGrade {
@@ -135,6 +166,11 @@ export function getDogToolStatBoost(dog: Dog, tools: Tool[]): DogStatBoost {
   let quality = tool.qualityBoost;
   if (tool.traits.includes('precision')) quality += 1;
   return { speed: tool.speedBoost, quality };
+}
+
+// 含已裝備工具加成的工作能力
+export function dogPowerWithTools(dog: Dog, tools: Tool[]): number {
+  return dogPower(dog, getDogToolStatBoost(dog, tools));
 }
 
 // 個別員工的 trait 速度乘數

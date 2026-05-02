@@ -64,10 +64,11 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'toy',
     name: '狗狗玩具區',
-    cost: 420,
+    cost: 2000,
     category: 'all',
-    desc: '可愛裝飾用，狗狗們都喜歡（暫無數值效果）。',
-    statTags: [{ label: '裝飾用', type: 'up' }],
+    maxLevel: 1,
+    desc: '購買後狗狗完成案件會撿到玩具（庫存上限 50 件），裝備可加成速度與專業。',
+    statTags: [{ label: '解鎖玩具掉落', type: 'up' }],
   },
   {
     id: 'gym',

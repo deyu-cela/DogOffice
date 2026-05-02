@@ -1,7 +1,15 @@
-import type { CompanyBuffs, GameState, Tool } from '@/types';
+import type { CompanyBuffs, GameState, ProjectCategory, Tool, ToolGrade } from '@/types';
 import type { GameSaveData } from '@/types/save';
 import { SAVE_VERSION } from '@/types/save';
 import { getToolIconByDefId } from '@/constants/tools';
+
+const TOOL_GRADES: ReadonlyArray<ToolGrade> = ['S', 'A', 'B'];
+const TOOL_CATEGORIES: ReadonlyArray<ProjectCategory> = ['tech', 'design', 'marketing', 'service'];
+
+function clampNum(v: unknown, min: number, max: number, fb: number): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return fb;
+  return Math.max(min, Math.min(max, v));
+}
 
 const LOG_TAIL_LIMIT = 10;
 
@@ -165,14 +173,43 @@ export function deserialize(raw: unknown): GameSaveData | null {
   })) as GameSaveData['staff'];
 
   const tools = Array.isArray(d.tools)
-    ? (d.tools as Array<Record<string, unknown>>).map((t) => {
+    ? (d.tools as Array<Record<string, unknown>>).flatMap((t) => {
+        const instanceId = typeof t.instanceId === 'string' ? t.instanceId : '';
         const defId = typeof t.defId === 'string' ? t.defId : '';
+        if (!instanceId || !defId) return [];
+        const category = TOOL_CATEGORIES.includes(t.category as ProjectCategory)
+          ? (t.category as ProjectCategory)
+          : null;
+        if (!category) return [];
+        const grade = TOOL_GRADES.includes(t.grade as ToolGrade) ? (t.grade as ToolGrade) : 'B';
         const iconName = typeof t.iconName === 'string'
           ? (t.iconName as Tool['iconName'])
           : getToolIconByDefId(defId);
-        return { ...t, iconName } as Tool;
+        const traits = Array.isArray(t.traits)
+          ? (t.traits.filter((x) => typeof x === 'string') as Tool['traits']).slice(0, 4)
+          : [];
+        const normalized: Tool = {
+          instanceId,
+          defId,
+          name: typeof t.name === 'string' ? t.name : defId,
+          iconName,
+          category,
+          grade,
+          speedBoost: clampNum(t.speedBoost, 0, 5, 0),
+          qualityBoost: clampNum(t.qualityBoost, 0, 5, 0),
+          traits,
+          obtainedDay: typeof t.obtainedDay === 'number' && t.obtainedDay > 0 ? Math.round(t.obtainedDay) : 1,
+        };
+        return [normalized];
       })
     : [];
+
+  const validToolIds = new Set(tools.map((t) => t.instanceId));
+  for (const dog of staff as Array<Record<string, unknown>>) {
+    if (typeof dog.equippedToolId === 'string' && !validToolIds.has(dog.equippedToolId)) {
+      dog.equippedToolId = null;
+    }
+  }
 
   const clients = (Array.isArray(d.clients)
     ? (d.clients as Array<Record<string, unknown>>).map(roundProjectFields)

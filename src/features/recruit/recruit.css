@@ -1,0 +1,175 @@
+.recruit-scrapbook-backdrop {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 221, 232, 0.34), transparent 32%),
+    radial-gradient(circle at 82% 76%, rgba(255, 232, 190, 0.28), transparent 34%),
+    rgba(91, 56, 45, 0.34);
+  backdrop-filter: blur(8px) saturate(1.06);
+  -webkit-backdrop-filter: blur(8px) saturate(1.06);
+}
+
+.recruit-scrapbook-modal {
+  position: relative;
+  max-height: 92vh;
+  border-radius: 8px;
+  background:
+    radial-gradient(rgba(228, 160, 170, 0.1) 1px, transparent 1.6px) 0 0 / 9px 9px,
+    repeating-linear-gradient(0deg, rgba(186, 121, 82, 0.05) 0 1px, transparent 1px 18px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 247, 247, 0.97));
+  border: 1px solid rgba(236, 181, 185, 0.5);
+  box-shadow:
+    0 24px 44px rgba(160, 90, 60, 0.24),
+    0 7px 14px rgba(160, 90, 60, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    inset 0 -2px 0 rgba(180, 140, 100, 0.08);
+  animation: gachaModalIn 0.24s ease-out;
+}
+
+.recruit-close-btn,
+.recruit-soft-btn,
+.recruit-pull-btn {
+  border-radius: 8px;
+  font-weight: 900;
+}
+
+.recruit-close-btn {
+  color: #cf405b;
+  background: linear-gradient(180deg, #fffefe, #ffe8e9);
+  border: 1px solid rgba(229, 116, 132, 0.32);
+  box-shadow:
+    0 5px 12px rgba(185, 85, 93, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+
+.recruit-home {
+  color: #5b382d;
+}
+
+.recruit-banner {
+  position: relative;
+  border-bottom: 1.5px dashed rgba(190, 117, 105, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 243, 0.24), rgba(255, 245, 217, 0.78));
+  overflow: hidden;
+}
+
+.recruit-banner-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.recruit-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 60%, rgba(255, 245, 238, 0.55) 100%);
+  pointer-events: none;
+}
+
+.recruit-banner-caption {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 18px;
+  z-index: 1;
+  padding: 8px 14px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  text-shadow: 0 2px 6px rgba(255, 255, 255, 0.85), 0 1px 2px rgba(255, 255, 255, 0.95);
+}
+
+.recruit-money-chip,
+.recruit-cost-chip {
+  border-radius: 999px;
+  font-family: var(--font-handwritten);
+}
+
+.recruit-money-chip {
+  color: #b97428;
+  background: linear-gradient(180deg, #fffaf0, #fff1da);
+  border: 1px dashed rgba(196, 156, 28, 0.48);
+}
+
+.recruit-soft-btn {
+  color: #6e4638;
+  background: linear-gradient(180deg, #ffffff, #fff3f1);
+  border: 1px dashed rgba(214, 145, 150, 0.42);
+  box-shadow: 0 4px 9px rgba(166, 91, 85, 0.1);
+}
+
+.recruit-actions {
+  background: transparent;
+}
+
+.recruit-pull-btn {
+  min-height: 58px;
+  border: 1px solid rgba(214, 60, 100, 0.3);
+  box-shadow:
+    0 8px 14px rgba(214, 60, 100, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.recruit-pull-btn[data-variant='primary'] {
+  color: #fff;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0 8px, transparent 8px 16px),
+    linear-gradient(180deg, #ff8aa3, #ff5a7a);
+}
+
+.recruit-pull-btn[data-variant='secondary'] {
+  color: #6e4638;
+  background: linear-gradient(180deg, #ffffff, #fff3f1);
+}
+
+.recruit-pull-btn:disabled {
+  color: #a98a80;
+  background: rgba(255, 240, 237, 0.68);
+  border-color: rgba(208, 130, 105, 0.28);
+  box-shadow: none;
+}
+
+.recruit-cost-chip {
+  color: #fff;
+  background: rgba(91, 56, 45, 0.72);
+}
+
+.recruit-rate-panel,
+.recruit-result-stage {
+  background:
+    radial-gradient(rgba(228, 160, 170, 0.08) 0.5px, transparent 1px) 0 0 / 4px 4px,
+    linear-gradient(180deg, #fffdfb 0%, #fff5f5 100%);
+  border: 1.5px dashed rgba(214, 145, 150, 0.45);
+  color: #5b382d;
+  box-shadow: 0 12px 24px rgba(166, 91, 85, 0.18);
+}
+
+.recruit-result-stage {
+  min-height: 520px;
+}
+
+.recruit-confirm-btn {
+  border-radius: 8px;
+  font-weight: 900;
+  color: #cf405b;
+  background: linear-gradient(180deg, #fffefe, #ffe8e9);
+  border: 1px solid rgba(229, 116, 132, 0.32);
+}
+
+.recruit-again-btn {
+  border-radius: 8px;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(180deg, #ff8aa3, #ff5a7a);
+  border: 1px solid rgba(214, 60, 100, 0.36);
+  box-shadow: 0 8px 14px rgba(214, 60, 100, 0.22);
+}
+
+.recruit-again-btn:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}

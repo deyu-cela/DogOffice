@@ -190,6 +190,8 @@ export type ShopItem = {
   statTags: { label: string; type: 'up' | 'down' }[];
   // 設施對應的職業類別；'all' 代表全員受惠（如 sofa）
   category: ProjectCategory | 'all';
+  // 個別設施可購買等級上限；省略時使用全域 MAX_SHOP_LEVEL
+  maxLevel?: number;
 };
 
 // === 工具系統 ===

@@ -4,6 +4,7 @@ import { DOG_ROSTER } from '@/constants/dogRoster';
 import { useGameStore, GACHA_COST, type GachaResult } from '@/store/gameStore';
 import { useUiStore } from '@/store/uiStore';
 import { GachaCard } from './GachaCard';
+import './recruit.css';
 
 type Phase = 'home' | 'pulling';
 
@@ -80,19 +81,13 @@ export function GachaModal() {
     <>
       <style>{KEYFRAMES}</style>
       <div
-        className="fixed inset-0 z-[860] flex items-center justify-center p-3"
-        style={{ background: 'rgba(8,20,45,0.58)', backdropFilter: 'blur(8px)' }}
+        className="recruit-scrapbook-backdrop fixed inset-0 z-[860] flex items-center justify-center p-3"
         onClick={handleClose}
       >
         <div
-          className="relative w-full overflow-hidden"
+          className="recruit-scrapbook-modal relative w-full overflow-hidden"
           style={{
             maxWidth: phase === 'home' ? 520 : 760,
-            maxHeight: '92vh',
-            borderRadius: 10,
-            background: '#101827',
-            boxShadow: '0 24px 80px rgba(0,0,0,0.42)',
-            animation: 'gachaModalIn 0.24s ease-out',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -158,82 +153,54 @@ function HomeView({
   const canOne = money >= onePullCost;
   const canTen = money >= tenPullCost;
   const rates = useMemo(() => makeRateRows(), []);
-  const bannerImage = `${import.meta.env.BASE_URL}assets/start-screen.png`;
+  const bannerImage = `${import.meta.env.BASE_URL}assets/gacha.png`;
 
   return (
-    <div className="relative text-white">
+    <div className="recruit-home relative">
       <button
         type="button"
         aria-label="關閉"
         onClick={onClose}
-        className="absolute top-2 right-2 z-20 grid place-items-center"
+        className="recruit-close-btn absolute top-2 right-2 z-20 grid place-items-center"
         style={{
           width: 30,
           height: 30,
-          borderRadius: 6,
-          background: 'rgba(0,0,0,0.36)',
-          border: '1px solid rgba(255,255,255,0.28)',
-          fontWeight: 900,
         }}
       >
         X
       </button>
 
-      <section
-        className="relative"
-        style={{
-          height: 372,
-          backgroundImage: `linear-gradient(180deg, rgba(4,7,14,0.08), rgba(4,7,14,0.78)), url(${bannerImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-y-0 left-0 flex items-center px-2 text-5xl font-black" style={{ color: 'rgba(255,255,255,0.82)', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
-          &laquo;
-        </div>
-        <div className="absolute inset-y-0 right-0 flex items-center px-2 text-5xl font-black" style={{ color: 'rgba(255,255,255,0.82)', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
-          &raquo;
-        </div>
+      <section className="recruit-banner">
+        <img src={bannerImage} alt="" className="recruit-banner-img" draggable={false} />
 
-        <div className="absolute left-7 flex items-center gap-2" style={{ bottom: 116 }}>
-          <button type="button" onClick={onToggleRates} className="px-3 py-1.5 text-sm font-black" style={infoButtonStyle}>
+        <div className="absolute left-7 z-10 flex items-center gap-2" style={{ bottom: 180 }}>
+          <button type="button" onClick={onToggleRates} className="recruit-soft-btn px-3 py-1.5 text-sm">
             機率情報
           </button>
         </div>
 
         <div
-          className="absolute left-0 right-0 py-4 text-center"
-          style={{
-            bottom: 18,
-            background: 'linear-gradient(90deg, rgba(0,0,0,0), rgba(0,0,0,0.54), rgba(0,0,0,0))',
-          }}
+          className="recruit-banner-caption text-center"
+          style={{ bottom: 96 }}
         >
-          <div className="text-3xl font-black tracking-wide" style={{ textShadow: '0 3px 10px rgba(0,0,0,0.52)' }}>
+          <div className="text-3xl font-black tracking-wide" style={{ color: '#5b382d' }}>
             普通招募
           </div>
-          <div className="mt-1 text-xs font-bold" style={{ color: 'rgba(255,255,255,0.78)' }}>
+          <div className="recruit-money-chip mx-auto mt-1 w-fit px-3 py-1 text-xs font-bold">
             目前資金 ${money.toLocaleString()}
           </div>
         </div>
 
         {ratesOpen && <RatePanel rows={rates} />}
-      </section>
 
-      <div className="grid grid-cols-2 gap-4 p-4" style={{ background: 'linear-gradient(180deg, rgba(9,14,24,0.9), #101827)' }}>
-        <RecruitButton label="招募1名" cost={onePullCost} disabled={!canOne} variant="light" onClick={onOne} />
-        <RecruitButton label="招募10名" cost={tenPullCost} disabled={!canTen} variant="blue" onClick={onTen} />
-      </div>
+        <div className="recruit-actions absolute left-4 right-4 bottom-4 z-10 grid grid-cols-2 gap-4">
+          <RecruitButton label="招募 1 次" cost={onePullCost} disabled={!canOne} variant="secondary" onClick={onOne} />
+          <RecruitButton label="招募 10 次" cost={tenPullCost} disabled={!canTen} variant="primary" onClick={onTen} />
+        </div>
+      </section>
     </div>
   );
 }
-
-const infoButtonStyle = {
-  borderRadius: 4,
-  background: 'linear-gradient(180deg, rgba(25,30,42,0.92), rgba(12,17,27,0.92))',
-  border: '1px solid rgba(255,255,255,0.5)',
-  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08), 0 2px 10px rgba(0,0,0,0.24)',
-  color: '#ffffff',
-} as const;
 
 function RecruitButton({
   label,
@@ -245,33 +212,24 @@ function RecruitButton({
   label: string;
   cost: number;
   disabled: boolean;
-  variant: 'light' | 'blue';
+  variant: 'secondary' | 'primary';
   onClick: () => void;
 }) {
-  const blue = variant === 'blue';
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="flex items-center justify-between gap-2 px-4 font-black"
+      className="recruit-pull-btn flex items-center justify-between gap-2 px-4 font-black"
+      data-variant={variant}
       style={{
-        height: 58,
-        borderRadius: 6,
-        background: blue ? 'linear-gradient(180deg, #2fc8ff, #0799dc)' : 'linear-gradient(180deg, #ffffff, #edf2f8)',
-        color: blue ? '#ffffff' : '#353b46',
-        border: blue ? '2px solid #86e9ff' : '1px solid rgba(255,255,255,0.9)',
-        boxShadow: blue ? 'inset 0 0 0 1px rgba(255,255,255,0.45), 0 3px 12px rgba(17,166,224,0.36)' : '0 3px 12px rgba(0,0,0,0.22)',
         opacity: disabled ? 0.52 : 1,
         cursor: disabled ? 'not-allowed' : 'pointer',
         fontSize: 18,
       }}
     >
       <span>{label}</span>
-      <span className="flex items-center gap-2 px-2.5 py-1" style={{
-        borderRadius: 999,
-        background: blue ? 'rgba(0,0,0,0.42)' : '#30343d',
-        color: 'white',
+      <span className="recruit-cost-chip flex items-center gap-2 px-2.5 py-1" style={{
         fontSize: 13,
         minWidth: 78,
         justifyContent: 'center',
@@ -285,18 +243,14 @@ function RecruitButton({
 
 function RatePanel({ rows }: { rows: { grade: string; count: number; percent: string }[] }) {
   return (
-    <div className="absolute left-7 right-7 z-10 p-3" style={{
-      bottom: 150,
-      borderRadius: 6,
-      background: 'rgba(14,19,30,0.88)',
-      border: '1px solid rgba(255,255,255,0.26)',
-      boxShadow: '0 12px 28px rgba(0,0,0,0.34)',
+    <div className="recruit-rate-panel absolute left-7 right-7 z-10 p-3" style={{
+      bottom: 220,
     }}>
       <div className="mb-2 text-sm font-black">招募機率表</div>
       <div className="grid gap-1.5">
         {rows.map((row) => (
           <div key={row.grade} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-xs">
-            <span style={{ color: row.grade === 'U' || row.grade === 'S' ? '#ffd76b' : 'rgba(255,255,255,0.9)' }}>
+            <span style={{ color: row.grade === 'U' || row.grade === 'S' ? '#b97428' : '#6e4638' }}>
               {GRADE_LABEL[row.grade] ?? row.grade}
             </span>
             <span style={{ color: 'rgba(255,255,255,0.62)' }}>{row.count} 名</span>
@@ -336,13 +290,13 @@ function PullingView({
   const canAgain = money >= (isTen ? tenPullCost : onePullCost);
 
   return (
-    <div className="relative flex flex-col items-center justify-center p-6" style={{ minHeight: 520, background: 'radial-gradient(circle at 50% 45%, #264f9e, #08142d 70%)' }}>
+    <div className="recruit-result-stage relative flex flex-col items-center justify-center p-6">
       {!allRevealed && (
-        <button type="button" onClick={onRevealAll} className="absolute right-4 bottom-4 rounded-md px-3 py-1.5 text-xs font-black" style={{ color: 'white', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.35)' }}>
+        <button type="button" onClick={onRevealAll} className="recruit-soft-btn absolute right-4 bottom-4 px-3 py-1.5 text-xs">
           全部揭曉
         </button>
       )}
-      <div className="mb-5 text-sm font-black tracking-[0.24em] text-white">TAP TO REVEAL</div>
+      <div className="mb-5 text-sm font-black tracking-[0.24em]" style={{ color: '#886153' }}>TAP TO REVEAL</div>
       <div className={isTen ? 'grid' : 'flex'} style={isTen ? { gridTemplateColumns: 'repeat(5, auto)', gap: 12, rowGap: 16 } : undefined}>
         {results.map((result, index) => (
           <GachaCard key={index} result={result} revealed={revealed.has(index)} flyDelay={0.04 * index} size={cardSize} onReveal={() => onReveal(index)} />
@@ -353,13 +307,7 @@ function PullingView({
           <button
             type="button"
             onClick={onConfirm}
-            className="py-2.5 font-black text-white"
-            style={{
-              borderRadius: 2,
-              background: 'linear-gradient(180deg, #272727, #141414)',
-              boxShadow: '0 3px 10px rgba(0,0,0,0.24)',
-              color: '#ffffff',
-            }}
+            className="recruit-confirm-btn py-2.5"
           >
             確認
           </button>
@@ -367,11 +315,8 @@ function PullingView({
             type="button"
             disabled={!canAgain}
             onClick={onAgain}
-            className="py-2.5 font-black text-white"
+            className="recruit-again-btn py-2.5"
             style={{
-              borderRadius: 2,
-              background: 'linear-gradient(180deg, #27c8ff, #0797d5)',
-              boxShadow: '0 3px 12px rgba(0,154,216,0.34)',
               opacity: canAgain ? 1 : 0.52,
               cursor: canAgain ? 'pointer' : 'not-allowed',
             }}

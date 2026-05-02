@@ -30,9 +30,10 @@ import {
   getToolSelfQualityMul,
   getToolSelfSpeedMul,
   getToolSpeedBoost,
+  pickToolToReplace,
   rollTool,
 } from './toolsEngine';
-import { TOOL_DROP_CHANCE } from '@/constants/tools';
+import { TOOL_CAP, TOOL_DROP_CHANCE } from '@/constants/tools';
 
 // === 類別主/次 stat 加成（只剩 speed/quality）===
 type CategoryMul = {
@@ -428,29 +429,54 @@ export function runProjectsDay(state: GameState): DayResult {
           reward: settled.finalReward,
         },
       ];
-      // === 工具掉落（按 category；luckyCharm 加成）===
+      // === 玩具掉落（需先購買「狗狗玩具區」；按 category；luckyCharm 加成）===
+      const hasToyZone = (s.purchases?.toy ?? 0) > 0;
       const luckyBonus = getTeamLuckyBonus(ctx.toolMap, assignedDogs.map((d) => d.id));
       const dropChance = TOOL_DROP_CHANCE + luckyBonus;
-      if (Math.random() < dropChance) {
+      if (hasToyZone && Math.random() < dropChance) {
         const tool = rollTool(project.category, s.day);
         if (tool) {
-          s.tools = [...s.tools, tool];
-          s.pendingToolDrops = [
-            ...s.pendingToolDrops,
-            {
-              id: `tool-${s.day}-${project.id}-${s.pendingToolDrops.length}`,
-              projectId: project.id,
-              tool,
-            },
-          ];
-          newLogs.push({
-            day: s.day,
-            msg: `🛠 撿到工具：${tool.name}（${tool.grade}）`,
-          });
-          toast = {
-            msg: `🛠 撿到 ${tool.grade} 級工具：${tool.name}`,
-            type: 'positive',
-          };
+          let nextTools = s.tools;
+          let replacedTool: Tool | null = null;
+          let dropIntoBag = true;
+          if (s.tools.length >= TOOL_CAP) {
+            const removeId = pickToolToReplace(s.tools, tool, s.staff);
+            if (removeId) {
+              replacedTool = s.tools.find((t) => t.instanceId === removeId) ?? null;
+              nextTools = s.tools.filter((t) => t.instanceId !== removeId);
+            } else {
+              dropIntoBag = false;
+              newLogs.push({
+                day: s.day,
+                msg: `🧸 撿到玩具但庫存已滿（${TOOL_CAP} 件且無可替換），${tool.name} 放生`,
+              });
+              toast = { msg: `玩具庫存已滿，${tool.name} 未收入`, type: 'negative' };
+            }
+          }
+          if (dropIntoBag) {
+            s.tools = [...nextTools, tool];
+            s.pendingToolDrops = [
+              ...s.pendingToolDrops,
+              {
+                id: `tool-${s.day}-${project.id}-${s.pendingToolDrops.length}`,
+                projectId: project.id,
+                tool,
+              },
+            ];
+            const replaceMsg = replacedTool
+              ? `（擠掉 ${replacedTool.grade} 級 ${replacedTool.name}）`
+              : '';
+            newLogs.push({
+              day: s.day,
+              msg: `🧸 撿到玩具：${tool.name}（${tool.grade}）${replaceMsg}`,
+            });
+            toast = {
+              msg: replacedTool
+                ? `🧸 撿到 ${tool.grade} 級 ${tool.name}，擠掉 ${replacedTool.name}`
+                : `🧸 撿到 ${tool.grade} 級玩具：${tool.name}`,
+              type: 'positive',
+            };
+          }
         }
       }
     } else {
