@@ -134,15 +134,19 @@ export function StaffList() {
     <section
       className="relative overflow-hidden rounded-xl"
       style={{
-        background: 'linear-gradient(180deg, #f6f8fb 0%, #ffffff 42%, #edf2f7 100%)',
-        border: '1px solid rgba(64,74,92,0.16)',
+        background:
+          'linear-gradient(180deg, rgba(255,255,255,0.66), rgba(255,247,239,0.72)), repeating-linear-gradient(0deg, rgba(186,121,82,0.05) 0 1px, transparent 1px 16px), rgba(247,214,191,0.46)',
+        border: '1px solid rgba(208,130,105,0.34)',
+        boxShadow: '0 8px 16px rgba(166,91,85,0.08), inset 0 0 0 1px rgba(255,255,255,0.42)',
+        backdropFilter: 'blur(7px) saturate(1.02)',
+        WebkitBackdropFilter: 'blur(7px) saturate(1.02)',
       }}
     >
       <div
         className="flex items-center justify-between gap-2 px-3 py-2"
         style={{
-          background: 'linear-gradient(180deg, #303235 0%, #222426 100%)',
-          borderBottom: '3px solid #22b9e8',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,232,233,0.56))',
+          borderBottom: '1px solid rgba(190,117,105,0.36)',
         }}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -157,8 +161,8 @@ export function StaffList() {
             N
           </div>
           <div className="min-w-0">
-            <div className="font-black text-white text-sm leading-tight">員工</div>
-            <div className="text-[10px] text-slate-300">可查看同伴狀態</div>
+            <div className="font-black text-sm leading-tight" style={{ color: '#5b382d' }}>員工</div>
+            <div className="text-[10px]" style={{ color: '#886153' }}>可查看同伴狀態</div>
           </div>
         </div>
 
@@ -184,12 +188,12 @@ export function StaffList() {
                 onClick={() => setFilter(item.key)}
                 className="h-10 min-w-10 px-3 rounded-md font-black text-sm"
                 style={{
-                  color: active ? '#ffffff' : '#f1f5f9',
+                  color: active ? '#fffdf8' : '#6e4638',
                   background: active
-                    ? 'linear-gradient(180deg, #2cc7ff, #1594d0)'
-                    : 'linear-gradient(180deg, #3d4045, #24262b)',
-                  border: active ? '1px solid #66ddff' : '1px solid rgba(255,255,255,0.18)',
-                  boxShadow: active ? '0 0 0 1px rgba(255,255,255,0.28) inset' : 'none',
+                    ? 'linear-gradient(180deg, #f7b267, #c87e78)'
+                    : 'linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,247,239,0.58))',
+                  border: active ? '1px solid rgba(208,130,105,0.46)' : '1px solid rgba(208,130,105,0.28)',
+                  boxShadow: active ? '0 0 0 1px rgba(255,255,255,0.28) inset' : '0 4px 10px rgba(166,91,85,0.08)',
                 }}
               >
                 {item.label}
@@ -203,9 +207,9 @@ export function StaffList() {
             onClick={() => setDesc((value) => !value)}
             className="h-10 w-10 rounded-md font-black text-lg"
             style={{
-              color: '#f8fafc',
-              background: 'linear-gradient(180deg, #3d4045, #24262b)',
-              border: '1px solid rgba(255,255,255,0.18)',
+              color: '#6e4638',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,247,239,0.58))',
+              border: '1px solid rgba(208,130,105,0.28)',
             }}
           >
             {desc ? '↻' : '↺'}
@@ -214,15 +218,15 @@ export function StaffList() {
           <label
             className="h-10 rounded-md flex items-center px-2"
             style={{
-              background: 'linear-gradient(180deg, #3d4045, #24262b)',
-              border: '1px solid rgba(255,255,255,0.18)',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,247,239,0.58))',
+              border: '1px solid rgba(208,130,105,0.28)',
             }}
           >
             <select
               value={sortKey}
               onChange={(event) => setSortKey(event.target.value as SortKey)}
               className="bg-transparent text-sm font-black outline-none"
-              style={{ color: '#f8fafc' }}
+              style={{ color: '#6e4638' }}
             >
               {(Object.keys(SORT_LABEL) as SortKey[]).map((key) => (
                 <option key={key} value={key} style={{ color: '#1f2937' }}>
@@ -233,7 +237,7 @@ export function StaffList() {
           </label>
         </div>
 
-        <div className="text-[11px] mb-2 text-center font-bold" style={{ color: '#687386' }}>
+        <div className="text-[11px] mb-2 text-center font-bold" style={{ color: '#886153' }}>
           {visibleRows.length} / {staff.length} 名員工
         </div>
 
@@ -277,11 +281,11 @@ function HeaderButton({
       onClick={onClick}
       className="h-9 px-3 rounded-sm text-xs font-black"
       style={{
-        color: disabled ? '#8a9099' : '#f8fafc',
+        color: disabled ? '#a98a80' : '#fffdf8',
         background: disabled
-          ? 'linear-gradient(180deg, #32363b, #24272c)'
-          : 'linear-gradient(180deg, #464a50, #25282d)',
-        border: '1px solid rgba(255,255,255,0.18)',
+          ? 'rgba(255,240,237,0.58)'
+          : 'linear-gradient(180deg, #f7b267, #c87e78)',
+        border: '1px solid rgba(208,130,105,0.32)',
         cursor: disabled ? 'not-allowed' : 'pointer',
       }}
     >

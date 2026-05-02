@@ -217,7 +217,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
   const modal = (
     <div
       className="fixed inset-0 z-[860] flex items-center justify-center p-4"
-      style={{ background: 'rgba(8,32,77,0.5)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(91,56,45,0.32)', backdropFilter: 'blur(6px)' }}
       onClick={onClose}
     >
       <div
@@ -225,9 +225,12 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
         style={{
           maxWidth: 1440,
           height: 'min(92vh, 860px)',
-          background: 'linear-gradient(180deg, #fbfcfe 0%, #ffffff 48%, #f4f6f9 100%)',
-          border: '1px solid rgba(52,64,84,0.18)',
-          boxShadow: '0 24px 70px rgba(15,23,42,0.24)',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,247,239,0.9)), repeating-linear-gradient(0deg, rgba(186,121,82,0.06) 0 1px, transparent 1px 18px), #f7d6bf',
+          border: '1px solid rgba(208,130,105,0.38)',
+          boxShadow: '0 24px 70px rgba(72,40,34,0.24)',
+          backdropFilter: 'blur(10px) saturate(1.04)',
+          WebkitBackdropFilter: 'blur(10px) saturate(1.04)',
         }}
         onClick={(e) => e.stopPropagation()}
       >

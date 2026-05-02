@@ -18,11 +18,11 @@ const ICON_BY_ID: Record<ShopItemEffectKey, SvgIconName> = {
 type CategoryStyle = { label: string; color: string; bg: string };
 
 const CATEGORY_STYLE: Record<ProjectCategory | 'all', CategoryStyle> = {
-  tech: { label: '工程', color: '#1d5fb8', bg: '#eaf2ff' },
-  design: { label: '美術', color: '#7b61ff', bg: '#f1ebff' },
-  marketing: { label: '行銷', color: '#f6a63a', bg: '#fff1e0' },
-  service: { label: '客服', color: '#16a77f', bg: '#e9faf2' },
-  all: { label: '全員', color: '#5b6b85', bg: '#f3f7ff' },
+  tech: { label: '科技', color: '#b97428', bg: 'rgba(255,244,220,0.62)' },
+  design: { label: '設計', color: '#d74e63', bg: 'rgba(255,232,233,0.6)' },
+  marketing: { label: '行銷', color: '#c87e78', bg: 'rgba(251,227,220,0.62)' },
+  service: { label: '服務', color: '#6f966d', bg: 'rgba(223,238,218,0.62)' },
+  all: { label: '全員', color: '#6e4638', bg: 'rgba(255,247,239,0.64)' },
 };
 
 export function ShopPanel() {
@@ -42,23 +42,29 @@ export function ShopPanel() {
         return (
           <div
             key={item.id}
-            className="p-3 rounded-2xl flex flex-col gap-2"
+            className="p-3 rounded-xl flex flex-col gap-2"
             style={{
-              background: isMax ? '#eefaf7' : canAfford ? '#ffffff' : '#f3f7ff',
+              background: isMax
+                ? 'rgba(223,238,218,0.62)'
+                : canAfford
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,247,239,0.66))'
+                  : 'rgba(255,240,237,0.48)',
               border: isMax
-                ? '1px solid rgba(51,194,154,0.32)'
-                : '1px solid var(--line)',
-              boxShadow: '0 2px 6px rgba(30,90,180,0.06)',
+                ? '1px solid rgba(158,194,156,0.46)'
+                : '1px solid rgba(208,130,105,0.3)',
+              boxShadow: '0 8px 16px rgba(166,91,85,0.08), inset 0 0 0 1px rgba(255,255,255,0.42)',
+              backdropFilter: 'blur(6px) saturate(1.02)',
+              WebkitBackdropFilter: 'blur(6px) saturate(1.02)',
             }}
           >
             <div
-              className="rounded-xl w-full aspect-square flex items-center justify-center"
-              style={{ background: cs.bg }}
+              className="rounded-lg w-full aspect-square flex items-center justify-center"
+              style={{ background: 'rgba(255,255,255,0.24)', border: '1px dashed rgba(214,145,150,0.26)' }}
             >
               <SvgIcon name={ICON_BY_ID[item.id]} size={48} />
             </div>
 
-            <div className="font-extrabold text-[14px] leading-tight" style={{ color: 'var(--text)' }}>
+            <div className="font-extrabold text-[14px] leading-tight" style={{ color: '#5b382d' }}>
               {item.name}
             </div>
 
@@ -68,7 +74,7 @@ export function ShopPanel() {
                 style={{
                   color: cs.color,
                   background: cs.bg,
-                  border: `1px solid ${cs.color}33`,
+                  border: `1px solid ${cs.color}44`,
                 }}
               >
                 {cs.label}
@@ -76,12 +82,12 @@ export function ShopPanel() {
               <span
                 className="text-[11px] px-1.5 py-0.5 rounded-md font-bold"
                 style={{
-                  background: isMax ? '#dff8ef' : '#eef6ff',
-                  color: isMax ? '#16926f' : 'var(--blue)',
-                  border: '1px solid var(--line)',
+                  background: isMax ? 'rgba(223,238,218,0.72)' : 'rgba(255,247,239,0.66)',
+                  color: isMax ? '#6f966d' : '#6e4638',
+                  border: '1px solid rgba(208,130,105,0.28)',
                 }}
               >
-                {isMax ? '滿級' : `等級 ${level}/${MAX_SHOP_LEVEL}`}
+                {isMax ? '滿級' : `Lv ${level}/${MAX_SHOP_LEVEL}`}
               </span>
             </div>
 
@@ -89,9 +95,9 @@ export function ShopPanel() {
               {item.id === 'sofa' ? (
                 <span
                   className="text-[11px] px-2 py-0.5 rounded-md font-bold w-fit"
-                  style={{ background: '#e9faf2', color: '#16926f' }}
+                  style={{ background: 'rgba(223,238,218,0.68)', color: '#6f966d' }}
                 >
-                  每日疲勞 −{3 + Math.max(level, 1) * 2}
+                  每日疲勞 -{3 + Math.max(level, 1) * 2}
                 </span>
               ) : (
                 item.statTags.map((tag, i) => (
@@ -99,8 +105,8 @@ export function ShopPanel() {
                     key={i}
                     className="text-[11px] px-2 py-0.5 rounded-md font-bold w-fit"
                     style={{
-                      background: tag.type === 'up' ? '#eefaf7' : '#fff7f7',
-                      color: tag.type === 'up' ? '#16926f' : '#d34a4a',
+                      background: tag.type === 'up' ? 'rgba(223,238,218,0.68)' : 'rgba(255,232,233,0.68)',
+                      color: tag.type === 'up' ? '#6f966d' : '#d74e63',
                     }}
                   >
                     {tag.label}
@@ -116,21 +122,15 @@ export function ShopPanel() {
               className="text-sm font-bold py-2 rounded-lg w-full mt-auto"
               style={{
                 background: isMax
-                  ? '#dff8ef'
+                  ? 'rgba(223,238,218,0.72)'
                   : canAfford
-                    ? 'linear-gradient(180deg, #35c59c, #16a77f)'
-                    : '#e9f1ff',
-                color: isMax ? '#16926f' : canAfford ? 'white' : '#8aa2c8',
-                border: '1px solid var(--line)',
+                    ? 'linear-gradient(180deg, #f7b267, #c87e78)'
+                    : 'rgba(255,240,237,0.58)',
+                color: isMax ? '#6f966d' : canAfford ? '#fffdf8' : '#a98a80',
+                border: '1px solid rgba(208,130,105,0.32)',
                 cursor: isMax || !canAfford ? 'not-allowed' : 'pointer',
               }}
-              title={
-                isMax
-                  ? '此設施已滿級'
-                  : level === 0
-                    ? `首次購置 $${cost}`
-                    : `升級至 等級 ${level + 1}（成本 $${cost}）`
-              }
+              title={isMax ? '已升到最高等級' : level === 0 ? `購買 $${cost}` : `升級到 ${level + 1}，花費 $${cost}`}
             >
               {buttonLabel}
             </button>

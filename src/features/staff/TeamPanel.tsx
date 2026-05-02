@@ -84,20 +84,25 @@ function TeamCard({
     <div
       className="rounded-xl p-3"
       style={{
-        background: team.open ? `${color}10` : '#f7fbff',
-        border: team.open ? `1.5px solid ${color}` : '1px solid var(--line)',
+        background: team.open
+          ? 'linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,247,239,0.66))'
+          : 'rgba(255,240,237,0.46)',
+        border: team.open ? `1.5px solid ${color}` : '1px solid rgba(208,130,105,0.3)',
+        boxShadow: '0 8px 16px rgba(166,91,85,0.08), inset 0 0 0 1px rgba(255,255,255,0.42)',
+        backdropFilter: 'blur(6px) saturate(1.02)',
+        WebkitBackdropFilter: 'blur(6px) saturate(1.02)',
       }}
     >
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <span
             className="w-7 h-7 rounded-md flex items-center justify-center"
-            style={{ background: `${color}22`, border: `1px solid ${color}55` }}
+            style={{ background: 'rgba(255,255,255,0.24)', border: `1px solid ${color}55` }}
           >
             <SvgIcon name={INDUSTRY_ICON[industry]} size={18} />
           </span>
           <div className="text-left">
-            <div className="text-sm font-extrabold" style={{ color: '#173b78' }}>
+            <div className="text-sm font-extrabold" style={{ color: '#5b382d' }}>
               {INDUSTRY_LABEL[industry]} Team
             </div>
             <div className="text-[10px]" style={{ color: 'var(--muted)' }}>

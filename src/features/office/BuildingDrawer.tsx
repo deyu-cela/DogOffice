@@ -46,10 +46,13 @@ export function BuildingDrawer() {
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,249,255,0.95));
-          border: 1px solid var(--line);
-          box-shadow: 0 -14px 34px rgba(23,53,111,0.2);
-          backdrop-filter: blur(12px);
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.76), rgba(255,247,239,0.86)),
+            repeating-linear-gradient(0deg, rgba(186,121,82,0.06) 0 1px, transparent 1px 18px),
+            #f7d6bf;
+          border: 1px solid rgba(208,130,105,0.38);
+          box-shadow: 0 -14px 34px rgba(72,40,34,0.18);
+          backdrop-filter: blur(12px) saturate(1.04);
         }
         @media (min-width: 768px) {
           .drawer-wrap {
@@ -60,7 +63,7 @@ export function BuildingDrawer() {
             border-top-left-radius: 24px;
             border-bottom-left-radius: 24px;
             animation: drawerSlideDesktop 0.25s ease-out;
-            box-shadow: -12px 0 34px rgba(23,53,111,0.18);
+            box-shadow: -12px 0 34px rgba(72,40,34,0.18);
           }
         }
         @media (max-width: 767px) {
@@ -76,15 +79,15 @@ export function BuildingDrawer() {
         }
       `}</style>
       <div
-        className="fixed inset-0 z-[800] bg-slate-950/35 backdrop-blur-[2px]"
+        className="fixed inset-0 z-[800] backdrop-blur-[2px]"
         onClick={close}
-        style={{ animation: 'backdropFade 0.2s ease-out' }}
+        style={{ animation: 'backdropFade 0.2s ease-out', background: 'rgba(91,56,45,0.28)' }}
       />
       <div className="drawer-wrap p-4 md:p-5">
         <div className="flex items-center justify-between mb-3 gap-3">
           <div className="min-w-0">
-            <h2 className="text-lg md:text-xl font-extrabold truncate">{TITLE[kind]}</h2>
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+            <h2 className="text-lg md:text-xl font-extrabold truncate" style={{ color: '#5b382d' }}>{TITLE[kind]}</h2>
+            <p className="text-xs leading-relaxed" style={{ color: '#886153' }}>
               {SUBTITLE[kind]}
             </p>
           </div>
@@ -93,9 +96,9 @@ export function BuildingDrawer() {
             onClick={close}
             className="text-sm px-3 py-1.5 rounded-xl whitespace-nowrap"
             style={{
-              background: '#f4f9ff',
-              color: 'var(--text)',
-              border: '1px solid var(--line)',
+              background: 'linear-gradient(180deg, rgba(255,254,254,0.76), rgba(255,232,233,0.62))',
+              color: '#cf405b',
+              border: '1px solid rgba(229,116,132,0.32)',
               boxShadow: 'none',
             }}
           >
