@@ -1,10 +1,10 @@
-import type { CompanyBuffs, GameState, ProjectCategory, Tool, ToolGrade, ToolTraitId } from '@/types';
+import type { CompanyBuffs, GameState, Tool, ToolCategory, ToolGrade, ToolTraitId } from '@/types';
 import type { GameSaveData } from '@/types/save';
 import { SAVE_VERSION } from '@/types/save';
 import { getToolIconByDefId, TOOL_TRAIT_DEFS } from '@/constants/tools';
 
-const TOOL_GRADES: ReadonlyArray<ToolGrade> = ['S', 'A', 'B'];
-const TOOL_CATEGORIES: ReadonlyArray<ProjectCategory> = ['tech', 'design', 'marketing', 'service'];
+const TOOL_GRADES: ReadonlyArray<ToolGrade> = ['U', 'S', 'A', 'B'];
+const TOOL_CATEGORIES: ReadonlyArray<ToolCategory> = ['tech', 'design', 'marketing', 'service', 'CEO'];
 const VALID_TOOL_TRAITS = new Set(Object.keys(TOOL_TRAIT_DEFS));
 
 function clampNum(v: unknown, min: number, max: number, fb: number): number {
@@ -175,8 +175,8 @@ export function deserialize(raw: unknown): GameSaveData | null {
         const instanceId = typeof t.instanceId === 'string' ? t.instanceId : '';
         const defId = typeof t.defId === 'string' ? t.defId : '';
         if (!instanceId || !defId) return [];
-        const category = TOOL_CATEGORIES.includes(t.category as ProjectCategory)
-          ? (t.category as ProjectCategory)
+        const category = TOOL_CATEGORIES.includes(t.category as ToolCategory)
+          ? (t.category as ToolCategory)
           : null;
         if (!category) return [];
         const grade = TOOL_GRADES.includes(t.grade as ToolGrade) ? (t.grade as ToolGrade) : 'B';
@@ -186,6 +186,7 @@ export function deserialize(raw: unknown): GameSaveData | null {
         const traits = Array.isArray(t.traits)
           ? (t.traits.filter((x): x is ToolTraitId => typeof x === 'string' && VALID_TOOL_TRAITS.has(x)) as Tool['traits']).slice(0, 4)
           : [];
+        const lockedToDogId = typeof t.lockedToDogId === 'string' ? t.lockedToDogId : null;
         const normalized: Tool = {
           instanceId,
           defId,
@@ -193,10 +194,11 @@ export function deserialize(raw: unknown): GameSaveData | null {
           iconName,
           category,
           grade,
-          speedBoost: clampNum(t.speedBoost, 0, 5, 0),
-          qualityBoost: clampNum(t.qualityBoost, 0, 5, 0),
+          speedBoost: clampNum(t.speedBoost, 0, 8, 0),
+          qualityBoost: clampNum(t.qualityBoost, 0, 8, 0),
           traits,
           obtainedDay: typeof t.obtainedDay === 'number' && t.obtainedDay > 0 ? Math.round(t.obtainedDay) : 1,
+          lockedToDogId,
         };
         return [normalized];
       })

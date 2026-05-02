@@ -12,6 +12,7 @@ import type {
   TrainingSession,
 } from '@/types';
 import {
+  createCeoUTool,
   getDogToolCategory,
   getDogToolStatBoost,
   pickBestUnequippedToolForDog,
@@ -398,7 +399,7 @@ export function teamTotalAbility(state: GameState): number {
   for (const dog of state.staff) {
     if (!ids.has(dog.id)) continue;
     sum += dogAbility(dog);
-    const boost = getDogToolStatBoost(dog, state.tools);
+    const boost = getDogToolStatBoost(dog, state.tools, state.teams);
     sum += boost.speed * 0.4 + boost.quality * 0.4;
   }
   return sum;
@@ -500,16 +501,45 @@ function openTeamMemberIds(state: GameState, industry: ProjectCategory): Set<str
 }
 
 // 把指定 dogIds 的 equippedToolId 清空（玩具留在 s.tools，不銷毀）
-function unequipDogs(staff: Dog[], dogIds: string[]): Dog[] {
+// CEO 鎖定的 U 工具不會被拆下
+function unequipDogs(staff: Dog[], dogIds: string[], tools: Tool[]): Dog[] {
   if (dogIds.length === 0) return staff;
   const ids = new Set(dogIds);
+  const lockedSet = new Set(
+    tools.filter((t) => t.lockedToDogId).map((t) => t.instanceId),
+  );
   let changed = false;
   const next = staff.map((d) => {
     if (!ids.has(d.id) || !d.equippedToolId) return d;
+    if (lockedSet.has(d.equippedToolId)) return d;
     changed = true;
     return { ...d, equippedToolId: null };
   });
   return changed ? next : staff;
+}
+
+// CEO 入隊時生成綁定 U 工具（若該 CEO 尚未綁過）
+function attachCeoUTool(
+  state: GameState,
+  dogId: string,
+): { staff: Dog[]; tools: Tool[] } {
+  const dog = state.staff.find((d) => d.id === dogId);
+  if (!dog || !dog.isCEO) return { staff: state.staff, tools: state.tools };
+  const existing = state.tools.find((t) => t.lockedToDogId === dogId);
+  if (existing) {
+    if (dog.equippedToolId === existing.instanceId) {
+      return { staff: state.staff, tools: state.tools };
+    }
+    const staff = state.staff.map((d) =>
+      d.id === dogId ? { ...d, equippedToolId: existing.instanceId } : d,
+    );
+    return { staff, tools: state.tools };
+  }
+  const tool = createCeoUTool(dogId, state.day);
+  const staff = state.staff.map((d) =>
+    d.id === dogId ? { ...d, equippedToolId: tool.instanceId } : d,
+  );
+  return { staff, tools: [...state.tools, tool] };
 }
 
 // 為一批新加入 team 的員工依序挑最佳未裝備工具；dogPower desc 優先
@@ -1693,10 +1723,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       staff: equippedStaff,
       teams: { ...s.teams, [industry]: updatedTeam },
     };
+    if (hired.isCEO) {
+      const attached = attachCeoUTool(next, hired.id);
+      next = { ...next, staff: attached.staff, tools: attached.tools };
+    }
     next = pushLog(
       next,
       hired.isCEO
-        ? ` 抽到傳說 ${hired.name}！全公司沸騰`
+        ? ` 抽到傳說 ${hired.name}！全公司沸騰，神兵武士刀（U 級）永久綁定！`
         : ` 抽卡得到 ${hired.name}（${hired.breed} ${hired.role}・${entry.grade}）→ ${industry} team`,
     );
     next.tierBudget = recomputeTierBudget(next);
@@ -1758,7 +1792,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newSet = new Set(newIds);
     const removed = team.memberIds.filter((id) => !newSet.has(id));
     const added = newIds.filter((id) => !oldIds.has(id));
-    let staff = unequipDogs(s.staff, removed);
+    let staff = unequipDogs(s.staff, removed, s.tools);
     staff = autoEquipForNewMembers(staff, s.tools, added);
     let next = sanitizeProjectAssignments({
       ...s,
@@ -1780,7 +1814,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newIds = team.memberIds.filter((id) => id !== dogId);
     let next: GameState = {
       ...s,
-      staff: unequipDogs(s.staff, [dogId]),
+      staff: unequipDogs(s.staff, [dogId], s.tools),
       teams: {
         ...s.teams,
         [industry]: { ...team, memberIds: newIds },
@@ -1830,7 +1864,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       staff: [...s.staff, dog],
       claimedStarterPack: true,
     };
+    const attached = attachCeoUTool(next, dog.id);
+    next = { ...next, staff: attached.staff, tools: attached.tools };
     next = pushLog(next, ` 開局禮包到貨：${dog.name}（CEO）加入了！0 元薪水、永不抱怨。`);
+    next = pushLog(next, `🗡 ${dog.name} 帶著神兵武士刀（U 級）登場，永遠綁定。`);
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
   },
@@ -1865,6 +1902,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const targetDog = s.staff.find((d) => d.id === dogId);
     const tool = s.tools.find((t) => t.instanceId === toolInstanceId);
     if (!targetDog || !tool) return;
+    // 鎖定工具（CEO U）禁止外部操作
+    if (tool.lockedToDogId) return;
+    // 目標狗已裝鎖定工具 → 不可覆蓋
+    if (targetDog.equippedToolId) {
+      const existing = s.tools.find((t) => t.instanceId === targetDog.equippedToolId);
+      if (existing?.lockedToDogId) return;
+    }
     // category 必須相符；PM/CEO（getDogToolCategory=null）禁止
     const dogCat = getDogToolCategory(targetDog);
     if (!dogCat || tool.category !== dogCat) return;
@@ -1885,6 +1929,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const s = get();
     const dog = s.staff.find((d) => d.id === dogId);
     if (!dog || !dog.equippedToolId) return;
+    const equipped = s.tools.find((t) => t.instanceId === dog.equippedToolId);
+    if (equipped?.lockedToDogId) return;
     set({
       staff: s.staff.map((d) => (d.id === dogId ? { ...d, equippedToolId: null } : d)),
     });
@@ -1892,12 +1938,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   destroyTool: (toolInstanceId) => {
     const s = get();
-    const equipped = s.staff.some((d) => d.equippedToolId === toolInstanceId);
-    if (equipped) return;
     const target = s.tools.find((t) => t.instanceId === toolInstanceId);
     if (!target) return;
+    if (target.lockedToDogId) return;
     set({
       tools: s.tools.filter((t) => t.instanceId !== toolInstanceId),
+      staff: s.staff.map((d) =>
+        d.equippedToolId === toolInstanceId ? { ...d, equippedToolId: null } : d,
+      ),
       log: [...s.log, { day: s.day, msg: `🗑 銷毀玩具：${target.name}（${target.grade}）` }],
     });
   },

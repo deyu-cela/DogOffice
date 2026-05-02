@@ -13,11 +13,13 @@ import type { ToolGrade } from '@/types';
 import './staff.css';
 
 const TOOL_GRADE_BG: Record<ToolGrade, string> = {
+  U: 'linear-gradient(180deg, #ffd9f0, #b577ff)',
   S: 'linear-gradient(180deg, #ffd95a, #f0a818)',
   A: 'linear-gradient(180deg, #c9a4f0, #8a4ce0)',
   B: 'linear-gradient(180deg, #c8d8e8, #6a8aa8)',
 };
 const TOOL_GRADE_TEXT: Record<ToolGrade, string> = {
+  U: '#3a0a4d',
   S: '#5a3d05',
   A: '#24152f',
   B: '#fff',
@@ -68,6 +70,7 @@ export function StaffActionModal() {
   const upgradeDogFrag = useGameStore((s) => s.upgradeDogWithFragments);
   const openTraitChoice = useGameStore((s) => s.openTraitChoiceModal);
   const tools = useGameStore((s) => s.tools);
+  const teams = useGameStore((s) => s.teams);
   const openToolPicker = useGameStore((s) => s.openToolPicker);
 
   if (!modal) return null;
@@ -75,7 +78,7 @@ export function StaffActionModal() {
   if (!dog) return null;
   const idx = modal.staffIndex;
   const grade = dogGrade(dog);
-  const power = dogPowerWithTools(dog, tools);
+  const power = dogPowerWithTools(dog, tools, teams);
   const stars = dogPowerStars(power);
   const powerPct = Math.round((power / 400) * 100);
 
@@ -133,20 +136,31 @@ export function StaffActionModal() {
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-lg font-extrabold">{dog.name}</span>
               {(() => {
-                const toolCat = getDogToolCategory(dog);
-                if (!toolCat) return null;
                 const equipped = dog.equippedToolId
                   ? tools.find((t) => t.instanceId === dog.equippedToolId) ?? null
                   : null;
+                const isLocked = !!equipped?.lockedToDogId;
+                const toolCat = getDogToolCategory(dog);
+                // 一般狗：沒 toolCat 就不顯示；CEO 例外（顯示鎖定 U 工具）
+                if (!toolCat && !(dog.isCEO && equipped)) return null;
+                const clickable = !isLocked && !!toolCat;
                 return (
                   <button
                     type="button"
-                    onClick={() => openToolPicker(dog.id)}
+                    onClick={clickable ? () => openToolPicker(dog.id) : undefined}
+                    disabled={!clickable}
                     className="staff-chip-btn flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-bold"
                     style={{
                       color: equipped ? '#7a4a1c' : '#6b7a8a',
+                      cursor: clickable ? 'pointer' : 'default',
                     }}
-                    title={equipped ? `${equipped.name}（${equipped.grade}）` : '裝備玩具'}
+                    title={
+                      isLocked
+                        ? `${equipped!.name}（${equipped!.grade}・永久綁定）`
+                        : equipped
+                        ? `${equipped.name}（${equipped.grade}）`
+                        : '裝備玩具'
+                    }
                   >
                     <SvgIcon name="tool" size={14} />
                     {equipped ? (
@@ -161,6 +175,7 @@ export function StaffActionModal() {
                         >
                           {equipped.grade}
                         </span>
+                        {isLocked && <span className="text-[10px]">🔒</span>}
                       </>
                     ) : (
                       <span>無</span>
@@ -225,7 +240,7 @@ export function StaffActionModal() {
 
         {/* C. 4 stats */}
         {(() => {
-          const toolBoost = getDogToolStatBoost(dog, tools);
+          const toolBoost = getDogToolStatBoost(dog, tools, teams);
           return (
             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-3">
               {STAT_LABELS.map(({ key, label, color }) => {

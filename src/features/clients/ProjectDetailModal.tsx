@@ -58,6 +58,7 @@ export function ProjectDetailModal({
   const staff = useGameStore((s) => s.staff);
   const companyBuffs = useGameStore((s) => s.companyBuffs);
   const tools = useGameStore((s) => s.tools);
+  const teams = useGameStore((s) => s.teams);
   const reject = useGameStore((s) => s.rejectProject);
   const abandon = useGameStore((s) => s.abandonProject);
   const [confirmAbandon, setConfirmAbandon] = useState(false);
@@ -79,7 +80,7 @@ export function ProjectDetailModal({
   const isOffered = project?.status === 'offered';
   const assignedDogs = !project ? [] : staff.filter((d) => project.assignedStaffIds.includes(d.id));
 
-  const toolMap = useMemo(() => buildToolMap(staff, tools), [staff, tools]);
+  const toolMap = useMemo(() => buildToolMap(staff, tools, teams), [staff, tools, teams]);
   const dailyContrib = useMemo(
     () => (project ? estimateDailyContrib(project.category, assignedDogs, companyBuffs, toolMap) : 0),
     [project, assignedDogs, companyBuffs, toolMap],

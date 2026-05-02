@@ -14,11 +14,13 @@ const CATEGORY_LABEL: Record<ProjectCategory, string> = {
 };
 
 const GRADE_BG: Record<ToolGrade, string> = {
+  U: 'linear-gradient(180deg, #ffd9f0, #b577ff)',
   S: 'linear-gradient(180deg, #ffd95a, #f0a818)',
   A: 'linear-gradient(180deg, #c9a4f0, #8a4ce0)',
   B: 'linear-gradient(180deg, #c8d8e8, #6a8aa8)',
 };
 const GRADE_TEXT: Record<ToolGrade, string> = {
+  U: '#3a0a4d',
   S: '#5a3d05',
   A: '#fff',
   B: '#fff',
@@ -51,7 +53,10 @@ export function ToolPickerModal() {
     : null;
 
   const candidates = tools.filter(
-    (t) => t.category === dogCategory && (!equipBy.has(t.instanceId) || equipBy.get(t.instanceId) === dog.id),
+    (t) =>
+      !t.lockedToDogId &&
+      t.category === dogCategory &&
+      (!equipBy.has(t.instanceId) || equipBy.get(t.instanceId) === dog.id),
   );
 
   return (

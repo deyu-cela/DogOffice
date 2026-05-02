@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useGameStore } from '@/store/gameStore';
 import { TOOL_CAP, TOOL_TRAIT_DEFS } from '@/constants/tools';
 import { SvgIcon } from '@/components/SvgIcon';
-import type { ProjectCategory, Tool, ToolGrade } from '@/types';
+import type { ProjectCategory, Tool, ToolCategory, ToolGrade } from '@/types';
 import './tool.css';
 
 type FilterKey = 'all' | ProjectCategory;
@@ -24,34 +24,39 @@ const SORT_LABEL: Record<SortKey, string> = {
   recent: '最新',
 };
 
-const GRADE_ORDER: Record<ToolGrade, number> = { S: 0, A: 1, B: 2 };
+const GRADE_ORDER: Record<ToolGrade, number> = { U: -1, S: 0, A: 1, B: 2 };
 
-const CATEGORY_LABEL: Record<ProjectCategory, string> = {
+const CATEGORY_LABEL: Record<ToolCategory, string> = {
   tech: '工程',
   design: '美術',
   marketing: '行銷',
   service: '客服',
+  CEO: 'CEO',
 };
 
-const CATEGORY_COLOR: Record<ProjectCategory, string> = {
+const CATEGORY_COLOR: Record<ToolCategory, string> = {
   tech: '#2f72d6',
   design: '#d84f9b',
   marketing: '#d98919',
   service: '#1d9b64',
+  CEO: '#7a3aa8',
 };
 
 const CARD_ACCENT: Record<ToolGrade, string> = {
+  U: '#ff7eb6',
   S: '#f7bd22',
   A: '#b066e8',
   B: '#3d80e8',
 };
 
 const GRADE_BG: Record<ToolGrade, string> = {
+  U: 'linear-gradient(180deg, #ffd9f0, #b577ff)',
   S: 'linear-gradient(180deg, #ffd95a, #f0a818)',
   A: 'linear-gradient(180deg, #c9a4f0, #8a4ce0)',
   B: 'linear-gradient(180deg, #c8d8e8, #6a8aa8)',
 };
 const GRADE_TEXT: Record<ToolGrade, string> = {
+  U: '#3a0a4d',
   S: '#1a1208',
   A: '#150a1f',
   B: '#0f1419',
@@ -99,12 +104,15 @@ export function ToolInventoryModal({ onClose }: { onClose: () => void }) {
     return m;
   }, [staff]);
 
+  // CEO 綁定工具不算入庫存（額外配給），不出現在玩具庫存清單
+  const inventoryTools = useMemo(() => tools.filter((t) => !t.lockedToDogId), [tools]);
+
   const rows = useMemo<ToolRow[]>(() => {
-    return tools.map((tool) => ({
+    return inventoryTools.map((tool) => ({
       tool,
       equippedByName: equipByName.get(tool.instanceId) ?? null,
     }));
-  }, [tools, equipByName]);
+  }, [inventoryTools, equipByName]);
 
   const visibleRows = useMemo(() => {
     return rows
@@ -194,12 +202,12 @@ export function ToolInventoryModal({ onClose }: { onClose: () => void }) {
           <div
             className="tool-count-chip text-[11px] font-bold"
           >
-            顯示 {visibleRows.length} 件 / 庫存 {tools.length} / 上限 {TOOL_CAP}
+            顯示 {visibleRows.length} 件 / 庫存 {inventoryTools.length} / 上限 {TOOL_CAP}
           </div>
 
           {visibleRows.length === 0 ? (
             <div className="tool-paper-empty text-center text-sm py-12" style={{ color: '#886153' }}>
-              {tools.length === 0
+              {inventoryTools.length === 0
                 ? '還沒撿到任何玩具，多接案吧！'
                 : '這個篩選沒有玩具'}
             </div>
@@ -244,7 +252,6 @@ function ToolCard({
   const { tool, equippedByName } = row;
   const accent = CARD_ACCENT[tool.grade];
   const [confirming, setConfirming] = useState(false);
-  const isEquipped = !!equippedByName;
 
   return (
     <div
@@ -275,17 +282,7 @@ function ToolCard({
           </Badge>
         </div>
 
-        {equippedByName && (
-          <div
-            className="absolute right-1 top-1 z-10 px-1.5 py-0.5 text-[9px] font-black truncate max-w-[68%]"
-            style={{ background: '#16a77f', color: '#fff' }}
-            title={`已裝備：${equippedByName}`}
-          >
-            {equippedByName}
-          </div>
-        )}
-
-        {!isEquipped && (
+        <div className="absolute right-1 top-1 z-10 flex flex-col items-end gap-1 max-w-[70%]">
           <button
             type="button"
             aria-label="銷毀玩具"
@@ -293,22 +290,33 @@ function ToolCard({
               e.stopPropagation();
               setConfirming(true);
             }}
-            className="absolute right-1 top-1 z-10 grid place-items-center text-[10px] font-black"
+            className="grid place-items-center font-black"
             style={{
               width: 18,
               height: 18,
+              fontSize: 11,
               color: '#fff',
               background: '#cf405b',
               border: '1px solid rgba(255,255,255,0.6)',
               borderRadius: 4,
               boxShadow: '0 1px 3px rgba(91,56,45,0.25)',
               lineHeight: 1,
+              padding: 0,
             }}
             title="銷毀玩具"
           >
             ✕
           </button>
-        )}
+          {equippedByName && (
+            <div
+              className="px-1.5 py-0.5 text-[9px] font-black truncate max-w-full"
+              style={{ background: '#16a77f', color: '#fff', borderRadius: 4 }}
+              title={`已裝備：${equippedByName}`}
+            >
+              {equippedByName}
+            </div>
+          )}
+        </div>
 
         <div className="absolute inset-x-0 top-1 bottom-[62%] flex items-center justify-center">
           <div className="drop-shadow-lg">
@@ -372,49 +380,61 @@ function ToolCard({
         </div>
       </div>
 
-      {confirming && (
+      {confirming && createPortal(
         <div
-          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 px-2"
-          style={{
-            background: 'rgba(91, 56, 45, 0.78)',
-            color: '#fff',
-            borderRadius: 6,
+          className="fixed inset-0 z-[900] flex items-center justify-center p-4"
+          style={{ background: 'rgba(91, 56, 45, 0.55)' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setConfirming(false);
           }}
-          onClick={(e) => e.stopPropagation()}
         >
-          <div className="text-[11px] font-black text-center leading-tight">
-            銷毀「{tool.name}」？
+          <div
+            className="flex flex-col items-center gap-3 px-5 py-4 max-w-[320px] w-full"
+            style={{
+              background: '#fffaf0',
+              border: '1.5px dashed rgba(214, 145, 150, 0.55)',
+              borderRadius: 12,
+              boxShadow: '0 18px 36px rgba(91,56,45,0.32)',
+              color: '#5b382d',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-sm font-black text-center leading-snug">
+              銷毀「{tool.name}」？
+            </div>
+            <div className="flex gap-2 w-full justify-center">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDestroy(tool.instanceId);
+                  setConfirming(false);
+                }}
+                className="tool-action-danger h-9 px-4 text-sm font-black"
+              >
+                確認
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirming(false);
+                }}
+                className="h-9 px-4 text-sm font-black"
+                style={{
+                  background: '#fff',
+                  color: '#5b382d',
+                  border: '1px solid rgba(91,56,45,0.32)',
+                  borderRadius: 8,
+                }}
+              >
+                取消
+              </button>
+            </div>
           </div>
-          <div className="flex gap-1.5">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDestroy(tool.instanceId);
-                setConfirming(false);
-              }}
-              className="tool-action-danger h-7 px-2 text-[10px] font-black"
-            >
-              確認
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirming(false);
-              }}
-              className="h-7 px-2 text-[10px] font-black"
-              style={{
-                background: '#fff',
-                color: '#5b382d',
-                border: '1px solid rgba(91,56,45,0.32)',
-                borderRadius: 8,
-              }}
-            >
-              取消
-            </button>
-          </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

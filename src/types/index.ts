@@ -185,7 +185,9 @@ export type ShopItem = {
 };
 
 // === 工具系統 ===
-export type ToolGrade = 'S' | 'A' | 'B';
+export type ToolGrade = 'U' | 'S' | 'A' | 'B';
+
+export type ToolCategory = ProjectCategory | 'CEO';
 
 export type ToolTraitId =
   | 'fastStart'        // 該員工 speed 整體 ×1.20
@@ -208,7 +210,8 @@ export type ToolIconName =
   | 'toolLight'
   | 'toolManual'
   | 'toolHeadset'
-  | 'toolMirror';
+  | 'toolMirror'
+  | 'toolKatana';
 
 export type ToolDef = {
   defId: string;
@@ -223,12 +226,14 @@ export type Tool = {
   defId: string;
   name: string;          // 冗餘存：避免 def 改名後既有 tool 顯示破掉
   iconName: ToolIconName;
-  category: ProjectCategory;
+  category: ToolCategory;
   grade: ToolGrade;
   speedBoost: number;
   qualityBoost: number;
   traits: ToolTraitId[];
   obtainedDay: number;
+  // U 級綁定狗，永遠鎖定不可拆/不可替換/不算入庫存上限
+  lockedToDogId?: string | null;
 };
 
 export type ToolPickerModal = {

@@ -52,7 +52,8 @@ export type SvgIconName =
   | 'toolLight'
   | 'toolManual'
   | 'toolHeadset'
-  | 'toolMirror';
+  | 'toolMirror'
+  | 'toolKatana';
 
 type Props = {
   name: SvgIconName;
@@ -511,6 +512,52 @@ export function SvgIcon({ name, size = 24, className }: Props) {
           <path d="M12 9c1-1.6 2.6-2.4 4.5-2.4" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" fill="none" />
           <rect x="14.5" y="22" width="3" height="7" rx="1" fill={GOLD} stroke={BLUE} strokeWidth="1.4" />
           <ellipse cx="16" cy="29.5" rx="4" ry="1.2" fill={GOLD} stroke={BLUE} strokeWidth="1.4" />
+        </svg>
+      );
+    case 'toolKatana':
+      // 武士刀：刀身斜放（左下→右上），刀鍔在中間，握柄帶纏繩
+      return (
+        <svg {...common}>
+          <defs>
+            <linearGradient id="katanaBlade" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%" stopColor="#e6eef7" />
+              <stop offset="50%" stopColor="#ffffff" />
+              <stop offset="100%" stopColor="#aac0d8" />
+            </linearGradient>
+          </defs>
+          {/* 刀身 */}
+          <path
+            d="M27.5 4.2 L29 5.7 L11.7 23 L9.4 22.6 L8.6 20.2 Z"
+            fill="url(#katanaBlade)"
+            stroke={BLUE}
+            strokeWidth="1.4"
+            strokeLinejoin="round"
+          />
+          {/* 刀光 */}
+          <path d="M27 5 L11.5 20.7" stroke="#fff" strokeWidth="0.9" strokeLinecap="round" opacity="0.9" />
+          {/* 刀鍔（tsuba） */}
+          <rect x="6.4" y="20.4" width="6" height="3.2" rx="0.6"
+            transform="rotate(-45 9.4 22)"
+            fill={GOLD}
+            stroke={BLUE}
+            strokeWidth="1.4"
+          />
+          {/* 握柄 */}
+          <rect x="2.2" y="22.4" width="9" height="3.6" rx="0.8"
+            transform="rotate(-45 6.7 24.2)"
+            fill="#3d2a1c"
+            stroke={BLUE}
+            strokeWidth="1.4"
+          />
+          {/* 纏繩 */}
+          <path
+            d="M3.5 26.2 L5 27.7 M5.4 24 L6.9 25.6 M7.3 21.8 L8.8 23.4"
+            stroke={GOLD}
+            strokeWidth="1"
+            strokeLinecap="round"
+          />
+          {/* 柄頭 */}
+          <circle cx="3.2" cy="27.6" r="1.4" fill={GOLD} stroke={BLUE} strokeWidth="1.2" />
         </svg>
       );
     case 'gem':

@@ -989,6 +989,7 @@ function Windows3D() {
           width={6.0}
           height={6.7}
           theme={theme}
+          paneCount={2}
         />
         <FloorToCeilingWindow
           position={[0.35, WALL_H * 0.48, -HALF + 0.035]}
@@ -997,6 +998,7 @@ function Windows3D() {
           height={6.7}
           theme={theme}
           viewSrc={window4RUrl}
+          paneCount={2}
         />
       </>
     );
@@ -2044,13 +2046,13 @@ function FloorToCeilingWindow({
   const window4Tex = usePixelTexture(viewSrc ?? window4Url);
   const sceneryTex = getSceneryTextureFor(theme);
   const viewTex = viewSrc ? window4Tex : theme === 'skyline' ? window4Tex : sceneryTex;
-  const frameCol = luxury ? '#d8d2c6' : theme === 'skyline' ? '#536b7d' : '#3d5263';
-  const railCol = luxury ? '#c3b8a8' : theme === 'skyline' ? '#405566' : '#2f414f';
-  const hiCol = luxury ? '#f5eee2' : theme === 'skyline' ? '#cfe4ef' : '#b9d5e4';
+  const frameCol = luxury ? '#d8d2c6' : theme === 'skyline' ? '#9fb6c4' : '#6f8795';
+  const railCol = luxury ? '#c3b8a8' : theme === 'skyline' ? '#7f98a8' : '#5f7380';
+  const hiCol = luxury ? '#f5eee2' : theme === 'skyline' ? '#e7f5fb' : '#d5ebf5';
   const paneW = width / paneCount;
-  const barT = luxury ? 0.045 : 0.075;
-  const frameT = luxury ? 0.095 : 0.14;
-  const railH = luxury ? 0.12 : 0.18;
+  const barT = luxury ? 0.045 : 0.038;
+  const frameT = luxury ? 0.095 : 0.075;
+  const railH = luxury ? 0.12 : 0.105;
   const paneSlots = Array.from({ length: Math.max(0, paneCount - 1) }, (_, i) => i + 1 - paneCount / 2);
   const highlightSlots = Array.from({ length: paneCount }, (_, i) => i + 0.5 - paneCount / 2);
 
@@ -2058,7 +2060,7 @@ function FloorToCeilingWindow({
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh position={[0, 0, -0.12]}>
         <boxGeometry args={[width + 0.18, height + 0.18, 0.08]} />
-        <meshBasicMaterial color={luxury ? '#eee7da' : '#263744'} />
+        <meshBasicMaterial color={luxury ? '#eee7da' : '#d9e8ef'} />
       </mesh>
       <mesh position={[0, 0, -0.015]}>
         <planeGeometry args={[width - frameT * 2, height - railH * 2]} />
@@ -2069,10 +2071,10 @@ function FloorToCeilingWindow({
         <meshBasicMaterial color={luxury ? '#fff0c9' : '#d8f3ff'} transparent opacity={luxury ? 0.13 : 0.18} side={DoubleSide} toneMapped={false} />
       </mesh>
 
-      <WindowBar x={0} y={height / 2 - railH / 2} w={width} h={railH} d={luxury ? 0.1 : 0.16} color={railCol} z={0.04} />
-      <WindowBar x={0} y={-height / 2 + railH / 2} w={width} h={railH} d={luxury ? 0.12 : 0.2} color={railCol} z={0.06} />
-      <WindowBar x={-width / 2 + frameT / 2} y={0} w={frameT} h={height} d={luxury ? 0.1 : 0.16} color={frameCol} z={0.04} />
-      <WindowBar x={width / 2 - frameT / 2} y={0} w={frameT} h={height} d={luxury ? 0.1 : 0.16} color={frameCol} z={0.04} />
+      <WindowBar x={0} y={height / 2 - railH / 2} w={width} h={railH} d={luxury ? 0.1 : 0.08} color={railCol} z={0.04} />
+      <WindowBar x={0} y={-height / 2 + railH / 2} w={width} h={railH} d={luxury ? 0.12 : 0.095} color={railCol} z={0.06} />
+      <WindowBar x={-width / 2 + frameT / 2} y={0} w={frameT} h={height} d={luxury ? 0.1 : 0.08} color={frameCol} z={0.04} />
+      <WindowBar x={width / 2 - frameT / 2} y={0} w={frameT} h={height} d={luxury ? 0.1 : 0.08} color={frameCol} z={0.04} />
 
       {highlightSlots.map((slot) => (
         <WindowBar
@@ -2081,7 +2083,7 @@ function FloorToCeilingWindow({
           y={0.25}
           w={luxury ? 0.022 : 0.035}
           h={height - railH * 2.6}
-          d={luxury ? 0.055 : 0.08}
+          d={luxury ? 0.055 : 0.045}
           color={hiCol}
           z={0.075}
         />
@@ -2093,7 +2095,7 @@ function FloorToCeilingWindow({
           y={0}
           w={barT}
           h={height - railH * 2}
-          d={luxury ? 0.105 : 0.18}
+          d={luxury ? 0.105 : 0.07}
           color={frameCol}
           z={0.075}
         />

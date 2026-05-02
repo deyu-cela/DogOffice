@@ -110,6 +110,7 @@ type StaffRow = {
 export function StaffList() {
   const staff = useGameStore((s) => s.staff);
   const tools = useGameStore((s) => s.tools);
+  const teams = useGameStore((s) => s.teams);
   const playMini = useGameStore((s) => s.openPlayMiniGame);
   const openTraining = useGameStore((s) => s.openTraining);
   const openStaffAction = useGameStore((s) => s.openStaffAction);
@@ -124,9 +125,9 @@ export function StaffList() {
       index,
       grade: dogGrade(dog),
       rank: rankClass(dog),
-      power: dogPowerWithTools(dog, tools),
+      power: dogPowerWithTools(dog, tools, teams),
     }));
-  }, [staff, tools]);
+  }, [staff, tools, teams]);
 
   const visibleRows = useMemo(() => {
     return rows

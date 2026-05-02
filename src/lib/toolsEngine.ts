@@ -1,5 +1,8 @@
 import type { Dog, ProjectCategory, Team, Tool, ToolGrade, ToolTraitId } from '@/types';
 import {
+  CEO_U_TOOL_DEF_ID,
+  CEO_U_TOOL_NAME,
+  CEO_U_TOOL_TRAITS,
   LUCKY_CHARM_BONUS,
   TOOL_GRADE_PROB,
   TOOL_STAT_RANGE,
@@ -13,13 +16,50 @@ export function nextToolId(): string {
   return `tool_${++toolIdCounter}_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e6).toString(36)}`;
 }
 
-const GRADE_RANK: Record<ToolGrade, number> = { S: 3, A: 2, B: 1 };
+const GRADE_RANK: Record<ToolGrade, number> = { U: 4, S: 3, A: 2, B: 1 };
+
+export function isToolLocked(tool: Tool): boolean {
+  return !!tool.lockedToDogId;
+}
+
+// 建立 CEO U 級綁定工具
+export function createCeoUTool(dogId: string, day: number): Tool {
+  const speedRange = TOOL_STAT_RANGE.U.speed;
+  const qualityRange = TOOL_STAT_RANGE.U.quality;
+  const speed = speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]);
+  const quality = qualityRange[0] + Math.random() * (qualityRange[1] - qualityRange[0]);
+  return {
+    instanceId: nextToolId(),
+    defId: CEO_U_TOOL_DEF_ID,
+    name: CEO_U_TOOL_NAME,
+    iconName: 'toolKatana',
+    category: 'CEO',
+    grade: 'U',
+    speedBoost: Math.round(speed * 10) / 10,
+    qualityBoost: Math.round(quality * 10) / 10,
+    traits: [...CEO_U_TOOL_TRAITS],
+    obtainedDay: day,
+    lockedToDogId: dogId,
+  };
+}
+
+function isDogOnAnyTeam(
+  dogId: string,
+  teams?: Record<ProjectCategory, Team>,
+): boolean {
+  if (!teams) return false;
+  for (const k of Object.keys(teams) as ProjectCategory[]) {
+    if (teams[k].memberIds.includes(dogId)) return true;
+  }
+  return false;
+}
 
 // 找出可被新工具擠掉的舊工具 instanceId；找不到回 null
 // 規則：
 //  1. 優先：同 category 且 grade 嚴格低於 newTool 且未裝備
 //  2. 退一步：任何 category 且 grade 嚴格低於 newTool 且未裝備
 //  在候選集中：先按 grade 升序（先擠最低階），再按 obtainedDay 升序（同階則擠最舊）
+//  CEO 綁定的工具永遠排除
 export function pickToolToReplace(
   tools: Tool[],
   newTool: Tool,
@@ -30,7 +70,10 @@ export function pickToolToReplace(
   const newRank = GRADE_RANK[newTool.grade];
 
   const candidates = tools.filter(
-    (t) => GRADE_RANK[t.grade] < newRank && !equipped.has(t.instanceId),
+    (t) =>
+      !isToolLocked(t) &&
+      GRADE_RANK[t.grade] < newRank &&
+      !equipped.has(t.instanceId),
   );
   if (candidates.length === 0) return null;
 
@@ -97,7 +140,12 @@ export function rollTool(category: ProjectCategory, day: number): Tool | null {
 }
 
 // 根據 staff 的 equippedToolId 與 tools 列表，建立 dogId → Tool 的 map
-export function buildToolMap(staff: Dog[], tools: Tool[]): Map<string, Tool> {
+// teams 可選；若提供，CEO 的 U 級工具僅在 CEO 上隊時才生效
+export function buildToolMap(
+  staff: Dog[],
+  tools: Tool[],
+  teams?: Record<ProjectCategory, Team>,
+): Map<string, Tool> {
   const byInstanceId = new Map<string, Tool>();
   for (const t of tools) byInstanceId.set(t.instanceId, t);
   const out = new Map<string, Tool>();
@@ -105,13 +153,16 @@ export function buildToolMap(staff: Dog[], tools: Tool[]): Map<string, Tool> {
     if (!d.equippedToolId) continue;
     const tool = byInstanceId.get(d.equippedToolId);
     if (!tool) continue;
-    if (tool.category !== getDogToolCategory(d)) continue;
+    if (tool.grade === 'U') {
+      if (!d.isCEO) continue;
+      if (teams && !isDogOnAnyTeam(d.id, teams)) continue;
+    } else if (tool.category !== getDogToolCategory(d)) continue;
     out.set(d.id, tool);
   }
   return out;
 }
 
-// 取得員工可裝備的 category；PM/CEO 視為 null（不可裝）
+// 取得員工可裝備的 category；PM/CEO 視為 null（不可裝一般工具；CEO 走 U 專屬路徑）
 // 用 dog.role 反查避免循環依賴 dogPrimaryIndustry（gameStore 內已有）
 const ROLE_TOOL_CATEGORY: Record<string, ProjectCategory | null> = {
   工程師: 'tech',
@@ -144,12 +195,17 @@ export function getToolQualityBoost(toolMap: Map<string, Tool>, dogId: string): 
 }
 
 // 直接針對單一 dog 取得已裝備工具（不靠 toolMap，給 UI 用）
+// 純查詢：不檢查 team；CEO U 工具會回傳（UI 顯示用）
 export function getDogEquippedTool(dog: Dog, tools: Tool[]): Tool | null {
   if (!dog.equippedToolId) return null;
+  const t = tools.find((x) => x.instanceId === dog.equippedToolId);
+  if (!t) return null;
+  if (t.grade === 'U') {
+    return dog.isCEO ? t : null;
+  }
   const cat = getDogToolCategory(dog);
   if (!cat) return null;
-  const t = tools.find((x) => x.instanceId === dog.equippedToolId);
-  if (!t || t.category !== cat) return null;
+  if (t.category !== cat) return null;
   return t;
 }
 
@@ -159,17 +215,29 @@ export type DogStatBoost = {
 };
 
 // 取得單一 dog 因裝備工具獲得的 stats 加成（speed / quality；不含團隊 chain 等乘數）
-export function getDogToolStatBoost(dog: Dog, tools: Tool[]): DogStatBoost {
+// teams 可選：若提供，CEO 的 U 級工具僅在 CEO 上隊時才提供加成
+export function getDogToolStatBoost(
+  dog: Dog,
+  tools: Tool[],
+  teams?: Record<ProjectCategory, Team>,
+): DogStatBoost {
   const tool = getDogEquippedTool(dog, tools);
   if (!tool) return { speed: 0, quality: 0 };
+  if (tool.grade === 'U' && teams && !isDogOnAnyTeam(dog.id, teams)) {
+    return { speed: 0, quality: 0 };
+  }
   let quality = tool.qualityBoost;
   if (tool.traits.includes('precision')) quality += 1;
   return { speed: tool.speedBoost, quality };
 }
 
 // 含已裝備工具加成的工作能力
-export function dogPowerWithTools(dog: Dog, tools: Tool[]): number {
-  return dogPower(dog, getDogToolStatBoost(dog, tools));
+export function dogPowerWithTools(
+  dog: Dog,
+  tools: Tool[],
+  teams?: Record<ProjectCategory, Team>,
+): number {
+  return dogPower(dog, getDogToolStatBoost(dog, tools, teams));
 }
 
 // 個別員工的 trait 速度乘數
@@ -256,6 +324,7 @@ function getActiveDogIds(teams: Record<ProjectCategory, Team>): Set<string> {
 }
 
 // 在上陣員工中找一個可被新工具升級的人；挑現裝備最差者
+// 跳過已裝備鎖定（U 綁定）工具的狗
 export function findAutoEquipTarget(
   staff: Dog[],
   teams: Record<ProjectCategory, Team>,
@@ -270,6 +339,7 @@ export function findAutoEquipTarget(
     const equipped = dog.equippedToolId
       ? tools.find((t) => t.instanceId === dog.equippedToolId) ?? null
       : null;
+    if (equipped && isToolLocked(equipped)) continue;
     if (!isToolStrictlyBetter(newTool, equipped)) continue;
     cand.push({ dog, equipped });
   }
@@ -287,7 +357,7 @@ export function findAutoEquipTarget(
   return { dogId: pick.dog.id, oldToolId: pick.equipped?.instanceId ?? null };
 }
 
-// inventory 中（未裝備）找比新工具差的，挑最差者擠掉
+// inventory 中（未裝備）找比新工具差的，挑最差者擠掉；跳過鎖定工具
 export function findReplaceableInInventory(
   tools: Tool[],
   staff: Dog[],
@@ -296,7 +366,10 @@ export function findReplaceableInInventory(
   const equipped = new Set<string>();
   for (const d of staff) if (d.equippedToolId) equipped.add(d.equippedToolId);
   const cand = tools.filter(
-    (t) => !equipped.has(t.instanceId) && isToolStrictlyBetter(newTool, t),
+    (t) =>
+      !isToolLocked(t) &&
+      !equipped.has(t.instanceId) &&
+      isToolStrictlyBetter(newTool, t),
   );
   if (cand.length === 0) return null;
   cand.sort(
@@ -308,7 +381,7 @@ export function findReplaceableInInventory(
   return cand[0].instanceId;
 }
 
-// 從未裝備且 category 相符的工具中，挑最佳給指定 dog
+// 從未裝備且 category 相符的工具中，挑最佳給指定 dog；跳過鎖定工具
 export function pickBestUnequippedToolForDog(
   tools: Tool[],
   staff: Dog[],
@@ -319,7 +392,10 @@ export function pickBestUnequippedToolForDog(
   const equipped = new Set<string>();
   for (const d of staff) if (d.equippedToolId) equipped.add(d.equippedToolId);
   const cand = tools.filter(
-    (t) => t.category === cat && !equipped.has(t.instanceId),
+    (t) =>
+      !isToolLocked(t) &&
+      t.category === cat &&
+      !equipped.has(t.instanceId),
   );
   if (cand.length === 0) return null;
   cand.sort(

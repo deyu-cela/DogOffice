@@ -6,11 +6,12 @@ export const TOOL_DROP_CHANCE = 0.2;
 // 工具庫存上限
 export const TOOL_CAP = 50;
 
-// 等級獨立骰
+// 等級獨立骰（U 不從掉落取得，由 CEO 取得時專屬發放）
 export const TOOL_GRADE_PROB: Record<ToolGrade, number> = {
   B: 0.6,
   A: 0.3,
   S: 0.1,
+  U: 0,
 };
 
 // 等級對應數值區間（加性，疊在 stats 上）
@@ -18,14 +19,22 @@ export const TOOL_STAT_RANGE: Record<ToolGrade, { speed: [number, number]; quali
   B: { speed: [0.5, 1.0], quality: [0.5, 1.0] },
   A: { speed: [1.0, 2.0], quality: [1.0, 2.0] },
   S: { speed: [2.0, 3.5], quality: [2.0, 3.5] },
+  U: { speed: [3, 5], quality: [3, 5] },
 };
 
-// 隨機特性機率（roll 1 個）
+// 隨機特性機率（roll 1 個；U 級固定全給三件最強）
 export const TOOL_TRAIT_PROB: Record<ToolGrade, number> = {
   B: 0,
   A: 0.5,
   S: 1,
+  U: 1,
 };
+
+// CEO U 級工具固定特性：加速啟動 + 命中 + 高難度專家
+export const CEO_U_TOOL_TRAITS: ToolTraitId[] = ['fastStart', 'precision', 'highTierExpert'];
+
+export const CEO_U_TOOL_DEF_ID = 'ceo-katana';
+export const CEO_U_TOOL_NAME = '神兵武士刀';
 
 // luckyCharm 加成
 export const LUCKY_CHARM_BONUS = 0.05;
@@ -63,6 +72,11 @@ const TOOL_DEFS_BY_CATEGORY: Record<ProjectCategory, ToolDef[]> = {
   ],
 };
 
+// CEO 專屬 U 級工具圖示反查（不屬於任何產業 def 表）
+const CEO_TOOL_ICON_BY_DEF_ID: Record<string, ToolDef['iconName']> = {
+  [CEO_U_TOOL_DEF_ID]: 'toolKatana',
+};
+
 export const TOOL_DEFS: ToolDef[] = Object.values(TOOL_DEFS_BY_CATEGORY).flat();
 
 export function getToolDefsForCategory(category: ProjectCategory): ToolDef[] {
@@ -79,5 +93,5 @@ const TOOL_ICON_BY_DEF_ID: Record<string, ToolDef['iconName']> = TOOL_DEFS.reduc
 );
 
 export function getToolIconByDefId(defId: string): ToolDef['iconName'] {
-  return TOOL_ICON_BY_DEF_ID[defId] ?? 'toolKeyboard';
+  return TOOL_ICON_BY_DEF_ID[defId] ?? CEO_TOOL_ICON_BY_DEF_ID[defId] ?? 'toolKeyboard';
 }

@@ -5,7 +5,7 @@ import { DogAvatar } from '@/components/DogAvatar';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 import { dogPowerStars, dogGrade, type DogGradeUI } from '@/lib/utils';
 import { dogPowerWithTools } from '@/lib/toolsEngine';
-import type { Dog, Project, ProjectCategory, Tool } from '@/types';
+import type { Dog, Project, ProjectCategory, Team, Tool } from '@/types';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import './staff.css';
 
@@ -188,7 +188,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
     const base = filter === 'all' ? staff : staff.filter((d) => d.role === filter);
     return [...base].sort((a, b) => {
       switch (sortKey) {
-        case 'power': return dogPowerWithTools(b, tools) - dogPowerWithTools(a, tools);
+        case 'power': return dogPowerWithTools(b, tools, teams) - dogPowerWithTools(a, tools, teams);
         case 'level': return b.level - a.level;
         case 'grade': return GRADE_ORDER[dogGrade(a)] - GRADE_ORDER[dogGrade(b)];
         case 'name': return a.name.localeCompare(b.name);
@@ -214,12 +214,12 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
     .map((id) => staffById.get(id))
     .filter((d): d is Dog => !!d);
   const activeChemistry = activeChemistryForTeam(teamMembers, activeIndustry);
-  const teamTotalPower = teamMembers.reduce((n, d) => n + dogPowerWithTools(d, tools), 0);
+  const teamTotalPower = teamMembers.reduce((n, d) => n + dogPowerWithTools(d, tools, teams), 0);
   const teamAvgLevel = teamMembers.length
     ? teamMembers.reduce((n, d) => n + d.level, 0) / teamMembers.length
     : 0;
   const teamTotalStars = teamMembers.length
-    ? Math.round(teamMembers.reduce((n, d) => n + dogPowerStars(dogPowerWithTools(d, tools)), 0) / teamMembers.length)
+    ? Math.round(teamMembers.reduce((n, d) => n + dogPowerStars(dogPowerWithTools(d, tools, teams)), 0) / teamMembers.length)
     : 0;
 
   const modal = (
@@ -380,6 +380,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
                   <SlotCell
                     dog={dog ?? null}
                     tools={tools}
+                    teams={teams}
                     color={headerColor}
                     editMode={editMode}
                     onShowDetails={() => dog && showDetails(dog.id)}
@@ -490,6 +491,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
                     key={d.id}
                     dog={d}
                     tools={tools}
+                    teams={teams}
                     inTeam={inCurrent}
                     inOtherTeam={inOther}
                     teamFull={team.memberIds.length >= maxMembers}
@@ -579,6 +581,7 @@ function PowerStars({ count, size = 11 }: { count: number; size?: number }) {
 function SlotCell({
   dog,
   tools,
+  teams,
   color,
   editMode,
   onShowDetails,
@@ -586,6 +589,7 @@ function SlotCell({
 }: {
   dog: Dog | null;
   tools: Tool[];
+  teams: Record<ProjectCategory, Team>;
   color: string;
   editMode: boolean;
   onShowDetails: () => void;
@@ -615,7 +619,7 @@ function SlotCell({
   }
 
   const grade = dogGrade(dog);
-  const power = dogPowerWithTools(dog, tools);
+  const power = dogPowerWithTools(dog, tools, teams);
   const stars = dogPowerStars(power);
   const industry = dogPrimaryIndustry(dog.role);
   const isU = grade === 'U';
@@ -804,6 +808,7 @@ function SparkleOverlay() {
 function StaffCell({
   dog,
   tools,
+  teams,
   inTeam,
   inOtherTeam,
   teamFull,
@@ -814,6 +819,7 @@ function StaffCell({
 }: {
   dog: Dog;
   tools: Tool[];
+  teams: Record<ProjectCategory, Team>;
   inTeam: boolean;
   inOtherTeam: ProjectCategory | null;
   teamFull: boolean;
@@ -824,7 +830,7 @@ function StaffCell({
 }) {
   const industry = dogPrimaryIndustry(dog.role);
   const grade = dogGrade(dog);
-  const power = dogPowerWithTools(dog, tools);
+  const power = dogPowerWithTools(dog, tools, teams);
   const stars = dogPowerStars(power);
   const isU = grade === 'U';
   const ringColor = GRADE_RING_COLOR[grade];

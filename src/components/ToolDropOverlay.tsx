@@ -7,17 +7,20 @@ import type { Tool, ToolGrade } from '@/types';
 type Drop = { id: string; projectId: string; tool: Tool };
 
 const GRADE_GLOW: Record<ToolGrade, string> = {
+  U: '0 0 32px 8px rgba(181,119,255,0.95)',
   S: '0 0 24px 6px rgba(247,189,34,0.85)',
   A: '0 0 18px 4px rgba(176,102,232,0.7)',
   B: '0 0 12px 2px rgba(110,160,232,0.55)',
 };
 
 const GRADE_BG: Record<ToolGrade, string> = {
+  U: 'linear-gradient(180deg, #ffd9f0, #b577ff)',
   S: 'linear-gradient(180deg, #ffd95a, #f0a818)',
   A: 'linear-gradient(180deg, #c9a4f0, #8a4ce0)',
   B: 'linear-gradient(180deg, #c8d8e8, #6a8aa8)',
 };
 const GRADE_TEXT: Record<ToolGrade, string> = {
+  U: '#3a0a4d',
   S: '#5a3d05',
   A: '#fff',
   B: '#fff',

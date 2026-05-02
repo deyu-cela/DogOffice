@@ -359,7 +359,7 @@ export function runProjectsDay(state: GameState): DayResult {
   };
 
   // 1. 每日 fatigue / loyalty
-  const initialToolMap = buildToolMap(s.staff, s.tools);
+  const initialToolMap = buildToolMap(s.staff, s.tools, s.teams);
   s.staff = applyDailyFatigue(s.staff, s.companyBuffs.patienceBoost ?? 0, initialToolMap);
   s.staff = applyDailyLoyalty(s.staff);
   s.staff = s.staff.map((d) =>
@@ -370,7 +370,7 @@ export function runProjectsDay(state: GameState): DayResult {
   const ctx: DayProgress = {
     staffById: buildDogIdMap(s.staff),
     currentDay: s.day,
-    toolMap: buildToolMap(s.staff, s.tools),
+    toolMap: buildToolMap(s.staff, s.tools, s.teams),
   };
   const updatedClients: Project[] = [];
   for (const project of s.clients) {
@@ -428,7 +428,7 @@ export function runProjectsDay(state: GameState): DayResult {
       if (hasToyZone && Math.random() < dropChance) {
         const tool = rollTool(project.category, s.day);
         if (tool) {
-          const inventoryFull = s.tools.length >= TOOL_CAP;
+          const inventoryFull = s.tools.filter((t) => !t.lockedToDogId).length >= TOOL_CAP;
           const target = findAutoEquipTarget(s.staff, s.teams, s.tools, tool);
           let acquired = false;
 
@@ -439,29 +439,50 @@ export function runProjectsDay(state: GameState): DayResult {
               : null;
             let nextTools = s.tools;
             let droppedOldMsg = '';
+            let canEquip = true;
             if (oldTool && inventoryFull) {
               // 庫存滿 → 舊裝備丟掉
               nextTools = s.tools.filter((t) => t.instanceId !== oldTool.instanceId);
               droppedOldMsg = `（丟掉舊 ${oldTool.grade} ${oldTool.name}）`;
+            } else if (!oldTool && inventoryFull) {
+              // 目標狗沒裝備，但庫存已滿 → 擠掉庫存中更差的
+              const removeId = findReplaceableInInventory(s.tools, s.staff, tool);
+              if (removeId) {
+                const replaced = s.tools.find((t) => t.instanceId === removeId) ?? null;
+                nextTools = s.tools.filter((t) => t.instanceId !== removeId);
+                droppedOldMsg = replaced
+                  ? `（擠掉 ${replaced.grade} ${replaced.name}）`
+                  : '';
+              } else {
+                canEquip = false;
+              }
             }
-            nextTools = [...nextTools, tool];
-            s.tools = nextTools;
-            s.staff = s.staff.map((d) =>
-              d.id === target.dogId ? { ...d, equippedToolId: tool.instanceId } : d,
-            );
-            const dogName = s.staff.find((d) => d.id === target.dogId)?.name ?? '';
-            const oldEquipMsg = oldTool && !inventoryFull
-              ? `（換下 ${oldTool.grade} ${oldTool.name}）`
-              : '';
-            newLogs.push({
-              day: s.day,
-              msg: `🧸 撿到 ${tool.grade} ${tool.name} → 自動裝給 ${dogName}${oldEquipMsg}${droppedOldMsg}`,
-            });
-            toast = {
-              msg: `🧸 ${tool.grade} ${tool.name} → ${dogName}`,
-              type: 'positive',
-            };
-            acquired = true;
+            if (canEquip) {
+              nextTools = [...nextTools, tool];
+              s.tools = nextTools;
+              s.staff = s.staff.map((d) =>
+                d.id === target.dogId ? { ...d, equippedToolId: tool.instanceId } : d,
+              );
+              const dogName = s.staff.find((d) => d.id === target.dogId)?.name ?? '';
+              const oldEquipMsg = oldTool && !inventoryFull
+                ? `（換下 ${oldTool.grade} ${oldTool.name}）`
+                : '';
+              newLogs.push({
+                day: s.day,
+                msg: `🧸 撿到 ${tool.grade} ${tool.name} → 自動裝給 ${dogName}${oldEquipMsg}${droppedOldMsg}`,
+              });
+              toast = {
+                msg: `🧸 ${tool.grade} ${tool.name} → ${dogName}`,
+                type: 'positive',
+              };
+              acquired = true;
+            } else {
+              newLogs.push({
+                day: s.day,
+                msg: `🧸 撿到 ${tool.grade} ${tool.name}，但庫存已滿且無可擠掉項目，丟棄`,
+              });
+              toast = { msg: `${tool.name} 庫存滿，丟棄`, type: 'negative' };
+            }
           } else if (!inventoryFull) {
             // 沒人需要升級，但庫存有空 → 收入庫存
             s.tools = [...s.tools, tool];
