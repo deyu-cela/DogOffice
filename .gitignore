@@ -6,3 +6,6 @@ dist-ssr
 *.log
 .vite
 *.tsbuildinfo
+
+# codex 工作中產出的測試截圖（mock / 風格參考），不入 repo
+.codex-*.png
