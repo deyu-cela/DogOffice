@@ -44,6 +44,9 @@ export type SvgIconName =
   | 'toolKeyboard'
   | 'toolMonitor'
   | 'toolGpu'
+  | 'toolBoard'
+  | 'toolGantt'
+  | 'toolPlan'
   | 'toolTablet'
   | 'toolColor'
   | 'toolBrush'
@@ -512,6 +515,51 @@ export function SvgIcon({ name, size = 24, className }: Props) {
           <path d="M12 9c1-1.6 2.6-2.4 4.5-2.4" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" fill="none" />
           <rect x="14.5" y="22" width="3" height="7" rx="1" fill={GOLD} stroke={BLUE} strokeWidth="1.4" />
           <ellipse cx="16" cy="29.5" rx="4" ry="1.2" fill={GOLD} stroke={BLUE} strokeWidth="1.4" />
+        </svg>
+      );
+    case 'toolBoard':
+      // Scrum 看板：3 欄 × 多張便利貼
+      return (
+        <svg {...common}>
+          <rect x="3" y="6" width="26" height="20" rx="1.6" fill="#eaf4ff" stroke={BLUE} strokeWidth="1.8" />
+          <path d="M11.5 6v20M20.5 6v20" stroke={BLUE} strokeWidth="1" opacity="0.5" />
+          <rect x="4.5" y="8.5" width="6" height="3.5" rx="0.5" fill={GOLD} stroke={ORANGE} strokeWidth="0.6" />
+          <rect x="4.5" y="13.5" width="6" height="3.5" rx="0.5" fill={GOLD} stroke={ORANGE} strokeWidth="0.6" />
+          <rect x="13" y="8.5" width="6" height="3.5" rx="0.5" fill={ORANGE} stroke={BLUE} strokeWidth="0.6" />
+          <rect x="13" y="13.5" width="6" height="3.5" rx="0.5" fill={ORANGE} stroke={BLUE} strokeWidth="0.6" />
+          <rect x="13" y="18.5" width="6" height="3.5" rx="0.5" fill={ORANGE} stroke={BLUE} strokeWidth="0.6" />
+          <rect x="21.5" y="8.5" width="6" height="3.5" rx="0.5" fill={TEAL} stroke={BLUE} strokeWidth="0.6" />
+          <rect x="21.5" y="13.5" width="6" height="3.5" rx="0.5" fill={TEAL} stroke={BLUE} strokeWidth="0.6" />
+          <path d="M5.5 23l1.4 1.4 2.6-2.6" fill="none" stroke={BLUE} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'toolGantt':
+      // 甘特圖：橫條圖 + 時間軸
+      return (
+        <svg {...common}>
+          <rect x="3" y="5" width="26" height="22" rx="1.6" fill="#fff" stroke={BLUE} strokeWidth="1.8" />
+          <path d="M3 10h26" stroke={BLUE} strokeWidth="1.2" />
+          <path d="M9 10v17" stroke={BLUE} strokeWidth="0.8" opacity="0.5" />
+          <path d="M9 7.5h2M14 7.5h2M19 7.5h2M24 7.5h2" stroke={BLUE} strokeWidth="1.4" strokeLinecap="round" />
+          <rect x="9.5" y="12" width="9" height="2.6" rx="0.6" fill={LIGHT_BLUE} stroke={BLUE} strokeWidth="0.6" />
+          <rect x="13" y="15.6" width="11" height="2.6" rx="0.6" fill={TEAL} stroke={BLUE} strokeWidth="0.6" />
+          <rect x="11" y="19.2" width="7" height="2.6" rx="0.6" fill={ORANGE} stroke={BLUE} strokeWidth="0.6" />
+          <rect x="17" y="22.8" width="9" height="2.6" rx="0.6" fill={GOLD} stroke={BLUE} strokeWidth="0.6" />
+        </svg>
+      );
+    case 'toolPlan':
+      // 時程表：日曆 + 進度方塊
+      return (
+        <svg {...common}>
+          <rect x="4" y="7" width="24" height="20" rx="2" fill="#fff" stroke={BLUE} strokeWidth="1.8" />
+          <path d="M4 12h24" stroke={BLUE} strokeWidth="1.4" />
+          <path d="M10 4v5M22 4v5" stroke={BLUE} strokeWidth="2" strokeLinecap="round" />
+          <rect x="7" y="14.5" width="4" height="3" rx="0.5" fill={TEAL} />
+          <rect x="13" y="14.5" width="4" height="3" rx="0.5" fill={TEAL} />
+          <rect x="19" y="14.5" width="4" height="3" rx="0.5" fill={GOLD} />
+          <rect x="7" y="20" width="4" height="3" rx="0.5" fill={ORANGE} />
+          <rect x="13" y="20" width="4" height="3" rx="0.5" fill="#eaf4ff" stroke={BLUE} strokeWidth="0.8" />
+          <rect x="19" y="20" width="4" height="3" rx="0.5" fill="#eaf4ff" stroke={BLUE} strokeWidth="0.8" />
         </svg>
       );
     case 'toolKatana':

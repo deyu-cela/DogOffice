@@ -162,17 +162,17 @@ export function buildToolMap(
   return out;
 }
 
-// 取得員工可裝備的 category；PM/CEO 視為 null（不可裝一般工具；CEO 走 U 專屬路徑）
+// 取得員工可裝備的 category；CEO 走 U 專屬路徑（toolCategory=null）
 // 用 dog.role 反查避免循環依賴 dogPrimaryIndustry（gameStore 內已有）
 const ROLE_TOOL_CATEGORY: Record<string, ProjectCategory | null> = {
   工程師: 'tech',
-  QA: 'tech',
+  PM: 'tech',
   美術: 'design',
-  企劃: 'design',
-  業務: 'marketing',
+  QA: 'design',
   行銷: 'marketing',
+  業務: 'marketing',
   客服: 'service',
-  PM: null,
+  企劃: 'service',
   CEO: null,
 };
 

@@ -42,7 +42,7 @@ export function StatBars() {
         bgColor="#e0d0f0"
         icon={COFFEE_ICON}
         iconColor="#7a4ab0"
-        label="精神"
+        label="疲勞"
         value={fatigueText}
         pct={avgFatigue}
         barColor="#a070d8"

@@ -26,7 +26,7 @@ export const DOG_ROLES: DogRole[] = [
     passive: '專業之王（quality 10），tech 案專業保證。',
     motto: '「這裡有個 bug，那裡也有。」',
     baseStats: { speed: 4, quality: 10, patience: 8 },
-    category: 'tech',
+    category: 'design',
   },
   {
     role: '美術',
@@ -50,7 +50,7 @@ export const DOG_ROLES: DogRole[] = [
     passive: 'design 案速度型，創意豐富但耐心不足。',
     motto: '「這裡我有 3 個超酷的新提案。」',
     baseStats: { speed: 7, quality: 6, patience: 4 },
-    category: 'design',
+    category: 'service',
   },
   {
     role: '業務',
@@ -98,7 +98,7 @@ export const DOG_ROLES: DogRole[] = [
     passive: '全能型隊長，耐心高、產能均衡。',
     motto: '「先拉個時程表，我們對齊一下。」',
     baseStats: { speed: 6, quality: 6, patience: 8 },
-    category: 'all',
+    category: 'tech',
   },
 ];
 

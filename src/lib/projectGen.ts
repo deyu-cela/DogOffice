@@ -257,13 +257,13 @@ export function isRoleMatched(dog: Dog, category: ProjectCategory): boolean {
   // 由 dogRoles 決定，這裡用 role string 簡單判斷
   const roleMatch: Record<string, ProjectCategory[]> = {
     工程師: ['tech'],
-    QA: ['tech'],
+    PM: ['tech'],
     美術: ['design'],
-    企劃: ['design', 'marketing'],
-    業務: ['marketing', 'service'],
+    QA: ['design'],
     行銷: ['marketing'],
+    業務: ['marketing'],
     客服: ['service'],
-    PM: ['tech', 'design', 'marketing', 'service'],
+    企劃: ['service'],
     CEO: ['tech', 'design', 'marketing', 'service'],
   };
   return roleMatch[dog.role]?.includes(category) ?? false;

@@ -54,6 +54,9 @@ const TOOL_DEFS_BY_CATEGORY: Record<ProjectCategory, ToolDef[]> = {
     { defId: 'tech-keyboard', name: '機械鍵盤', iconName: 'toolKeyboard', category: 'tech', desc: '清脆手感，工程師最愛。' },
     { defId: 'tech-monitor', name: '雙螢幕', iconName: 'toolMonitor', category: 'tech', desc: '視野翻倍，效率翻倍。' },
     { defId: 'tech-gpu', name: 'GPU 工作站', iconName: 'toolGpu', category: 'tech', desc: '算力滿載。' },
+    { defId: 'tech-board', name: '看板牆', iconName: 'toolBoard', category: 'tech', desc: '流程一目了然，PM 最愛。' },
+    { defId: 'tech-gantt', name: '甘特圖', iconName: 'toolGantt', category: 'tech', desc: '時程不延宕。' },
+    { defId: 'tech-plan', name: '時程表', iconName: 'toolPlan', category: 'tech', desc: '進度精準掌控。' },
   ],
   design: [
     { defId: 'design-tablet', name: '繪圖板', iconName: 'toolTablet', category: 'design', desc: '筆觸細膩。' },

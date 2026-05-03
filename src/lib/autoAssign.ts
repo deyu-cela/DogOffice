@@ -1,21 +1,14 @@
-import type { CompanyBuffs, Dog, ProjectCategory } from '@/types';
+import type { Dog, ProjectCategory } from '@/types';
 import type { DogTraitId } from '@/constants/dogTraits';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
-import { simulateProjectDays } from '@/lib/projectEngine';
 
 const ROLE_CATEGORY: Record<string, ProjectCategory[]> = {
-  工程師: ['tech'], QA: ['tech'],
-  美術: ['design'], 企劃: ['design', 'marketing'],
-  業務: ['marketing', 'service'], 行銷: ['marketing'],
-  客服: ['service'],
-  PM: ['tech', 'design', 'marketing', 'service'],
+  工程師: ['tech'], PM: ['tech'],
+  美術: ['design'], QA: ['design'],
+  行銷: ['marketing'], 業務: ['marketing'],
+  客服: ['service'], 企劃: ['service'],
   CEO: ['tech', 'design', 'marketing', 'service'],
 };
-
-function isSpecialistFor(role: string, category: ProjectCategory): boolean {
-  const cats = ROLE_CATEGORY[role];
-  return !!cats && cats.length === 1 && cats[0] === category;
-}
 
 function dogScoreFor(dog: Dog, category: ProjectCategory): number {
   const matched = (dog as Dog & { role: string }).role;
@@ -102,71 +95,6 @@ export function pickBestTeamForIndustry(
     if (bestIdx === -1) break;
     // 第一隻保證選；之後若加進去整體分數變負，就停
     if (result.length >= 1 && bestScore < 0) break;
-    result.push(pool[bestIdx]);
-    pool.splice(bestIdx, 1);
-  }
-  return result;
-}
-
-// 自動指派：貪心挑分數最高的，最多 3 隻；當加人不能再縮短預估天數時停止
-export function pickAutoAssign(
-  candidates: Dog[],
-  category: ProjectCategory,
-  alreadyPicked: Dog[],
-  remainingWork: number,
-  buffs: CompanyBuffs,
-): Dog[] {
-  const result: Dog[] = [...alreadyPicked];
-  const pool = candidates.slice();
-  const MAX = 3;
-
-  // 案件最快 2 天完成；估算 ≤ 2 不再算作更快，避免多派員工
-  // 模擬 day-by-day（含疲勞累積）讓估天數更貼近實際
-  const MIN_PROJECT_DAYS = 2;
-  const daysFor = (dogs: Dog[]): number => {
-    if (dogs.length === 0) return Infinity;
-    const sim = simulateProjectDays(dogs, remainingWork, 0, category, buffs);
-    if (!sim.complete) return Infinity;
-    return Math.max(MIN_PROJECT_DAYS, sim.days);
-  };
-
-  let prevDays = daysFor(result);
-
-  while (result.length < MAX && pool.length > 0) {
-    let searchIndices: number[] = pool.map((_, i) => i);
-    if (result.length === 0) {
-      const specialistIdx = pool
-        .map((d, i) => (isSpecialistFor(d.role, category) ? i : -1))
-        .filter((i) => i >= 0);
-      if (specialistIdx.length > 0) searchIndices = specialistIdx;
-    }
-
-    let bestIdx = -1;
-    let bestScore = -Infinity;
-    for (const i of searchIndices) {
-      const d = pool[i];
-      const baseScore = dogScoreFor(d, category);
-      const traitScore = traitScoreFor(d, category, result);
-      const newRoles = new Set([...result.map((r) => r.role), d.role]);
-      if (hasNegativeChemistry(newRoles, category)) continue;
-      const oldRoles = new Set(result.map((r) => r.role));
-      const chemDelta = chemistryBonus(newRoles, category) - chemistryBonus(oldRoles, category);
-      const total = baseScore + traitScore + chemDelta;
-      if (total > bestScore) {
-        bestScore = total;
-        bestIdx = i;
-      }
-    }
-    if (bestIdx === -1 || (result.length >= 1 && bestScore < 0)) break;
-
-    if (result.length >= 1) {
-      const newDays = daysFor([...result, pool[bestIdx]]);
-      if (newDays >= prevDays) break;
-      prevDays = newDays;
-    } else {
-      prevDays = daysFor([pool[bestIdx]]);
-    }
-
     result.push(pool[bestIdx]);
     pool.splice(bestIdx, 1);
   }

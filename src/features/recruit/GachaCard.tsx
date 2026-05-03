@@ -40,8 +40,7 @@ export function GachaCard({ result, revealed, flyDelay, onReveal, size = 120 }: 
         <div
           className="gacha-card-face gacha-card-back"
           style={{
-            background:
-              'radial-gradient(rgba(228,160,170,0.16) 1px, transparent 1.6px) 0 0 / 9px 9px, linear-gradient(180deg, #fffdfb 0%, #ffe8e9 100%)',
+            background: 'linear-gradient(180deg, #fffdfb 0%, #ffe8e9 100%)',
             border: '2px dashed rgba(214,145,150,0.58)',
             boxShadow: `0 8px 18px rgba(166,91,85,0.18), 0 0 16px ${star.glow}`,
           }}
