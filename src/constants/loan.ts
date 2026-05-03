@@ -1,0 +1,5 @@
+export const LOAN_AMOUNT = 300;
+export const LOAN_DAILY_DEDUCT = 5;
+export const LOAN_TERM_DAYS = 80;
+export const LOAN_TOTAL_REPAY = LOAN_DAILY_DEDUCT * LOAN_TERM_DAYS;
+export const LOAN_NET_COST = LOAN_TOTAL_REPAY - LOAN_AMOUNT;
