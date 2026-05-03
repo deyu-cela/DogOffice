@@ -24,13 +24,21 @@ export function Tutorial() {
   const teamOpen = useUiStore((s) => s.teamModalOpen);
   const shopOpen = useUiStore((s) => s.shopModalOpen);
   const openRecruit = useUiStore((s) => s.openRecruitModal);
+  const openTeam = useUiStore((s) => s.openTeamModal);
 
-  // 進入抽卡步驟時自動打開抽卡視窗；玩家中途關掉也會重開，直到完成 gate
+  // 進入抽卡 / 關閉抽卡步驟時自動打開抽卡視窗；玩家中途關掉或重整都會重開，直到完成 gate
   useEffect(() => {
-    if (step === STEP_GACHA && !recruitOpen) {
+    if ((step === STEP_GACHA || step === STEP_CLOSE_GACHA) && !recruitOpen) {
       openRecruit();
     }
   }, [step, recruitOpen, openRecruit]);
+
+  // 關閉隊伍步驟：重整後若隊伍視窗沒開，自動補開讓玩家能按 X 完成 gate
+  useEffect(() => {
+    if (step === STEP_CLOSE_TEAM && !teamOpen) {
+      openTeam();
+    }
+  }, [step, teamOpen, openTeam]);
 
   if (step <= 0 || step >= TUTORIAL_DONE_STEP) return null;
   const config = TUTORIAL_CONFIG.find((c) => c.step === step);

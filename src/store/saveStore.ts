@@ -4,7 +4,8 @@ import { SAVE_VERSION } from '@/types/save';
 import { ApiError, apiFetch } from '@/lib/api';
 import { migrate, serialize } from '@/lib/saveSerializer';
 import { useAuthStore } from '@/store/authStore';
-import { useGameStore } from '@/store/gameStore';
+import { useGameStore, TUTORIAL_DONE_STEP } from '@/store/gameStore';
+import { readTutorialBackup, clearTutorialBackup } from '@/lib/tutorialBackup';
 
 const MOCK_KEY = 'dogoffice:mocksave:v1';
 const mockMode = import.meta.env.VITE_SAVE_MOCK === 'true';
@@ -135,6 +136,31 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
           cloud: { ...meta, data },
           revision: meta.revision,
         });
+        // 安全網：本地教學備份若比雲端「更晚寫入」且步數較大，套用本地並補存雲端。
+        // 處理「reload 時雲端 save 競爭/網路掉導致教學倒退」的情況。
+        // 必須比對時間戳，否則上一局殘留的舊備份會 leapfrog 當前進度（跳過中間步驟）。
+        const uid = useAuthStore.getState().user?.userId;
+        if (uid != null) {
+          const local = readTutorialBackup(uid);
+          const gs = useGameStore.getState();
+          const cloudUpdatedMs = Date.parse(meta.updated_at);
+          const localFresher = local != null
+            && Number.isFinite(cloudUpdatedMs)
+            && local.savedAt > cloudUpdatedMs;
+          if (
+            local != null
+            && localFresher
+            && local.step > gs.tutorialStep
+            && local.step <= TUTORIAL_DONE_STEP
+          ) {
+            useGameStore.setState({ tutorialStep: local.step });
+            // 觸發 saveToCloud 把矯正後的步數寫回雲端（不阻塞 load 流程）
+            void get().saveToCloud();
+          } else if (local != null) {
+            // 雲端已追上或比備份新 → 清掉本地備份避免永遠殘留誤套用
+            clearTutorialBackup(uid);
+          }
+        }
       } catch (err) {
         // 新註冊用戶（API 回 404）視同「沒有存檔」，不算錯誤
         if (err instanceof ApiError && err.status === 404) {
@@ -223,6 +249,9 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
     try {
       if (mockMode) await mockDelete();
       else await apiDeleteSave();
+      // 同步清掉教學本地備份，避免破產重開後又被誤套用回去
+      const uid = useAuthStore.getState().user?.userId;
+      if (uid != null) clearTutorialBackup(uid);
       set({ ...initialState, status: 'idle' });
     } catch (err) {
       set({

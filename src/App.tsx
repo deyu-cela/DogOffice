@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { HintId } from '@/types';
 import { useGameStore, TUTORIAL_DONE_STEP } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
@@ -100,6 +101,22 @@ export default function App() {
     sessionStorage.setItem(STARTER_PACK_SESSION_KEY, '1');
     openStarterPack();
   }, [showSplash, claimedStarterPack, tutorialStep, openStarterPack]);
+
+  // 教學完成後補觸發 hint chain：reload 中段教學會讓 founded 不再重發成就 hint，
+  // chain（成就→擴建→任務牆→禮包→準備開始）就斷掉。這裡掃 seenHints 找第一個還沒看過的補上。
+  useEffect(() => {
+    if (showSplash) return;
+    if (tutorialStep < TUTORIAL_DONE_STEP) return;
+    const gs = useGameStore.getState();
+    if (gs.activeHint) return;
+    const chain: HintId[] = ['achievement', 'expand', 'first-task', 'starter-pack', 'ready-to-start'];
+    for (const id of chain) {
+      if (gs.seenHints[id]) continue;
+      if (id === 'starter-pack' && gs.claimedStarterPack) continue;
+      gs.triggerHint(id);
+      break;
+    }
+  }, [tutorialStep, showSplash, claimedStarterPack]);
 
   return (
     <>

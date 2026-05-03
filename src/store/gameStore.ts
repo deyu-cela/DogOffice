@@ -863,7 +863,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     } else if (justDismissed === 'expand') {
       get().triggerHint('first-task');
     } else if (justDismissed === 'first-task') {
-      get().triggerHint('starter-pack');
+      // 已領過禮包就跳過 starter-pack hint（避免指向已消失的 banner）
+      if (get().claimedStarterPack) {
+        get().triggerHint('ready-to-start');
+      } else {
+        get().triggerHint('starter-pack');
+      }
     } else if (justDismissed === 'starter-pack') {
       get().triggerHint('ready-to-start');
     }
