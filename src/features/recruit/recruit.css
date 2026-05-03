@@ -173,3 +173,71 @@
   opacity: 0.52;
   cursor: not-allowed;
 }
+
+.gacha-card-wrap {
+  position: relative;
+  display: inline-block;
+  perspective: 1000px;
+  animation: gachaCardFlyIn 0.48s cubic-bezier(0.2, 0.7, 0.3, 1.05) backwards;
+}
+
+.gacha-pillar {
+  position: absolute;
+  left: 50%;
+  bottom: -10%;
+  width: 70%;
+  height: 240%;
+  transform: translateX(-50%) scaleY(1);
+  transform-origin: bottom center;
+  filter: blur(2px);
+  animation: gachaPillarRise 0.6s cubic-bezier(0.3, 0.8, 0.2, 1) forwards;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gacha-card {
+  position: relative;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-radius: 12px;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.4, 0.05, 0.3, 1);
+  z-index: 1;
+}
+
+.gacha-card.revealed {
+  transform: rotateY(180deg);
+}
+
+.gacha-card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0s linear 0.275s;
+}
+
+.gacha-card-back {
+  opacity: 1;
+}
+
+.gacha-card-front {
+  transform: rotateY(180deg);
+  padding: 0;
+  opacity: 0;
+}
+
+.gacha-card.revealed .gacha-card-back {
+  opacity: 0;
+}
+
+.gacha-card.revealed .gacha-card-front {
+  opacity: 1;
+}

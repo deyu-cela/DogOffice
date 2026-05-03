@@ -30,6 +30,7 @@ export function GachaModal() {
   const [results, setResults] = useState<GachaResult[]>([]);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [ratesOpen, setRatesOpen] = useState(false);
+  const [pullSession, setPullSession] = useState(0);
 
   const onePullCost = GACHA_COST;
   const tenPullCost = GACHA_COST * 10;
@@ -64,6 +65,7 @@ export function GachaModal() {
     if (!r) return;
     setResults([r]);
     setRevealed(new Set());
+    setPullSession((n) => n + 1);
     setPhase('pulling');
   };
 
@@ -72,6 +74,7 @@ export function GachaModal() {
     if (arr.length === 0) return;
     setResults(arr);
     setRevealed(new Set());
+    setPullSession((n) => n + 1);
     setPhase('pulling');
   };
 
@@ -105,6 +108,7 @@ export function GachaModal() {
           )}
           {phase === 'pulling' && (
             <PullingView
+              key={pullSession}
               results={results}
               revealed={revealed}
               allRevealed={allRevealed}
@@ -349,60 +353,14 @@ const KEYFRAMES = `
   from { opacity: 0; transform: translateY(12px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-.gacha-card-wrap {
-  position: relative;
-  display: inline-block;
-  perspective: 1000px;
-  animation: gachaCardFlyIn 0.48s cubic-bezier(0.2, 0.7, 0.3, 1.05) backwards;
-}
 @keyframes gachaCardFlyIn {
   0% { opacity: 0; transform: translate(-120%, -90%) rotate(-18deg) scale(0.72); }
   70% { opacity: 1; transform: translate(5%, 2%) rotate(5deg) scale(1.03); }
   100% { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); }
 }
-.gacha-pillar {
-  position: absolute;
-  left: 50%;
-  bottom: -10%;
-  width: 70%;
-  height: 240%;
-  transform: translateX(-50%) scaleY(1);
-  transform-origin: bottom center;
-  filter: blur(2px);
-  animation: gachaPillarRise 0.6s cubic-bezier(0.3, 0.8, 0.2, 1) forwards;
-  pointer-events: none;
-  z-index: 0;
-}
 @keyframes gachaPillarRise {
   0% { transform: translateX(-50%) scaleY(0); opacity: 0; }
   60% { transform: translateX(-50%) scaleY(1.1); opacity: 1; }
   100% { transform: translateX(-50%) scaleY(1); opacity: 0.85; }
-}
-.gacha-card {
-  position: relative;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  border-radius: 12px;
-  transform-style: preserve-3d;
-  transition: transform 0.55s cubic-bezier(0.4, 0.05, 0.3, 1);
-  z-index: 1;
-}
-.gacha-card.revealed { transform: rotateY(180deg); }
-.gacha-card-face {
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.gacha-card-front {
-  transform: rotateY(180deg);
-  padding: 0;
 }
 `;

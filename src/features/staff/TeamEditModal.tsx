@@ -621,7 +621,10 @@ function QualityMulInfoModal({
     <div
       className="fixed inset-0 z-[890] flex items-center justify-center p-4"
       style={{ background: 'rgba(15,23,42,0.45)' }}
-      onClick={onClose}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
     >
       <div
         className="staff-scrapbook-modal w-full max-w-md p-4"
