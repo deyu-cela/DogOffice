@@ -26,6 +26,7 @@ import {
 } from '@/lib/leaderboardApi';
 import { logEvent } from '@/lib/eventApi';
 import { useAuthStore } from '@/store/authStore';
+import { useSaveStore } from '@/store/saveStore';
 import type { GameSaveData } from '@/types/save';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { TRAINING_QUESTIONS } from '@/constants/questions';
@@ -835,12 +836,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ...initialState,
 
   startGame: () => {
+    // 有雲端存檔 = 從 splash 點開始是「繼續遊戲」，不觸發 StartRun
+    // （否則 reload / 換機後 server 端 started_at 會被重置，累積的真實時長被吃掉）
+    const isResuming = !!useSaveStore.getState().cloud?.data;
     set((s) => ({
       showSplash: false,
       tutorialStep: s.tutorialStep > 0 ? s.tutorialStep : 1,
       tutorialSubStep: s.tutorialStep > 0 ? s.tutorialSubStep : 0,
     }));
-    fireStartLeaderboardRun();
+    if (!isResuming) {
+      fireStartLeaderboardRun();
+    }
     get().checkAchievements('game_start');
   },
   advanceTutorial: () =>
