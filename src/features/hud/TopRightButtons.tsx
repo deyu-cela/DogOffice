@@ -29,6 +29,7 @@ export function TopRightButtons() {
           style={{ ...ICON_BTN_STYLE, animationDelay: '0ms' }}
           title="排行榜"
           aria-label="排行榜"
+          data-tutorial="leaderboard-button"
         >
           <SvgIcon name="trophy" size={24} />
         </button>
@@ -40,6 +41,7 @@ export function TopRightButtons() {
           style={{ ...ICON_BTN_STYLE, animationDelay: '30ms' }}
           title="成就 CG 收藏"
           aria-label="成就 CG 收藏"
+          data-tutorial="achievement-button"
         >
           <SvgIcon name="gallery" size={24} />
         </button>

@@ -12,6 +12,7 @@ export function StarterPackBanner() {
       type="button"
       onClick={open}
       aria-label="開啟新手禮包"
+      data-tutorial="starter-pack"
       className="starter-pack-banner absolute z-[700] inline-flex items-center gap-2 rounded-full font-extrabold cursor-pointer"
       style={{
         background: 'linear-gradient(180deg, #fff7e0, #ffd9a3)',

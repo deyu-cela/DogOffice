@@ -170,6 +170,7 @@ function HomeView({
           width: 30,
           height: 30,
         }}
+        data-tutorial="recruit-close"
       >
         X
       </button>
@@ -198,7 +199,7 @@ function HomeView({
         {ratesOpen && <RatePanel rows={rates} />}
 
         <div className="recruit-actions absolute left-4 right-4 bottom-4 z-10 grid grid-cols-2 gap-4">
-          <RecruitButton label="招募 1 次" cost={onePullCost} disabled={!canOne} variant="secondary" onClick={onOne} />
+          <RecruitButton label="招募 1 次" cost={onePullCost} disabled={!canOne} variant="secondary" onClick={onOne} dataTutorial="gacha-pull" />
           <RecruitButton label="招募 10 次" cost={tenPullCost} disabled={!canTen} variant="primary" onClick={onTen} />
         </div>
       </section>
@@ -212,12 +213,14 @@ function RecruitButton({
   disabled,
   variant,
   onClick,
+  dataTutorial,
 }: {
   label: string;
   cost: number;
   disabled: boolean;
   variant: 'secondary' | 'primary';
   onClick: () => void;
+  dataTutorial?: string;
 }) {
   return (
     <button
@@ -226,6 +229,7 @@ function RecruitButton({
       onClick={onClick}
       className="recruit-pull-btn flex items-center justify-between gap-2 px-4 font-black"
       data-variant={variant}
+      data-tutorial={dataTutorial}
       style={{
         opacity: disabled ? 0.52 : 1,
         cursor: disabled ? 'not-allowed' : 'pointer',

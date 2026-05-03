@@ -97,7 +97,7 @@ export function serialize(state: GameState): GameSaveData {
     vacancyTimer: state.vacancyTimer,
     bankrupt: state.bankrupt,
     bankruptCountdown: state.bankruptCountdown,
-    tutorialStep: Math.max(0, Math.min(state.tutorialStep, 7)),
+    tutorialStep: Math.max(0, Math.min(state.tutorialStep, 8)),
     recruitmentClosed: state.recruitmentClosed,
     staff: serializeStaff(state),
     log: state.log.slice(-LOG_TAIL_LIMIT),
@@ -108,6 +108,7 @@ export function serialize(state: GameState): GameSaveData {
     claimedStarterPack: state.claimedStarterPack,
     specialTasks: state.specialTasks,
     tools: state.tools,
+    seenHints: { ...state.seenHints },
   };
 }
 
@@ -229,7 +230,8 @@ export function deserialize(raw: unknown): GameSaveData | null {
     vacancyTimer: asNum(d.vacancyTimer, 0),
     bankrupt: d.bankrupt === true,
     bankruptCountdown: asNum(d.bankruptCountdown, 0),
-    tutorialStep: Math.max(0, Math.min(asNum(d.tutorialStep, 7), 7)),
+    // 舊存檔的完成值（5/6/7/8）會被 clamp 到新版上限 8
+    tutorialStep: Math.max(0, Math.min(asNum(d.tutorialStep, 8), 8)),
     recruitmentClosed: d.recruitmentClosed === true,
     staff,
     log: Array.isArray(d.log) ? d.log.slice(-LOG_TAIL_LIMIT) : [],
@@ -242,6 +244,9 @@ export function deserialize(raw: unknown): GameSaveData | null {
     claimedStarterPack: d.claimedStarterPack === true,
     specialTasks: d.specialTasks && typeof d.specialTasks === 'object' ? d.specialTasks : undefined,
     tools,
+    seenHints: d.seenHints && typeof d.seenHints === 'object'
+      ? Object.fromEntries(Object.entries(d.seenHints).filter(([, v]) => v === true))
+      : {},
   };
 }
 

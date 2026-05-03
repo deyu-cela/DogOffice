@@ -287,6 +287,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={onClose}
             className="staff-close-pill ml-auto text-[11px] px-2 py-[2px] font-bold"
+            data-tutorial="team-close"
           >
             X
           </button>

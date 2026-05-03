@@ -57,6 +57,9 @@ export type GameSaveData = {
 
   // 工具系統（v3 起；舊存檔沒有 → 空陣列；員工 equippedToolId 也補 null）
   tools?: Tool[];
+
+  // 觸發式提示已看過旗標（v7+）
+  seenHints?: Partial<Record<string, true>>;
 };
 
 export type SavePayload = {
