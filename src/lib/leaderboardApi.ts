@@ -71,6 +71,12 @@ export async function submitLeaderboard(payload: SubmitPayload): Promise<SubmitR
   return apiFetch<SubmitResponse>('/leaderboard', { method: 'POST', body: payload, auth: true });
 }
 
+// 開新局時呼叫，後端紀錄 wall-clock 起始時間，用於送排行榜時驗證遊玩時長下界。
+// 載入雲端存檔不應呼叫，沿用原始 started_at。
+export async function startLeaderboardRun(): Promise<void> {
+  await apiFetch<{ started_at: string }>('/leaderboard/run', { method: 'POST', body: {}, auth: true });
+}
+
 export function isIgnorableApiError(err: unknown): boolean {
   if (err instanceof NetworkError || err instanceof TimeoutError) return true;
   if (err instanceof ApiError && err.status >= 500) return true;

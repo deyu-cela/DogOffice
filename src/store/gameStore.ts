@@ -21,8 +21,11 @@ import {
 import {
   saveLocalEntry,
   submitLeaderboard,
+  startLeaderboardRun,
   isIgnorableApiError,
 } from '@/lib/leaderboardApi';
+import { logEvent } from '@/lib/eventApi';
+import { useAuthStore } from '@/store/authStore';
 import type { GameSaveData } from '@/types/save';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { TRAINING_QUESTIONS } from '@/constants/questions';
@@ -58,6 +61,18 @@ import { runProjectsDay } from '@/lib/projectEngine';
 import { pickBestTeamForIndustry } from '@/lib/autoAssign';
 
 const initialQueue = [generateCandidate(), generateCandidate(), generateCandidate()];
+
+// 開新局時通知後端紀錄起始時間，用於排行榜時長下界驗證。
+// 未登入直接略過；網路 / 伺服器失敗只 log，不阻擋遊戲流程。
+// 失敗者送排行榜時會被後端拒收（"no active run"），可接受。
+function fireStartLeaderboardRun(): void {
+  if (!useAuthStore.getState().user) return;
+  void startLeaderboardRun().catch((err) => {
+    if (!isIgnorableApiError(err)) {
+      console.warn('[leaderboard-run] start failed:', err);
+    }
+  });
+}
 
 // === 辦公室固定每日支出 ===
 export const OFFICE_DAILY_EXPENSE = [20, 48, 129, 285, 608];
@@ -825,6 +840,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       tutorialStep: s.tutorialStep > 0 ? s.tutorialStep : 1,
       tutorialSubStep: s.tutorialStep > 0 ? s.tutorialSubStep : 0,
     }));
+    fireStartLeaderboardRun();
     get().checkAchievements('game_start');
   },
   advanceTutorial: () =>
@@ -976,6 +992,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     next.companyBuffs = buffs;
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
+    if (useAuthStore.getState().user) {
+      logEvent('buy_shop_item', { item_id: id, level: currentLevel + 1 });
+    }
   },
 
   upgradeOffice: () => {
@@ -1015,6 +1034,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       };
     }
     set(next as Partial<GameStore>);
+    if (useAuthStore.getState().user) {
+      logEvent('office_upgrade', { from_level: s.officeLevel, to_level: nextLevel });
+    }
     get().checkAchievements('office_upgrade');
   },
 
@@ -1568,6 +1590,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   restart: () => {
+    fireStartLeaderboardRun();
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
     set((s) => ({
       ...initialState,
