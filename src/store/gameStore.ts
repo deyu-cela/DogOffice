@@ -1823,7 +1823,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     next = pushLog(
       next,
       hired.isCEO
-        ? ` 抽到傳說 ${hired.name}！全公司沸騰，神兵武士刀（U 級）永久綁定！`
+        ? ` 抽到傳說 ${hired.name}！全公司沸騰，武士刀（U 級）永久綁定！`
         : ` 抽卡得到 ${hired.name}（${hired.breed} ${hired.role}・${entry.grade}）→ ${industry} team`,
     );
     next.tierBudget = recomputeTierBudget(next);
@@ -1974,7 +1974,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const attached = attachCeoUTool(next, dog.id);
     next = { ...next, staff: attached.staff, tools: attached.tools };
     next = pushLog(next, ` 開局禮包到貨：${dog.name}（CEO）加入了！0 元薪水、永不抱怨。`);
-    next = pushLog(next, `🗡 ${dog.name} 帶著神兵武士刀（U 級）登場，永遠綁定。`);
+    next = pushLog(next, `🗡 ${dog.name} 帶著武士刀（U 級）登場，永遠綁定。`);
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
     if (get().activeHint === 'starter-pack') get().dismissHint();

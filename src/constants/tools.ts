@@ -34,7 +34,7 @@ export const TOOL_TRAIT_PROB: Record<ToolGrade, number> = {
 export const CEO_U_TOOL_TRAITS: ToolTraitId[] = ['fastStart', 'precision', 'highTierExpert'];
 
 export const CEO_U_TOOL_DEF_ID = 'ceo-katana';
-export const CEO_U_TOOL_NAME = '神兵武士刀';
+export const CEO_U_TOOL_NAME = '武士刀';
 
 // luckyCharm 加成
 export const LUCKY_CHARM_BONUS = 0.05;

@@ -230,9 +230,9 @@ export function computeTeamEffectiveQuality(
 }
 
 // === 品質倍率（payoutMul）===
-// 有效品質加總 / 80，clamp [1, 3.5]，取小數第二位
+// 從 eff=40 起 1.0，每 +80 漲 1.0，上限 3.5（在 eff=240 達到）
 export function computeQualityPayoutMul(effectiveQuality: number): number {
-  const raw = effectiveQuality / 80;
+  const raw = 1 + Math.max(0, effectiveQuality - 40) / 80;
   return Math.round(clamp(raw, 1, 3.5) * 100) / 100;
 }
 

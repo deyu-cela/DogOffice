@@ -594,17 +594,17 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
 }
 
 const QUALITY_TABLE: Array<{ eff: number; mul: number }> = [
-  { eff: 80, mul: 1.0 },
-  { eff: 100, mul: 1.25 },
-  { eff: 120, mul: 1.5 },
-  { eff: 140, mul: 1.75 },
-  { eff: 160, mul: 2.0 },
-  { eff: 180, mul: 2.25 },
-  { eff: 200, mul: 2.5 },
-  { eff: 220, mul: 2.75 },
-  { eff: 240, mul: 3.0 },
-  { eff: 260, mul: 3.25 },
-  { eff: 280, mul: 3.5 },
+  { eff: 40, mul: 1.0 },
+  { eff: 60, mul: 1.25 },
+  { eff: 80, mul: 1.5 },
+  { eff: 100, mul: 1.75 },
+  { eff: 120, mul: 2.0 },
+  { eff: 140, mul: 2.25 },
+  { eff: 160, mul: 2.5 },
+  { eff: 180, mul: 2.75 },
+  { eff: 200, mul: 3.0 },
+  { eff: 220, mul: 3.25 },
+  { eff: 240, mul: 3.5 },
 ];
 
 function QualityMulInfoModal({
@@ -683,7 +683,7 @@ function QualityMulInfoModal({
                     }}
                   >
                     <td className="text-center px-2 py-1">
-                      {row.eff === 80 ? `≤ ${row.eff}` : row.eff === 280 ? `≥ ${row.eff}` : row.eff}
+                      {row.eff === 40 ? `≤ ${row.eff}` : row.eff === 240 ? `≥ ${row.eff}` : row.eff}
                     </td>
                     <td className="text-center px-2 py-1" style={{ color: '#3a7a3f' }}>
                       ×{row.mul.toFixed(2)}
