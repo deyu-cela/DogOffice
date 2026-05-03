@@ -21,8 +21,8 @@ export function StarterPackBanner() {
         boxShadow: '0 12px 24px rgba(204,118,42,0.25)',
         padding: '10px 16px',
         fontSize: 13,
-        bottom: 18,
-        left: 18,
+        bottom: 114,
+        left: 12,
       }}
     >
       <span className="text-xl leading-none">🎁</span>

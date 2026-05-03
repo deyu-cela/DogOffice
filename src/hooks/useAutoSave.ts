@@ -52,7 +52,9 @@ export function useAutoSave() {
   useEffect(() => {
     if (tutorialStep !== lastTutorialStepRef.current) {
       lastTutorialStepRef.current = tutorialStep;
-      throttledSave();
+      // 教學步數變更要立刻寫雲端：玩家可能在 10 秒節流內連點好幾步，
+      // 用 force 跳過節流，避免後續步數被丟掉造成重新整理後教學倒退
+      throttledSave(true);
     }
   }, [tutorialStep]);
 

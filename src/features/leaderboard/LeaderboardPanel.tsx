@@ -175,8 +175,19 @@ function EntryRow({
       <div className="flex-1 min-w-0">
         {showName ? (
           <>
-            <div className="text-sm font-extrabold truncate" style={{ color: 'var(--ink)' }} title={company}>
-              {company}
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <div className="text-sm font-extrabold truncate" style={{ color: 'var(--ink)' }} title={company}>
+                {company}
+              </div>
+              {entry.nickname && (
+                <div
+                  className="text-[11px] truncate shrink-0"
+                  style={{ color: 'var(--muted)' }}
+                  title={`帳號 ${entry.nickname}`}
+                >
+                  @{entry.nickname}
+                </div>
+              )}
             </div>
             <div className="text-xs" style={{ color: 'var(--muted)' }}>
               <span className="tabular-nums">第 {entry.days} 天</span>
