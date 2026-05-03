@@ -10,7 +10,7 @@ import {
   computeQualityPayoutMul,
   estimateDailyContrib,
 } from '@/lib/projectEngine';
-import type { Dog, Project, ProjectCategory, Team, Tool } from '@/types';
+import type { ChemistryCombo, Dog, Project, ProjectCategory, Team, Tool } from '@/types';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import './staff.css';
 
@@ -166,6 +166,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
   const [editMode, setEditMode] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [qualityInfoOpen, setQualityInfoOpen] = useState(false);
+  const [recipeInfoOpen, setRecipeInfoOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -179,6 +180,13 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
   }, [activeIndustry]);
 
   const team = teams[activeIndustry];
+  const industryRecipes = useMemo(
+    () =>
+      CHEMISTRY_COMBOS.filter(
+        (c) => !c.category || c.category === 'any' || c.category === activeIndustry,
+      ),
+    [activeIndustry],
+  );
   const staffById = useMemo(() => new Map(staff.map((d) => [d.id, d])), [staff]);
   const memberSet = useMemo(() => new Set(team.memberIds), [team.memberIds]);
   // 每個員工目前在哪個 team（員工不能跨 team）
@@ -386,6 +394,16 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
                 ))}
               </div>
             )}
+            <button
+              type="button"
+              onClick={() => setRecipeInfoOpen(true)}
+              className="staff-chip-btn text-[10px] whitespace-nowrap inline-flex items-center gap-1 ml-auto"
+              style={{ padding: '1px 8px' }}
+              title="查看化學反應配方表"
+            >
+              <SvgIcon name="chart" size={12} />
+              配方表
+            </button>
           </div>
           <div className="staff-total-card px-3 py-1 flex items-center gap-2 flex-wrap">
             <span className="text-[11px] font-bold" style={{ color: '#6b3c2b' }}>預估表現</span>
@@ -587,6 +605,15 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
           onClose={() => setQualityInfoOpen(false)}
         />
       )}
+      {recipeInfoOpen && (
+        <ChemistryRecipeInfoModal
+          industry={activeIndustry}
+          recipes={industryRecipes}
+          activeCombos={activeChemistry}
+          color={headerColor}
+          onClose={() => setRecipeInfoOpen(false)}
+        />
+      )}
     </div>
   );
 
@@ -693,6 +720,118 @@ function QualityMulInfoModal({
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChemistryRecipeInfoModal({
+  industry,
+  recipes,
+  activeCombos,
+  color,
+  onClose,
+}: {
+  industry: ProjectCategory;
+  recipes: ChemistryCombo[];
+  activeCombos: ChemistryCombo[];
+  color: string;
+  onClose: () => void;
+}) {
+  const triggeredSet = new Set(activeCombos);
+  return (
+    <div
+      className="fixed inset-0 z-[890] flex items-center justify-center p-4"
+      style={{ background: 'rgba(15,23,42,0.45)' }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+    >
+      <div
+        className="staff-scrapbook-modal w-full max-w-md p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-base font-extrabold" style={{ color: '#173b78' }}>
+            化學反應配方表
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="staff-close-pill text-[11px] px-2 py-[2px] font-bold"
+          >
+            X
+          </button>
+        </div>
+        <div
+          className="staff-paper-card px-3 py-2 mb-3 flex items-baseline gap-2 flex-wrap"
+          style={{ borderColor: `${color}66` }}
+        >
+          <span className="text-[11px] font-bold" style={{ color: 'var(--muted)' }}>
+            目前隊伍
+          </span>
+          <span className="text-sm font-black inline-flex items-center gap-1" style={{ color }}>
+            <SvgIcon name={INDUSTRY_ICON[industry]} size={13} />
+            {INDUSTRY_LABEL[industry]} Team
+          </span>
+          <span className="text-[11px]" style={{ color: 'var(--muted)' }}>
+            · 已觸發 {activeCombos.length} / {recipes.length}
+          </span>
+        </div>
+        <div className="overflow-hidden rounded-md mt-3" style={{ border: '1px solid var(--line)' }}>
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr style={{ background: '#f0f6ff' }}>
+                <th className="text-center px-2 py-1 font-bold" style={{ color: 'var(--muted)' }}>
+                  類型
+                </th>
+                <th className="text-left px-2 py-1 font-bold" style={{ color: 'var(--muted)' }}>
+                  職業組合
+                </th>
+                <th className="text-left px-2 py-1 font-bold" style={{ color: 'var(--muted)' }}>
+                  效果
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {recipes.map((combo) => {
+                const isHere = triggeredSet.has(combo);
+                const positive = combo.type === 'positive';
+                return (
+                  <tr
+                    key={`${combo.roles.join('-')}-${combo.category ?? 'any'}`}
+                    style={{
+                      background: isHere ? '#fff5b8' : 'transparent',
+                      fontWeight: isHere ? 800 : 500,
+                    }}
+                    title={combo.msg}
+                  >
+                    <td className="text-center px-2 py-1" style={{ color: positive ? '#3a7a3f' : '#c0392b' }}>
+                      {positive ? '＋ 正向' : '－ 負面'}
+                    </td>
+                    <td className="text-left px-2 py-1">
+                      {combo.roles.join(' + ')}
+                    </td>
+                    <td className="text-left px-2 py-1" style={{ color: positive ? '#3a7a3f' : '#c0392b' }}>
+                      {chemistryBonusText(combo.bonus)}
+                    </td>
+                  </tr>
+                );
+              })}
+              {recipes.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="text-center px-2 py-3" style={{ color: 'var(--muted)' }}>
+                    這個產業沒有可觸發的化學反應
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="text-[10px] mt-2" style={{ color: '#886153' }}>
+          兩位指定職業同隊即觸發；負面反應跨產業生效。
         </div>
       </div>
     </div>
