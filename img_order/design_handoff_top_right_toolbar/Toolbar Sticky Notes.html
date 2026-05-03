@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8"/>
+<title>狗狗公司 · 工具列（掛繩夾子版）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<style>
+  body { margin: 0; font-family: "Noto Sans TC", system-ui, sans-serif; background: #f6efe8; }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="toolbar-c.jsx"></script>
+<script type="text/babel">
+  const { DesignCanvas, DCSection, DCArtboard } = window;
+
+  function RoomBg({ children, w = 720, h = 200 }) {
+    return (
+      <div style={{
+        width: w, height: h,
+        background: "linear-gradient(180deg, #a8c9e8 0%, #d8e4ec 100%)",
+        borderRadius: 14, position: "relative", overflow: "hidden",
+        boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.06)",
+      }}>
+        <div style={{ position: "absolute", top: 12, right: 18 }}>{children}</div>
+      </div>
+    );
+  }
+
+  function App() {
+    return (
+      <DesignCanvas title="工具列 · C 掛繩夾子版" subtitle="放在主畫面右上的最終樣子" initialZoom={0.95}>
+        <DCSection id="final" title="最終版">
+          <DCArtboard id="overlay" label="實際擺在右上角" width={720} height={200}>
+            <RoomBg w={720} h={200}><window.HangingToolbar /></RoomBg>
+          </DCArtboard>
+          <DCArtboard id="closeup" label="近看細節（hover 第二顆按鈕）" width={520} height={200}>
+            <div style={{
+              width: 520, height: 200,
+              background: "#fffafc",
+              borderRadius: 14, position: "relative",
+              backgroundImage: "radial-gradient(circle at 16px 16px, rgba(239,111,143,0.05) 1.5px, transparent 1.6px)",
+              backgroundSize: "20px 20px",
+              boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.04)",
+              padding: "20px 24px",
+            }}>
+              <window.HangingToolbar />
+            </div>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
