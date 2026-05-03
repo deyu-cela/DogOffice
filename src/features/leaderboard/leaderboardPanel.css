@@ -459,6 +459,16 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.lb-rowslim__nick {
+  font-size: 10px;
+  color: #a37a82;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+}
 .lb-rowslim__detail {
   font-size: 10px;
   color: #a37a82;

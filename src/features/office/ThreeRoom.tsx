@@ -639,6 +639,18 @@ function ConstructionDog3D() {
         <planeGeometry args={[width, height]} />
         <meshBasicMaterial map={texture} transparent alphaTest={0.05} side={DoubleSide} />
       </mesh>
+      {/* Tutorial anchor：spotlight 用，定在擴建狗中央 */}
+      <Html
+        center
+        position={[0, height / 2, 0]}
+        zIndexRange={[0, 0]}
+        style={{ pointerEvents: 'none' }}
+      >
+        <div
+          data-tutorial="construction-dog"
+          style={{ width: 80, height: 80, opacity: 0 }}
+        />
+      </Html>
       <Html position={[0, -0.05 + yOffset, 0]} center zIndexRange={[10, 0]}>
         <div
           onClick={() => openDrawer('construction')}
@@ -794,6 +806,7 @@ function WallStickyNotes3D() {
           <Html key={p.id} position={pos} center zIndexRange={[20, 0]}>
             <div
               data-project-id={p.id}
+              data-tutorial={i === 0 ? 'first-task' : undefined}
               ref={(el) => {
                 if (!el) return;
                 const write = () => {
@@ -2373,6 +2386,9 @@ function Building3D({
     triggerOpen();
   };
 
+  const anchorId =
+    kind === 'hr' ? 'hr-building' : kind === 'dorm' ? 'dorm-building' : 'shop-building';
+
   return (
     <group position={[x, 0, z]}>
       <mesh
@@ -2386,6 +2402,18 @@ function Building3D({
         <planeGeometry args={[w, h]} />
         <meshBasicMaterial map={texture} transparent alphaTest={0.1} side={DoubleSide} />
       </mesh>
+      {/* Tutorial anchor：DOM 點，定位在建築中央，給 spotlight 抓 rect 用 */}
+      <Html
+        center
+        position={[0, h / 2, 0]}
+        zIndexRange={[0, 0]}
+        style={{ pointerEvents: 'none' }}
+      >
+        <div
+          data-tutorial={anchorId}
+          style={{ width: 80, height: 80, opacity: 0 }}
+        />
+      </Html>
       {needNotif && (
         <Billboard position={[w / 2 - 0.15, h - 0.15 + yOffset, 0]}>
           <mesh>

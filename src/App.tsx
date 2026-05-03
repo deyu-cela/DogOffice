@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { useGameStore } from '@/store/gameStore';
+import type { HintId } from '@/types';
+import { useGameStore, TUTORIAL_DONE_STEP } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
@@ -8,6 +9,7 @@ import { DailySummary } from '@/components/DailySummary';
 import { SplashScreen } from '@/features/splash/SplashScreen';
 import { StudioIntro } from '@/features/intro/StudioIntro';
 import { Tutorial } from '@/features/tutorial/Tutorial';
+import { HintBubble } from '@/features/tutorial/HintBubble';
 import { ConflictModal } from '@/features/save/ConflictModal';
 import { OfficeScene } from '@/features/office/OfficeScene';
 import { BuildingDrawer } from '@/features/office/BuildingDrawer';
@@ -89,13 +91,32 @@ export default function App() {
   const closeTeamModal = useUiStore((s) => s.closeTeamModal);
   const projectDetailId = useUiStore((s) => s.projectDetailId);
   const closeProjectDetail = useUiStore((s) => s.closeProjectDetail);
+  const tutorialStep = useGameStore((s) => s.tutorialStep);
 
   useEffect(() => {
     if (showSplash || claimedStarterPack) return;
+    // 教學進行中先別自動跳，由 hint chain 帶玩家到 starter-pack 步驟才開
+    if (tutorialStep > 0 && tutorialStep < TUTORIAL_DONE_STEP) return;
     if (sessionStorage.getItem(STARTER_PACK_SESSION_KEY) === '1') return;
     sessionStorage.setItem(STARTER_PACK_SESSION_KEY, '1');
     openStarterPack();
-  }, [showSplash, claimedStarterPack, openStarterPack]);
+  }, [showSplash, claimedStarterPack, tutorialStep, openStarterPack]);
+
+  // 教學完成後補觸發 hint chain：reload 中段教學會讓 founded 不再重發成就 hint，
+  // chain（成就→擴建→任務牆→禮包→準備開始）就斷掉。這裡掃 seenHints 找第一個還沒看過的補上。
+  useEffect(() => {
+    if (showSplash) return;
+    if (tutorialStep < TUTORIAL_DONE_STEP) return;
+    const gs = useGameStore.getState();
+    if (gs.activeHint) return;
+    const chain: HintId[] = ['achievement', 'expand', 'first-task', 'starter-pack', 'ready-to-start'];
+    for (const id of chain) {
+      if (gs.seenHints[id]) continue;
+      if (id === 'starter-pack' && gs.claimedStarterPack) continue;
+      gs.triggerHint(id);
+      break;
+    }
+  }, [tutorialStep, showSplash, claimedStarterPack]);
 
   return (
     <>
@@ -120,6 +141,7 @@ export default function App() {
       <DailySummary />
       {showSplash && <SplashScreen />}
       <Tutorial />
+      <HintBubble />
       <BuildingDrawer />
       {miniGame?.type === 'frisbee' && <FrisbeeGame />}
       {miniGame?.type === 'memory' && <MemoryGame />}

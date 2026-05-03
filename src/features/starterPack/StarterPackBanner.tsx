@@ -14,6 +14,7 @@ export function StarterPackBanner() {
         type="button"
         onClick={open}
         aria-label="開啟新手禮包"
+        data-tutorial="starter-pack"
         className="lhud-banner__btn lhud-paper"
       >
         <span className="lhud-banner__pin" aria-hidden="true" />

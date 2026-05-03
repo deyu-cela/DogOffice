@@ -4,7 +4,8 @@ import { SAVE_VERSION } from '@/types/save';
 import { ApiError, apiFetch } from '@/lib/api';
 import { migrate, serialize } from '@/lib/saveSerializer';
 import { useAuthStore } from '@/store/authStore';
-import { useGameStore } from '@/store/gameStore';
+import { useGameStore, TUTORIAL_DONE_STEP } from '@/store/gameStore';
+import { readTutorialBackup, clearTutorialBackup } from '@/lib/tutorialBackup';
 
 const MOCK_KEY = 'dogoffice:mocksave:v1';
 const mockMode = import.meta.env.VITE_SAVE_MOCK === 'true';
@@ -39,6 +40,9 @@ const initialState: SaveState = {
 
 let loadPromise: Promise<void> | null = null;
 let savePromise: Promise<void> | null = null;
+// 若存檔請求進行中又被呼叫一次，記錄下來，等當前請求完成後再存一次最新 state，
+// 避免快速連續變更（例：教學步數連點）的最新狀態被吞掉
+let pendingFollowUpSave = false;
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -132,6 +136,31 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
           cloud: { ...meta, data },
           revision: meta.revision,
         });
+        // 安全網：本地教學備份若比雲端「更晚寫入」且步數較大，套用本地並補存雲端。
+        // 處理「reload 時雲端 save 競爭/網路掉導致教學倒退」的情況。
+        // 必須比對時間戳，否則上一局殘留的舊備份會 leapfrog 當前進度（跳過中間步驟）。
+        const uid = useAuthStore.getState().user?.userId;
+        if (uid != null) {
+          const local = readTutorialBackup(uid);
+          const gs = useGameStore.getState();
+          const cloudUpdatedMs = Date.parse(meta.updated_at);
+          const localFresher = local != null
+            && Number.isFinite(cloudUpdatedMs)
+            && local.savedAt > cloudUpdatedMs;
+          if (
+            local != null
+            && localFresher
+            && local.step > gs.tutorialStep
+            && local.step <= TUTORIAL_DONE_STEP
+          ) {
+            useGameStore.setState({ tutorialStep: local.step });
+            // 觸發 saveToCloud 把矯正後的步數寫回雲端（不阻塞 load 流程）
+            void get().saveToCloud();
+          } else if (local != null) {
+            // 雲端已追上或比備份新 → 清掉本地備份避免永遠殘留誤套用
+            clearTutorialBackup(uid);
+          }
+        }
       } catch (err) {
         // 新註冊用戶（API 回 404）視同「沒有存檔」，不算錯誤
         if (err instanceof ApiError && err.status === 404) {
@@ -151,7 +180,10 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
   },
 
   saveToCloud: () => {
-    if (savePromise) return savePromise;
+    if (savePromise) {
+      pendingFollowUpSave = true;
+      return savePromise;
+    }
     const run = async () => {
       const auth = useAuthStore.getState();
       if (!auth.user) return;
@@ -203,6 +235,11 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
     };
     savePromise = run().finally(() => {
       savePromise = null;
+      if (pendingFollowUpSave) {
+        pendingFollowUpSave = false;
+        // 用最新 state 再存一次（不阻塞當前回傳的 promise）
+        get().saveToCloud();
+      }
     });
     return savePromise;
   },
@@ -212,6 +249,9 @@ export const useSaveStore = create<SaveState & SaveActions>((set, get) => ({
     try {
       if (mockMode) await mockDelete();
       else await apiDeleteSave();
+      // 同步清掉教學本地備份，避免破產重開後又被誤套用回去
+      const uid = useAuthStore.getState().user?.userId;
+      if (uid != null) clearTutorialBackup(uid);
       set({ ...initialState, status: 'idle' });
     } catch (err) {
       set({

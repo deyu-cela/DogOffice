@@ -16,6 +16,7 @@ type Props = {
   onClick?: () => void;
   disabled?: boolean;
   type?: 'button' | 'submit';
+  dataTutorial?: string;
 };
 
 export function HangingClipButton({
@@ -30,6 +31,7 @@ export function HangingClipButton({
   state = 'default',
   onClick,
   disabled = false,
+  dataTutorial,
 }: Props) {
   const wrapperStyle: CSSProperties = {
     paddingTop: 8 + hangY,
@@ -71,6 +73,7 @@ export function HangingClipButton({
       disabled={disabled}
       title={label}
       aria-label={label}
+      data-tutorial={dataTutorial}
     >
       <span className="toprt-clip" style={clipStyle} aria-hidden="true">
         <span className="toprt-clip__body" style={clipBodyStyle} />

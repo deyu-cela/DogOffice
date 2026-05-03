@@ -3,6 +3,7 @@ import type {
   CompanyBuffs,
   Dog,
   GameState,
+  HintId,
   LeaderboardEntry,
   Project,
   ProjectCategory,
@@ -160,10 +161,20 @@ export function nextShopCost(baseCost: number, currentLevel: number): number {
   return Math.round(baseCost * (1 + 0.5 * currentLevel));
 }
 
+// 開局教學總步數（1=welcome, 2=三建築, 3=抽卡, 4=關閉招募, 5=員工宿舍, 6=三維+疲勞, 7=關閉隊伍, 8=完成）
+export const TUTORIAL_DONE_STEP = 8;
+
 type Actions = {
   startGame: () => void;
   advanceTutorial: () => void;
   skipTutorial: () => void;
+  // gate 用：只在 tutorialStep === expected 時才推進到下一步
+  completeTutorialGate: (expected: number) => void;
+  // spotlight-multi 用的子索引推進
+  advanceTutorialSubStep: () => void;
+  // 觸發式提示
+  triggerHint: (id: HintId) => void;
+  dismissHint: () => void;
   setSpeed: (s: number) => void;
   tick: (dt: number) => void;
 
@@ -350,6 +361,9 @@ const initialState: GameState = {
   candidateReaction: null,
   showSplash: true,
   tutorialStep: 0,
+  tutorialSubStep: 0,
+  seenHints: {},
+  activeHint: null,
 
   bankrupt: false,
   bankruptCountdown: 0,
@@ -637,8 +651,9 @@ function hasOverlayOpen(state: GameState): boolean {
   return (
     !!state.miniGame ||
     !!state.trainingSession ||
-    (state.tutorialStep > 0 && state.tutorialStep < 7) ||
-    state.loanModalOpen
+    (state.tutorialStep > 0 && state.tutorialStep < TUTORIAL_DONE_STEP) ||
+    state.loanModalOpen ||
+    !!state.activeHint
   );
 }
 
@@ -804,11 +819,60 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ...initialState,
 
   startGame: () => {
-    set((s) => ({ showSplash: false, tutorialStep: s.tutorialStep > 0 ? s.tutorialStep : 1 }));
+    set((s) => ({
+      showSplash: false,
+      tutorialStep: s.tutorialStep > 0 ? s.tutorialStep : 1,
+      tutorialSubStep: s.tutorialStep > 0 ? s.tutorialSubStep : 0,
+    }));
     get().checkAchievements('game_start');
   },
-  advanceTutorial: () => set((s) => ({ tutorialStep: Math.min(s.tutorialStep + 1, 7) })),
-  skipTutorial: () => set({ tutorialStep: 7 }),
+  advanceTutorial: () =>
+    set((s) => ({
+      tutorialStep: Math.min(s.tutorialStep + 1, TUTORIAL_DONE_STEP),
+      tutorialSubStep: 0,
+    })),
+  advanceTutorialSubStep: () =>
+    set((s) => ({ tutorialSubStep: s.tutorialSubStep + 1 })),
+  skipTutorial: () => set({ tutorialStep: TUTORIAL_DONE_STEP, tutorialSubStep: 0 }),
+  completeTutorialGate: (expected) =>
+    set((s) =>
+      s.tutorialStep === expected
+        ? {
+            tutorialStep: Math.min(s.tutorialStep + 1, TUTORIAL_DONE_STEP),
+            tutorialSubStep: 0,
+          }
+        : {},
+    ),
+  triggerHint: (id) =>
+    set((s) => {
+      if (s.seenHints[id]) return {};
+      if (s.activeHint) return {}; // 排隊：已有 hint 顯示中就先不蓋
+      return { activeHint: id };
+    }),
+  dismissHint: () => {
+    const s = get();
+    if (!s.activeHint) return;
+    const justDismissed = s.activeHint;
+    set({
+      activeHint: null,
+      seenHints: { ...s.seenHints, [justDismissed]: true },
+    });
+    // 教學鏈：成就 → 擴建 → 任務牆 → 領取禮包 → 準備開始
+    if (justDismissed === 'achievement') {
+      get().triggerHint('expand');
+    } else if (justDismissed === 'expand') {
+      get().triggerHint('first-task');
+    } else if (justDismissed === 'first-task') {
+      // 已領過禮包就跳過 starter-pack hint（避免指向已消失的 banner）
+      if (get().claimedStarterPack) {
+        get().triggerHint('ready-to-start');
+      } else {
+        get().triggerHint('starter-pack');
+      }
+    } else if (justDismissed === 'starter-pack') {
+      get().triggerHint('ready-to-start');
+    }
+  },
   setSpeed: (speedMultiplier) => set({ speedMultiplier }),
 
   tick: (dt) => {
@@ -818,9 +882,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const BASE_DAY_MS = 15000;
     const newElapsed = s.dayElapsed + dt * s.speedMultiplier;
     if (newElapsed >= BASE_DAY_MS) {
+      const prevToolCount = s.tools.length;
+      const prevDay = s.day;
       const next = runAdvanceDay({ ...s, dayElapsed: 0 });
       set(next as Partial<GameStore>);
       get().checkAchievements('day_end');
+      // hint 觸發點：第一次拿玩具 / 跨過第 30 天
+      if (prevToolCount === 0 && next.tools.length > 0) {
+        get().triggerHint('toy');
+      }
+      if (prevDay < 30 && next.day >= 30) {
+        get().triggerHint('leaderboard');
+      }
     } else {
       set({ dayElapsed: newElapsed });
     }
@@ -1444,7 +1517,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       purchases: data.purchases,
       bankrupt: data.bankrupt,
       bankruptCountdown: data.bankruptCountdown ?? 0,
-      tutorialStep: data.tutorialStep,
+      // 老存檔可能 tutorialStep 為 7（舊版完成值）→ clamp 到新版 5
+      tutorialStep: Math.min(data.tutorialStep, TUTORIAL_DONE_STEP),
+      tutorialSubStep: 0,
+      seenHints: data.seenHints ?? {},
+      activeHint: null,
       staff: data.staff.map((d) => ({
         ...d,
         level: d.level ?? 1,
@@ -1507,7 +1584,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       candidatePatience: fresh[0].patience,
       log: [{ day: 1, msg: '公司剛開張，先去人資招員工，才能接案賺錢！' }],
       showSplash: false,
-      tutorialStep: 7,
+      tutorialStep: TUTORIAL_DONE_STEP,
+      tutorialSubStep: 0,
+      seenHints: s.seenHints,
+      activeHint: null,
       specialTasks: createInitialSpecialTasks(0),
       tools: [],
       toolPickerModal: null,
@@ -1643,6 +1723,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ? s.pendingAchievementToasts
         : [...s.pendingAchievementToasts, id],
     });
+    // 第一個非靜默成就解鎖時，觸發成就系統提示
+    if (!silent) get().triggerHint('achievement');
   },
 
   dismissAchievementToast: (id) => {
@@ -1692,6 +1774,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         next = { ...next, money: next.money + refund };
         next = pushLog(next, ` 抽到重複：${owned.name} 突破已滿 → +$${refund}`);
         set(next as Partial<GameStore>);
+        // 教學 step 3 gate：放在 set 之後，避免被 ...s spread 覆寫掉新的 tutorialStep
+        get().completeTutorialGate(3);
         return { dog: owned, duplicate: true, breakthroughGained: 0, refunded: refund };
       }
       const newBreak = owned.breakthroughs + 1;
@@ -1708,6 +1792,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       };
       next = pushLog(next, `✨ ${owned.name} 觸發突破！全能力 +1（${newBreak}/${DOG_BREAKTHROUGH_MAX}）`);
       set(next as Partial<GameStore>);
+      get().completeTutorialGate(3);
       const updated = next.staff.find((d) => d.id === owned.id) ?? owned;
       return { dog: updated, duplicate: true, breakthroughGained: 1, refunded: 0 };
     }
@@ -1738,7 +1823,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     next = pushLog(
       next,
       hired.isCEO
-        ? ` 抽到傳說 ${hired.name}！全公司沸騰，神兵武士刀（U 級）永久綁定！`
+        ? ` 抽到傳說 ${hired.name}！全公司沸騰，武士刀（U 級）永久綁定！`
         : ` 抽卡得到 ${hired.name}（${hired.breed} ${hired.role}・${entry.grade}）→ ${industry} team`,
     );
     next.tierBudget = recomputeTierBudget(next);
@@ -1748,6 +1833,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     next = applyAutoAccept(next);
     set(next as Partial<GameStore>);
     get().checkAchievements('hire', { dog: hired, prevStaffCount: s.staff.length });
+    get().completeTutorialGate(3);
     return { dog: hired, duplicate: false, breakthroughGained: 0, refunded: 0 };
   },
 
@@ -1875,6 +1961,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
       next.tierBudget = recomputeTierBudget(next);
       set(next as Partial<GameStore>);
+      // 教學中領取禮包：自動推進 hint chain 到 ready-to-start
+      if (get().activeHint === 'starter-pack') get().dismissHint();
       return;
     }
     const dog = createStarterCeo();
@@ -1886,9 +1974,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const attached = attachCeoUTool(next, dog.id);
     next = { ...next, staff: attached.staff, tools: attached.tools };
     next = pushLog(next, ` 開局禮包到貨：${dog.name}（CEO）加入了！0 元薪水、永不抱怨。`);
-    next = pushLog(next, `🗡 ${dog.name} 帶著神兵武士刀（U 級）登場，永遠綁定。`);
+    next = pushLog(next, `🗡 ${dog.name} 帶著武士刀（U 級）登場，永遠綁定。`);
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
+    if (get().activeHint === 'starter-pack') get().dismissHint();
   },
 
   startSpecialTask: (targetLevel) => {

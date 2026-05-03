@@ -262,6 +262,9 @@ function RowSlim({
       <div className="lb-rowslim__rank">#{rank}</div>
       <div className="lb-rowslim__main">
         <span className="lb-rowslim__name" title={name}>{name}</span>
+        {entry.nickname && (
+          <span className="lb-rowslim__nick" title={`帳號 ${entry.nickname}`}>@{entry.nickname}</span>
+        )}
         <span className="lb-rowslim__detail">
           第 {entry.days} 天 · {fmtMoney(entry.money)} · 員工 {entry.staffCount}
         </span>

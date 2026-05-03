@@ -1,3 +1,14 @@
+// === 觸發式提示 ID（首次解鎖該功能時彈一次） ===
+export type HintId =
+  | 'expand'
+  | 'toy'
+  | 'achievement'
+  | 'leaderboard'
+  | 'first-task'
+  | 'special-task'
+  | 'starter-pack'
+  | 'ready-to-start';
+
 // === 員工 3 維 stats（範圍 1-10）===
 // speed = 推進度速度；quality = 影響獎勵；patience = 影響疲勞累積速度
 export type Stats = {
@@ -398,7 +409,14 @@ export type GameState = {
   trainingSession: TrainingSession | null;
   candidateReaction: string | null;
   showSplash: boolean;
+  // 開局教學：0 未開始 / 1-4 進行中 / 5 完成
   tutorialStep: number;
+  // 開局教學中暫存的 sub-slide 索引（給 spotlight-multi 用，重整後從 0 重開）
+  tutorialSubStep: number;
+  // 觸發式提示已看過的旗標
+  seenHints: Partial<Record<HintId, true>>;
+  // 目前正在顯示的觸發式提示（null = 沒在顯示）
+  activeHint: HintId | null;
 
   bankrupt: boolean;
   bankruptCountdown: number;           // 連續資金 ≤0 的天數，達 5 → 破產

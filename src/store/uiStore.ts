@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ShopItemEffectKey } from '@/types';
+import { useGameStore } from './gameStore';
 
 export type BuildingKind = 'construction';
 
@@ -57,9 +58,20 @@ type UIState = {
 
 export const useUiStore = create<UIState>((set, get) => ({
   openBuilding: null,
-  openDrawer: (k) => set({ openBuilding: k }),
+  openDrawer: (k) => {
+    set({ openBuilding: k });
+    if (k === 'construction') {
+      useGameStore.getState().triggerHint('special-task');
+    }
+  },
   closeDrawer: () => set({ openBuilding: null }),
-  toggleDrawer: (k) => set({ openBuilding: get().openBuilding === k ? null : k }),
+  toggleDrawer: (k) => {
+    const next = get().openBuilding === k ? null : k;
+    set({ openBuilding: next });
+    if (next === 'construction') {
+      useGameStore.getState().triggerHint('special-task');
+    }
+  },
 
   showAchievements: false,
   openAchievements: () => set({ showAchievements: true }),
@@ -74,12 +86,21 @@ export const useUiStore = create<UIState>((set, get) => ({
   closeStarterPack: () => set({ showStarterPack: false }),
 
   teamModalOpen: false,
-  openTeamModal: () => set({ teamModalOpen: true }),
-  closeTeamModal: () => set({ teamModalOpen: false }),
+  openTeamModal: () => {
+    set({ teamModalOpen: true });
+    useGameStore.getState().completeTutorialGate(5);
+  },
+  closeTeamModal: () => {
+    set({ teamModalOpen: false });
+    useGameStore.getState().completeTutorialGate(7);
+  },
 
   recruitModalOpen: false,
   openRecruitModal: () => set({ recruitModalOpen: true }),
-  closeRecruitModal: () => set({ recruitModalOpen: false }),
+  closeRecruitModal: () => {
+    set({ recruitModalOpen: false });
+    useGameStore.getState().completeTutorialGate(4);
+  },
 
   shopModalOpen: false,
   openShopModal: () => set({ shopModalOpen: true }),

@@ -97,6 +97,7 @@ export function TopRightButtons() {
               icon={TROPHY_ICON}
               label="排行榜"
               onClick={() => setLbOpen(true)}
+              dataTutorial="leaderboard-button"
             />
 
             <HangingClipButton
@@ -108,6 +109,7 @@ export function TopRightButtons() {
               icon={GALLERY_ICON}
               label="成就 CG 收藏"
               onClick={openAchievements}
+              dataTutorial="achievement-button"
             />
 
             <HangingClipButton
