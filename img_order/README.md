@@ -25,5 +25,6 @@
 | 06 | `crown-tag.png`               | 32×24    | 第 1 名 podium 額外裝飾（紙皇冠） | ⭐  |
 | 07 | `sparkle.png`                 | 16×16    | 獎盃旁的閃光點綴（×2 張可不同角度）| ⭐  |
 | 08 | `bg-paper-watermark.png`      | 800×600  | dialog 底圖淡淡的浮水印（爪印+獎牌散落）| ⭐  |
+| 09 | `house-badge.png`             | 56×56    | 辦公室造型 dialog 頂端房子徽章 | ⭐⭐⭐ |
 
 詳細規格見各別檔案。

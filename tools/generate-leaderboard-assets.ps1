@@ -17,6 +17,7 @@ public static class LeaderboardAssetGenerator
     {
         Directory.CreateDirectory(outDir);
         TrophyBadge(Path.Combine(outDir, "trophy-badge.png"));
+        HouseBadge(Path.Combine(outDir, "house-badge.png"));
         Medal(Path.Combine(outDir, "medal-gold.png"), "#ef6f8f", "#ffd86b", "#ffb838", "#c98813", "#fff4b8", 1);
         Medal(Path.Combine(outDir, "medal-silver.png"), "#a8b0c8", "#f0f0f6", "#b8b8c8", "#8d90a0", "#ffffff", 2);
         Medal(Path.Combine(outDir, "medal-bronze.png"), "#c88566", "#ffcfa3", "#d18b5a", "#9a5c3a", "#ffe0c4", 3);
@@ -143,6 +144,88 @@ public static class LeaderboardAssetGenerator
                 g.FillPath(dark, RoundedRect(new RectangleF(35, 80, 42, 10), 5));
                 g.DrawPath(outline, RoundedRect(new RectangleF(35, 80, 42, 10), 5));
                 g.FillEllipse(hi, 46, 43, 10, 16);
+            }
+
+            Save((Bitmap)bmp.Clone(), path);
+        }
+    }
+
+    static void HouseBadge(string path)
+    {
+        using (Bitmap bmp = Canvas(112, 112))
+        using (Graphics g = GraphicsFor(bmp))
+        {
+            using (GraphicsPath shadow = RoundedRect(new RectangleF(19, 20, 76, 76), 18))
+            using (SolidBrush sb = new SolidBrush(Color.FromArgb(42, 72, 95, 55)))
+                g.FillPath(sb, shadow);
+
+            using (GraphicsPath card = RoundedRect(new RectangleF(16, 14, 76, 76), 18))
+            using (LinearGradientBrush fill = new LinearGradientBrush(new RectangleF(16, 14, 76, 76), C("#b8d8a0"), C("#88a868"), 90))
+            using (Pen border = new Pen(Color.White, 6) { LineJoin = LineJoin.Round })
+            {
+                g.FillPath(fill, card);
+                g.DrawPath(border, card);
+            }
+
+            using (Pen outline = new Pen(C("#76523c"), 4) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round })
+            using (SolidBrush wall = new SolidBrush(C("#fff0cf")))
+            using (SolidBrush roof = new SolidBrush(C("#a8543e")))
+            using (SolidBrush roofHi = new SolidBrush(C("#c97956")))
+            using (SolidBrush door = new SolidBrush(C("#b97855")))
+            using (SolidBrush window = new SolidBrush(C("#fffaf2")))
+            using (SolidBrush glass = new SolidBrush(C("#c8e6f5")))
+            using (SolidBrush knob = new SolidBrush(C("#ffb838")))
+            {
+                PointF[] roofPts = {
+                    new PointF(28, 51),
+                    new PointF(56, 29),
+                    new PointF(84, 51),
+                    new PointF(78, 57),
+                    new PointF(56, 41),
+                    new PointF(34, 57)
+                };
+                g.FillPolygon(roof, roofPts);
+                g.DrawPolygon(outline, roofPts);
+
+                using (GraphicsPath hi = new GraphicsPath())
+                {
+                    hi.AddLine(44, 42, 56, 33);
+                    hi.AddLine(72, 52, 56, 41);
+                    hi.AddLine(44, 42, 72, 52);
+                    hi.CloseFigure();
+                    g.FillPath(roofHi, hi);
+                }
+
+                using (GraphicsPath body = RoundedRect(new RectangleF(34, 51, 44, 34), 7))
+                {
+                    g.FillPath(wall, body);
+                    g.DrawPath(outline, body);
+                }
+
+                using (GraphicsPath doorPath = new GraphicsPath())
+                {
+                    doorPath.AddArc(49, 61, 14, 16, 180, 180);
+                    doorPath.AddLine(63, 69, 63, 84);
+                    doorPath.AddLine(49, 84, 49, 69);
+                    doorPath.CloseFigure();
+                    g.FillPath(door, doorPath);
+                    g.DrawPath(outline, doorPath);
+                }
+                g.FillEllipse(knob, 59, 74, 3.8f, 3.8f);
+
+                using (GraphicsPath leftWindow = RoundedRect(new RectangleF(39, 60, 9, 9), 2.5f))
+                using (GraphicsPath rightWindow = RoundedRect(new RectangleF(65, 60, 9, 9), 2.5f))
+                {
+                    g.FillPath(window, leftWindow);
+                    g.FillPath(window, rightWindow);
+                    g.DrawPath(outline, leftWindow);
+                    g.DrawPath(outline, rightWindow);
+                    g.FillRectangle(glass, 41, 62, 5, 5);
+                    g.FillRectangle(glass, 67, 62, 5, 5);
+                }
+
+                g.DrawLine(outline, 56, 41, 56, 30);
+                g.DrawLine(outline, 35, 55, 77, 55);
             }
 
             Save((Bitmap)bmp.Clone(), path);
