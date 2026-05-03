@@ -27,6 +27,7 @@ import type { GameSaveData } from '@/types/save';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { TRAINING_QUESTIONS } from '@/constants/questions';
 import { SHOP_ITEMS } from '@/constants/shopItems';
+import { LOAN_AMOUNT, LOAN_DAILY_DEDUCT, LOAN_TERM_DAYS } from '@/constants/loan';
 import {
   SPECIAL_TASK_NAMES,
   createInitialSpecialTasks,
@@ -766,12 +767,12 @@ function runAdvanceDay(prev: GameState): GameState {
     s = refillCurrent(s);
   }
 
-  // === Phase 6.5: 貸款扣款（每日 $5 利息）===
+  // === Phase 6.5: 貸款扣款（每日利息）===
   let loanPaidToday = 0;
   if (s.loanRepayDaysLeft > 0) {
-    s.money -= 5;
+    s.money -= LOAN_DAILY_DEDUCT;
     s.loanRepayDaysLeft -= 1;
-    loanPaidToday = 5;
+    loanPaidToday = LOAN_DAILY_DEDUCT;
     if (s.loanRepayDaysLeft === 0) {
       s = pushLog(s, ' 銀行貸款已還清！');
     }
@@ -1697,14 +1698,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const s = get();
     if (s.loanTaken) return;
     set({
-      money: s.money + 300,
+      money: s.money + LOAN_AMOUNT,
       loanTaken: true,
-      loanRepayDaysLeft: 80,
+      loanRepayDaysLeft: LOAN_TERM_DAYS,
       loanModalOpen: false,
       bankruptCountdown: 0,
       log: [
         ...s.log,
-        { day: s.day, msg: ' 銀行貸款 +$300，未來 80 天每日扣 $5 利息' },
+        {
+          day: s.day,
+          msg: ` 銀行貸款 +$${LOAN_AMOUNT}，未來 ${LOAN_TERM_DAYS} 天每日扣 $${LOAN_DAILY_DEDUCT} 利息`,
+        },
       ].slice(-30),
     });
   },

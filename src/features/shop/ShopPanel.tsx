@@ -1,20 +1,10 @@
+import { useCallback, useState } from 'react';
 import { SHOP_ITEMS } from '@/constants/shopItems';
 import { MAX_SHOP_LEVEL, nextShopCost, useGameStore } from '@/store/gameStore';
-import { JP_ASSETS } from '@/features/office/assets';
+import { FACILITY_ART_BY_ID } from '@/lib/shopEffects';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 import type { ProjectCategory, ShopItemEffectKey } from '@/types';
 import './shop.css';
-
-const FACILITY_ART_BY_ID: Record<ShopItemEffectKey, string> = {
-  snack: JP_ASSETS.snackJar,
-  toy: JP_ASSETS.toyBall,
-  desk: JP_ASSETS.woodenDesk,
-  policy: JP_ASSETS.policyWall,
-  lamp: JP_ASSETS.lanternRed,
-  sofa: JP_ASSETS.beanBag,
-  artwall: JP_ASSETS.pictureFrame,
-  coffee: JP_ASSETS.coffeeMachine,
-  gym: JP_ASSETS.gymArea,
-};
 
 type CategoryStyle = { label: string; color: string; bg: string };
 
@@ -29,9 +19,11 @@ const CATEGORY_STYLE: Record<ProjectCategory | 'all', CategoryStyle> = {
 export function ShopPanel() {
   const money = useGameStore((s) => s.money);
   const purchases = useGameStore((s) => s.purchases);
-  const buy = useGameStore((s) => s.buyShopItem);
+  const [selected, setSelected] = useState<ShopItemEffectKey | null>(null);
+  const closeDialog = useCallback(() => setSelected(null), []);
 
   return (
+    <>
     <div className="shop-grid">
       {SHOP_ITEMS.map((item) => {
         const level = purchases[item.id] ?? 0;
@@ -112,12 +104,10 @@ export function ShopPanel() {
 
             <button
               type="button"
-              disabled={isMax || !canAfford}
-              onClick={() => buy(item.id)}
+              onClick={() => setSelected(item.id)}
               className="shop-buy-btn"
               data-state={isMax ? 'max' : canAfford ? 'buy' : 'locked'}
-              style={{ cursor: isMax || !canAfford ? 'not-allowed' : 'pointer' }}
-              title={isMax ? '已升到最高等級' : level === 0 ? `購買 $${cost}` : `升級到 ${level + 1}，花費 $${cost}`}
+              title={isMax ? '已滿級' : level === 0 ? `購買 $${cost}` : `升級到 ${level + 1}，花費 $${cost}`}
             >
               {buttonLabel}
             </button>
@@ -125,5 +115,7 @@ export function ShopPanel() {
         );
       })}
     </div>
+    {selected && <UpgradeDialog itemId={selected} onClose={closeDialog} />}
+    </>
   );
 }
