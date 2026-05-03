@@ -13,6 +13,7 @@ import { displayCompanyName } from '@/lib/companyName';
 
 export function SplashScreen() {
   const startGame = useGameStore((s) => s.startGame);
+  const triggerStartLeaderboardRun = useGameStore((s) => s.triggerStartLeaderboardRun);
   const setCompanyName = useGameStore((s) => s.setCompanyName);
   const companyName = useGameStore((s) => s.companyName);
   const day = useGameStore((s) => s.day);
@@ -61,6 +62,7 @@ export function SplashScreen() {
   function handleConfirmName(name: string) {
     setCompanyName(name);
     setNamingOpen(false);
+    triggerStartLeaderboardRun();
     startGame();
   }
 

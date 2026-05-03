@@ -26,7 +26,6 @@ import {
 } from '@/lib/leaderboardApi';
 import { logEvent } from '@/lib/eventApi';
 import { useAuthStore } from '@/store/authStore';
-import { useSaveStore } from '@/store/saveStore';
 import type { GameSaveData } from '@/types/save';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { TRAINING_QUESTIONS } from '@/constants/questions';
@@ -183,6 +182,9 @@ export const TUTORIAL_DONE_STEP = 8;
 
 type Actions = {
   startGame: () => void;
+  // 通知後端記下這場 run 的真實開始時間（排行榜時長下界驗證用）
+  // 只在三個 UI 觸發點呼叫：命名確認 / 重新開始彈窗 / 破產重新開始
+  triggerStartLeaderboardRun: () => void;
   advanceTutorial: () => void;
   skipTutorial: () => void;
   // gate 用：只在 tutorialStep === expected 時才推進到下一步
@@ -836,19 +838,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ...initialState,
 
   startGame: () => {
-    // 有雲端存檔 = 從 splash 點開始是「繼續遊戲」，不觸發 StartRun
-    // （否則 reload / 換機後 server 端 started_at 會被重置，累積的真實時長被吃掉）
-    const isResuming = !!useSaveStore.getState().cloud?.data;
     set((s) => ({
       showSplash: false,
       tutorialStep: s.tutorialStep > 0 ? s.tutorialStep : 1,
       tutorialSubStep: s.tutorialStep > 0 ? s.tutorialSubStep : 0,
     }));
-    if (!isResuming) {
-      fireStartLeaderboardRun();
-    }
     get().checkAchievements('game_start');
   },
+  triggerStartLeaderboardRun: () => fireStartLeaderboardRun(),
   advanceTutorial: () =>
     set((s) => ({
       tutorialStep: Math.min(s.tutorialStep + 1, TUTORIAL_DONE_STEP),
@@ -1596,7 +1593,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   restart: () => {
-    fireStartLeaderboardRun();
     const fresh = [generateCandidate(), generateCandidate(), generateCandidate()];
     set((s) => ({
       ...initialState,

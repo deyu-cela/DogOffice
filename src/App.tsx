@@ -82,6 +82,7 @@ export default function App() {
   const money = useGameStore((s) => s.money);
   const companyName = useGameStore((s) => s.companyName);
   const restart = useGameStore((s) => s.restart);
+  const triggerStartLeaderboardRun = useGameStore((s) => s.triggerStartLeaderboardRun);
   const showAchievements = useUiStore((s) => s.showAchievements);
   const showCredits = useUiStore((s) => s.showCredits);
   const bgmScene: BgmScene = showAchievements ? 'memories' : showSplash ? 'splash' : 'office';
@@ -188,6 +189,7 @@ export default function App() {
             <button
               onClick={async () => {
                 await useSaveStore.getState().clearCloud();
+                triggerStartLeaderboardRun();
                 restart();
               }}
               className="px-8"

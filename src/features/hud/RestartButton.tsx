@@ -15,12 +15,14 @@ export function RestartButton() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const restart = useGameStore((s) => s.restart);
+  const triggerStartLeaderboardRun = useGameStore((s) => s.triggerStartLeaderboardRun);
 
   async function doRestart() {
     if (busy) return;
     setBusy(true);
     try {
       await useSaveStore.getState().clearCloud();
+      triggerStartLeaderboardRun();
       restart();
       setOpen(false);
     } finally {
