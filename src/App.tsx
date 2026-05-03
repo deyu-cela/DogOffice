@@ -28,6 +28,7 @@ import { TrainingQuiz } from '@/features/minigames/TrainingQuiz';
 import { SubmitRecordModal } from '@/features/leaderboard/SubmitRecordModal';
 import { BankLoanModal } from '@/features/loan/BankLoanModal';
 import { AchievementsScreen } from '@/features/achievements/AchievementsScreen';
+import { CreditsScreen } from '@/features/credits/CreditsScreen';
 import { AchievementToast } from '@/features/achievements/AchievementToast';
 import { CoinBurstOverlay } from '@/components/CoinBurstOverlay';
 import { ToolDropOverlay } from '@/components/ToolDropOverlay';
@@ -80,6 +81,7 @@ export default function App() {
   const companyName = useGameStore((s) => s.companyName);
   const restart = useGameStore((s) => s.restart);
   const showAchievements = useUiStore((s) => s.showAchievements);
+  const showCredits = useUiStore((s) => s.showCredits);
   const bgmScene: BgmScene = showAchievements ? 'memories' : showSplash ? 'splash' : 'office';
   const claimedStarterPack = useGameStore((s) => s.claimedStarterPack);
   const openStarterPack = useUiStore((s) => s.openStarterPack);
@@ -136,6 +138,7 @@ export default function App() {
       <BankLoanModal />
       <ConflictModal />
       {showAchievements && <AchievementsScreen />}
+      {showCredits && <CreditsScreen />}
       <AchievementToast />
       <CoinBurstOverlay />
       <ToolDropOverlay />
