@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { SvgIcon } from '@/components/SvgIcon';
+import { useUiStore } from '@/store/uiStore';
 import './login.css';
 
 const DESIGN_W = 1024;
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export function LoginScrapbook({ base, children }: Props) {
+  const openCredits = useUiStore((s) => s.openCredits);
   const [coverErrors, setCoverErrors] = useState<Set<number>>(() => new Set());
   const [coverIdx, setCoverIdx] = useState(0);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -80,14 +82,22 @@ export function LoginScrapbook({ base, children }: Props) {
         <BackgroundDecor />
         <header className="login-scrapbook-header relative z-10 flex items-center px-6 md:px-12 h-[78px]">
           <div className="login-brand inline-flex items-center">
-            <img
-              className="login-brand-logo"
-              src={`${base}assets/login/dogoffice-pawtopia-logo.png`}
-              alt="狗狗公司 Pawtopia"
-              width={150}
-              height={92}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-            />
+            <button
+              type="button"
+              className="login-brand-button"
+              onClick={openCredits}
+              aria-label="查看製作人員名單"
+              title="製作人員名單"
+            >
+              <img
+                className="login-brand-logo"
+                src={`${base}assets/login/dogoffice-pawtopia-logo.png`}
+                alt="狗狗公司 Pawtopia"
+                width={150}
+                height={92}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+              />
+            </button>
           </div>
         </header>
 
@@ -132,12 +142,12 @@ export function LoginScrapbook({ base, children }: Props) {
                 <span className="login-photo-title">
                   Paw-<wbr />der<br />Games
                 </span>
-                <span className="login-season-badge" aria-hidden>
-                  <strong>NEW</strong>
-                  <span>S2</span>
-                  <small>賽季開放</small>
-                </span>
               </div>
+              <span className="login-season-badge" aria-hidden>
+                <strong>NEW</strong>
+                <span>S2</span>
+                <small>賽季開放</small>
+              </span>
               <div className="login-polaroid-caption">
                 <span className="login-caption-heart" aria-hidden>♥</span>
                 <span className="login-caption-text">
