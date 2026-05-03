@@ -15,6 +15,11 @@ type UIState = {
   openAchievements: () => void;
   closeAchievements: () => void;
 
+  // 製作人員名單頁
+  showCredits: boolean;
+  openCredits: () => void;
+  closeCredits: () => void;
+
   // 新手禮包彈窗
   showStarterPack: boolean;
   openStarterPack: () => void;
@@ -71,6 +76,10 @@ export const useUiStore = create<UIState>((set, get) => ({
   showAchievements: false,
   openAchievements: () => set({ showAchievements: true }),
   closeAchievements: () => set({ showAchievements: false }),
+
+  showCredits: false,
+  openCredits: () => set({ showCredits: true }),
+  closeCredits: () => set({ showCredits: false }),
 
   showStarterPack: false,
   openStarterPack: () => set({ showStarterPack: true }),
