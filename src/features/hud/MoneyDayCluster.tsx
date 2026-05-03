@@ -5,56 +5,51 @@ import { useSaveStore } from '@/store/saveStore';
 import { BASE_DAY_MS } from '@/constants/officeLevels';
 import { moneyShort } from '@/lib/utils';
 import { displayCompanyName } from '@/lib/companyName';
-import { SvgIcon } from '@/components/SvgIcon';
+import './leftHud.css';
 
-const paperPanel: React.CSSProperties = {
-  position: 'relative',
-  overflow: 'visible',
-  border: '1px solid rgba(208, 130, 105, 0.35)',
-  borderRadius: 10,
-  background:
-    'linear-gradient(90deg, rgba(255,255,255,0.62), rgba(255,247,239,0.68)), repeating-linear-gradient(0deg, rgba(186,121,82,0.05) 0 1px, transparent 1px 18px), linear-gradient(90deg, rgba(248,211,189,0.42), rgba(255,244,232,0.46))',
-  boxShadow:
-    '0 12px 24px rgba(166,91,85,0.1), inset 0 0 0 1px rgba(255,255,255,0.46)',
-  backdropFilter: 'blur(8px) saturate(1.02)',
-  WebkitBackdropFilter: 'blur(8px) saturate(1.02)',
-};
+const PAW_ICON = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <ellipse cx="6.5" cy="9" rx="1.8" ry="2.4" />
+    <ellipse cx="17.5" cy="9" rx="1.8" ry="2.4" />
+    <ellipse cx="9.5" cy="5" rx="1.6" ry="2.2" />
+    <ellipse cx="14.5" cy="5" rx="1.6" ry="2.2" />
+    <path d="M12 11c-3 0-5 2.5-5 5 0 2 1.5 3 3 3 1 0 1.3-.5 2-.5s1 .5 2 .5c1.5 0 3-1 3-3 0-2.5-2-5-5-5z" />
+  </svg>
+);
 
-const tapeStyle: React.CSSProperties = {
-  position: 'absolute',
-  top: -9,
-  width: 54,
-  height: 18,
-  opacity: 0.86,
-  border: '1px solid rgba(232,132,145,0.22)',
-  background:
-    'linear-gradient(45deg, rgba(255,255,255,0.5) 25%, transparent 25% 50%, rgba(255,255,255,0.5) 50% 75%, transparent 75%), #f6a7b3',
-  backgroundSize: '18px 18px',
-  boxShadow: '0 3px 8px rgba(166,91,85,0.12)',
-  pointerEvents: 'none',
-};
+const MONEY_ICON = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 6v12M9 9h4.5a1.5 1.5 0 0 1 0 3H9.5a1.5 1.5 0 0 0 0 3H15" />
+  </svg>
+);
 
-const pinStyle: React.CSSProperties = {
-  position: 'absolute',
-  width: 18,
-  height: 18,
-  borderRadius: '50%',
-  background:
-    'radial-gradient(circle at 35% 25%, rgba(255,255,255,0.92) 0 24%, transparent 25%), linear-gradient(135deg, #ff98aa, #df6374)',
-  border: '1px solid rgba(158,64,75,0.3)',
-  boxShadow: '0 3px 0 rgba(140,65,65,0.18), 0 6px 12px rgba(171,78,78,0.18)',
-  pointerEvents: 'none',
-};
+const LOGOUT_ICON = (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+    <path d="M10 17l-5-5 5-5M5 12h11" />
+  </svg>
+);
 
-const stickerBase: React.CSSProperties = {
-  border: '1px solid rgba(208, 130, 105, 0.32)',
-  borderRadius: 999,
-  color: '#5b382d',
-  boxShadow:
-    '0 8px 16px rgba(166,91,85,0.09), inset 0 0 0 1px rgba(255,255,255,0.48)',
-  backdropFilter: 'blur(7px) saturate(1.02)',
-  WebkitBackdropFilter: 'blur(7px) saturate(1.02)',
-};
+const CALENDAR_ICON = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M3 10h18M8 3v4M16 3v4" />
+  </svg>
+);
+
+const HOURGLASS_ICON = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6 3h12M6 21h12" />
+    <path d="M7 3v3c0 3 4 4 4 6s-4 3-4 6v3M17 3v3c0 3-4 4-4 6s4 3 4 6v3" />
+  </svg>
+);
+
+const PLAY_ICON = (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M8 5v14l11-7z" />
+  </svg>
+);
 
 export function MoneyDayCluster() {
   const day = useGameStore((s) => s.day);
@@ -76,7 +71,6 @@ export function MoneyDayCluster() {
   const remainingSec = (Math.max(0, BASE_DAY_MS - dayElapsed) / speedMultiplier / 1000).toFixed(1);
   const cycleSpeed = () => setSpeed(speedMultiplier >= 3 ? 1 : speedMultiplier + 1);
   const displayName = displayCompanyName(companyName);
-  const avatarSrc = `${import.meta.env.BASE_URL}assets/dog-profiles/ceo.png`;
 
   async function onLogout() {
     if (logoutBusy) return;
@@ -85,7 +79,7 @@ export function MoneyDayCluster() {
       try {
         await useSaveStore.getState().saveToCloud();
       } catch {
-        // 登出不因雲端暫存失敗而卡住，和原本 UserBadge 行為一致。
+        // 雲端存檔失敗不擋登出，避免使用者被卡在中間狀態
       }
       await logout();
       setShowSplash(true);
@@ -95,202 +89,99 @@ export function MoneyDayCluster() {
   }
 
   return (
-    <div
-      className="pointer-events-none absolute left-3 top-3 z-[700] flex flex-col gap-3"
-      style={{ alignItems: 'flex-start', maxWidth: 'calc(100vw - 24px)' }}
-    >
-      <div
-        className="bx-fade-up pointer-events-auto flex items-center"
-        style={{
-          ...paperPanel,
-          width: 'min(380px, calc(100vw - 24px))',
-          minHeight: 48,
-          gap: 7,
-          padding: '6px 8px',
-          animationDelay: '0ms',
-        }}
-      >
-        <span style={{ ...tapeStyle, left: 20, transform: 'rotate(-7deg)' }} aria-hidden="true" />
-        <span style={{ ...pinStyle, left: 8, top: 8, width: 14, height: 14 }} aria-hidden="true" />
+    <div className="lhud-stack">
+      <div className="lhud-hover lhud-hover--lift2">
+        <div className="lhud-wallet">
+          <span className="lhud-wallet__stitch" aria-hidden="true" />
+          <div className="lhud-wallet__row">
+            <div className="lhud-wallet__avatar">{PAW_ICON}</div>
 
-        <div
-          className="grid shrink-0 place-items-center rounded-full"
-          style={{
-            width: 34,
-            height: 34,
-            background: 'transparent',
-            border: '0',
-            boxShadow: 'none',
-          }}
-        >
-          <SvgIcon name="appDog" size={24} />
-        </div>
+            <div className="lhud-wallet__money" title={`$${money.toLocaleString()}`}>
+              <div className="lhud-wallet__money-row">
+                {MONEY_ICON}
+                <span className="lhud-wallet__money-amt tabular-nums">${moneyShort(money)}</span>
+              </div>
+              <div className="lhud-wallet__money-cost tabular-nums" title={`每日支出：辦公室 $${OFFICE_DAILY_EXPENSE[officeLevel] ?? 0} + 薪資 $${salaryCost}`}>
+                <span aria-hidden="true" className="lhud-wallet__money-cost-arrow" />
+                -${moneyShort(dailyCost)}/天
+              </div>
+            </div>
 
-        <div
-          className="grid shrink-0 place-items-center rounded-full"
-          style={{
-            width: 30,
-            height: 30,
-            background: 'transparent',
-            border: '0',
-            boxShadow: 'none',
-          }}
-        >
-          <SvgIcon name="money" size={20} />
-        </div>
+            <div className="lhud-wallet__name" title={displayName}>
+              {displayName}
+            </div>
 
-        <div className="min-w-[72px] shrink-0">
-          <div
-            data-money-target
-            className="tabular-nums"
-            style={{ color: '#b97428', fontSize: 18, lineHeight: 1, fontWeight: 900 }}
-            title={`$${money.toLocaleString()}`}
-          >
-            ${moneyShort(money)}
-          </div>
-          <div
-            className="mt-1 flex items-center gap-1 tabular-nums"
-            style={{ color: '#d74e63', fontSize: 11, lineHeight: 1, fontWeight: 900 }}
-            title={`每日支出：辦公室 $${OFFICE_DAILY_EXPENSE[officeLevel] ?? 0} + 薪資 $${salaryCost}`}
-          >
-            <span
-              style={{
-                width: 0,
-                height: 0,
-                borderLeft: '4px solid transparent',
-                borderRight: '4px solid transparent',
-                borderTop: '6px solid #d74e63',
-              }}
-              aria-hidden="true"
-            />
-            -${moneyShort(dailyCost)}/天
+            {authedUser && (
+              <button
+                type="button"
+                onClick={onLogout}
+                disabled={logoutBusy}
+                className="lhud-wallet__logout"
+              >
+                {LOGOUT_ICON}
+                {logoutBusy ? '...' : '登出'}
+              </button>
+            )}
           </div>
         </div>
-
-        <div
-          className="min-w-0 flex-1 truncate text-center"
-          style={{
-            color: '#5b382d',
-            fontSize: 16,
-            lineHeight: 1,
-            fontWeight: 900,
-            borderBottom: '1px solid rgba(216,142,122,0.42)',
-            paddingBottom: 4,
-          }}
-          title={displayName}
-        >
-          {displayName}
-        </div>
-
-        {authedUser && (
-          <button
-            type="button"
-            onClick={onLogout}
-            disabled={logoutBusy}
-            className="shrink-0"
-            style={{
-              minWidth: 54,
-              height: 28,
-              padding: '0 9px',
-              borderRadius: 8,
-              border: '1px solid rgba(229,116,132,0.32)',
-              color: '#cf405b',
-              background: logoutBusy ? '#f2e8e5' : 'linear-gradient(180deg, #fffefe, #ffe8e9)',
-              boxShadow: '0 4px 10px rgba(185,85,93,0.11)',
-              fontSize: 12,
-              fontWeight: 900,
-              cursor: logoutBusy ? 'wait' : 'pointer',
-            }}
-          >
-            {logoutBusy ? '...' : '登出'}
-          </button>
-        )}
       </div>
 
-      <div className="pointer-events-auto flex items-center gap-1.5 pl-3">
-        <HudSticker delay="60ms" background="linear-gradient(180deg, rgba(255,254,254,0.68), rgba(255,232,233,0.58))">
-          <span className="grid place-items-center" style={smallIconCircle('#fff4dc', 'rgba(231,157,83,0.42)')}>
-            <SvgIcon name="calendar" size={16} />
-          </span>
-          <span>第 {day} 天</span>
-        </HudSticker>
+      <div className="lhud-sticky-row">
+        <StickyA tilt={-2} variant="day" width={88}>
+          <div className="lhud-sticky__row">
+            <span className="lhud-sticky__icon">{CALENDAR_ICON}</span>
+            <span className="lhud-sticky__text">第 {day} 天</span>
+          </div>
+        </StickyA>
 
-        <HudSticker delay="120ms" background="linear-gradient(180deg, rgba(248,255,244,0.68), rgba(223,238,218,0.58))">
-          <span className="grid place-items-center" style={smallIconCircle('#fff9e9', 'rgba(158,194,156,0.5)')}>
-            <SvgIcon name="hourglass" size={16} />
-          </span>
-          <span className="tabular-nums">下一天 {remainingSec}s</span>
-        </HudSticker>
+        <StickyA tilt={3} variant="time" width={112}>
+          <div className="lhud-sticky__row">
+            <span className="lhud-sticky__icon">{HOURGLASS_ICON}</span>
+            <span className="lhud-sticky__text tabular-nums">下一天 {remainingSec}s</span>
+          </div>
+        </StickyA>
 
-        <button
-          type="button"
-          onClick={cycleSpeed}
-          className="bx-fade-up inline-flex items-center gap-1.5"
-          style={{
-            height: 36,
-            minWidth: 54,
-            padding: '0 10px',
-            borderRadius: 999,
-            border: '1px solid rgba(208,130,105,0.34)',
-            color: '#5b382d',
-            background: 'linear-gradient(180deg, rgba(255,242,214,0.72), rgba(247,178,103,0.62))',
-            boxShadow:
-              '0 7px 14px rgba(166,91,85,0.1), inset 0 0 0 1px rgba(255,255,255,0.48)',
-            backdropFilter: 'blur(7px) saturate(1.02)',
-            WebkitBackdropFilter: 'blur(7px) saturate(1.02)',
-            animationDelay: '180ms',
-            fontWeight: 900,
-          }}
-          title="調整遊戲速度"
-          aria-label="調整遊戲速度"
-        >
-          <SvgIcon name="play" size={15} />
-          <span className="tabular-nums" style={{ fontSize: 13, lineHeight: 1, fontWeight: 900 }}>
-            {speedMultiplier}x
-          </span>
-        </button>
+        <StickyA tilt={-3} variant="speed" width={56} onClick={cycleSpeed} ariaLabel="調整遊戲速度">
+          <div className="lhud-sticky__row lhud-sticky__row--centered">
+            <span className="lhud-sticky__icon">{PLAY_ICON}</span>
+            <span className="lhud-sticky__text lhud-sticky__text--lg">{speedMultiplier}x</span>
+          </div>
+        </StickyA>
       </div>
     </div>
   );
 }
 
-function HudSticker({
-  children,
-  delay,
-  background,
-}: {
+type StickyAProps = {
+  tilt: number;
+  variant: 'day' | 'time' | 'speed';
+  width: number;
   children: React.ReactNode;
-  delay: string;
-  background: string;
-}) {
+  onClick?: () => void;
+  ariaLabel?: string;
+};
+
+function StickyA({ tilt, variant, width, children, onClick, ariaLabel }: StickyAProps) {
+  const isButton = onClick != null;
+  const Tag = isButton ? 'button' : 'div';
+  const className = `lhud-sticky lhud-paper lhud-sticky--${variant}${isButton ? ' lhud-sticky--btn' : ''}`;
+
   return (
-    <div
-      className="bx-fade-up inline-flex items-center gap-2.5"
-      style={{
-        ...stickerBase,
-        minHeight: 36,
-        padding: '6px 10px',
-        background,
-        fontSize: 13,
-        lineHeight: 1,
-        fontWeight: 900,
-        animationDelay: delay,
-      }}
-    >
-      {children}
+    <div className="lhud-hover">
+      <Tag
+        className={className}
+        style={{ width, transform: `rotate(${tilt}deg)` }}
+        {...(isButton
+          ? { type: 'button' as const, onClick, 'aria-label': ariaLabel, title: ariaLabel }
+          : {})}
+      >
+        <span
+          className="lhud-sticky__tape"
+          style={{ transform: `translateX(-50%) rotate(${-tilt * 1.3}deg)` }}
+          aria-hidden="true"
+        />
+        {children}
+      </Tag>
     </div>
   );
-}
-
-function smallIconCircle(background: string, borderColor: string): React.CSSProperties {
-  return {
-    width: 22,
-    height: 22,
-    borderRadius: '50%',
-    background,
-    border: `1px solid ${borderColor}`,
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
-    color: '#6e4638',
-    fontWeight: 900,
-  };
 }

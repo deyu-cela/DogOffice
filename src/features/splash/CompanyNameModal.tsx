@@ -1,20 +1,31 @@
 import { useState } from 'react';
-import { SvgIcon } from '@/components/SvgIcon';
 import {
   COMPANY_NAME_MAX,
   COMPANY_NAME_MIN,
   validateCompanyName,
 } from '@/lib/companyName';
+import './companyNameModal.css';
 
 type Props = {
   onConfirm: (name: string) => void;
 };
 
+const PAW_ICON = (
+  <svg viewBox="0 0 24 24" fill="currentColor" width={26} height={26} aria-hidden="true">
+    <ellipse cx="6.5" cy="9" rx="1.8" ry="2.4" />
+    <ellipse cx="17.5" cy="9" rx="1.8" ry="2.4" />
+    <ellipse cx="9.5" cy="5" rx="1.6" ry="2.2" />
+    <ellipse cx="14.5" cy="5" rx="1.6" ry="2.2" />
+    <path d="M12 11c-3 0-5 2.5-5 5 0 2 1.5 3 3 3 1 0 1.3-.5 2-.5s1 .5 2 .5c1.5 0 3-1 3-3 0-2.5-2-5-5-5z" />
+  </svg>
+);
+
 export function CompanyNameModal({ onConfirm }: Props) {
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     const result = validateCompanyName(value);
     if (!result.ok) {
       setError(result.error);
@@ -23,69 +34,47 @@ export function CompanyNameModal({ onConfirm }: Props) {
     onConfirm(result.name);
   };
 
+  const trimmed = value.trim();
+  const tooShort = trimmed.length < COMPANY_NAME_MIN;
+
   return (
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-[#08204d]/55 backdrop-blur-sm p-4">
-      <div
-        className="p-6 rounded-2xl max-w-sm w-full"
-        style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
-          border: '1px solid var(--line)',
-          boxShadow: '0 24px 70px rgba(30,90,180,0.28)',
-        }}
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ background: '#eef6ff', border: '1px solid var(--line)' }}
-          >
-            <SvgIcon name="appDog" size={32} />
-          </div>
-          <div>
-            <h2 className="text-xl font-extrabold" style={{ color: '#173b78' }}>為公司命名</h2>
-            <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              一旦取了，這個帳號就無法再改囉
-            </p>
-          </div>
-        </div>
+    <div className="cnm-backdrop" role="dialog" aria-labelledby="cnm-title" aria-modal="true">
+      <div className="cnm-stack">
+        <div className="cnm-back cnm-back--1" aria-hidden="true" />
+        <div className="cnm-back cnm-back--2" aria-hidden="true" />
+        <form className="cnm-card" onSubmit={handleSubmit}>
+          <span className="cnm-tape" aria-hidden="true" />
+          <span className="cnm-paw-badge" aria-hidden="true">{PAW_ICON}</span>
 
-        <label className="block text-xs font-bold mb-1" style={{ color: '#446da8' }}>
-          公司名稱（{COMPANY_NAME_MIN}–{COMPANY_NAME_MAX} 字，中英數）
-        </label>
-        <input
-          type="text"
-          autoFocus
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value);
-            if (error) setError(null);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSubmit();
-          }}
-          placeholder="為公司取個響亮的名字"
-          className="w-full px-3 py-2.5 rounded-lg text-base mb-2 outline-none"
-          style={{
-            background: '#ffffff',
-            border: error ? '1px solid #d34a4a' : '1px solid var(--line)',
-          }}
-        />
-        <div className="min-h-[18px] mb-3">
-          {error && (
-            <span className="text-xs font-bold" style={{ color: '#d34a4a' }}>{error}</span>
-          )}
-        </div>
+          <h2 id="cnm-title" className="cnm-title">為公司命名</h2>
+          <div className="cnm-divider" aria-hidden="true" />
+          <p className="cnm-subtitle">一旦取了，這個帳號就無法再改囉 🐾</p>
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="w-full py-3 rounded-lg font-extrabold text-base text-white"
-          style={{
-            background: 'linear-gradient(180deg, #57a8ff, #257ee8)',
-            boxShadow: '0 12px 28px rgba(37,126,232,0.32)',
-          }}
-        >
-          確定，開始經營！
-        </button>
+          <label>
+            <span className="cnm-label">
+              <span className="cnm-label__dot">•</span> 公司名稱（{COMPANY_NAME_MIN}–{COMPANY_NAME_MAX} 字，中英數）
+            </span>
+            <div className="cnm-field" data-error={error ? 'true' : 'false'}>
+              <input
+                type="text"
+                autoFocus
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="為公司取個響亮的名字"
+                aria-invalid={error ? 'true' : 'false'}
+                aria-describedby={error ? 'cnm-err' : undefined}
+              />
+            </div>
+            {error && <span id="cnm-err" className="cnm-err">{error}</span>}
+          </label>
+
+          <button type="submit" className="cnm-cta" disabled={tooShort}>
+            確定，開始經營！
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { useUiStore } from '@/store/uiStore';
+import { shade } from '@/lib/utils';
 
 const PAW = (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
@@ -27,15 +28,6 @@ function Icon({ size, color, children }: { size: number; color?: string; childre
   return (
     <span style={{ width: size, height: size, color, display: 'inline-block' }}>{children}</span>
   );
-}
-
-function shade(hex: string, amt: number) {
-  const c = hex.replace('#', '');
-  const n = parseInt(c, 16);
-  const r = Math.max(0, Math.min(255, ((n >> 16) & 0xff) + amt));
-  const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
-  const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
-  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
 }
 
 function Tape({
