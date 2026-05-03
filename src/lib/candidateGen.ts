@@ -79,7 +79,6 @@ export function generateCandidate(opts?: { role?: string }): Dog {
     interview: rand(INTERVIEW_QUESTIONS),
     // 接案制欄位
     fatigue: 0,
-    loyalty: 50,
     assignedProjectId: null,
     daysAtCompany: 0,
     unhappyLeaveDays: 0,
@@ -87,7 +86,7 @@ export function generateCandidate(opts?: { role?: string }): Dog {
     learnedTraits: [],
     pendingTraitChoice: null,
     level: 1,
-    fragments: 0,
+    breakthroughs: 0,
     equippedToolId: null,
   };
 

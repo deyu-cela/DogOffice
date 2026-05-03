@@ -125,17 +125,9 @@ function applyDailyFatigue(
   });
 }
 
-// === 每日 loyalty 自然累積 ===
-function applyDailyLoyalty(staff: Dog[]): Dog[] {
-  return staff.map((d) => {
-    let next = d.loyalty;
-    if (d.daysAtCompany > 0 && d.daysAtCompany % 7 === 0) next += 1;
-    return {
-      ...d,
-      loyalty: clamp(Math.round(next), 0, 100),
-      daysAtCompany: d.daysAtCompany + 1,
-    };
-  });
+// === 每日 daysAtCompany 累積 ===
+function applyDailyDaysAtCompany(staff: Dog[]): Dog[] {
+  return staff.map((d) => ({ ...d, daysAtCompany: d.daysAtCompany + 1 }));
 }
 
 type DayProgress = {
@@ -169,25 +161,18 @@ function pushProjectProgress(
   const chem = computeChemistry(assignedDogs, project.category);
   const chemBoost = getProjectChemBoost(assignedDogs);
   const effChemSpeed = 1 + (chem.speedMul - 1) * chemBoost;
-  const effChemQuality = 1 + (chem.qualityMul - 1) * chemBoost;
 
   let workAdded = 0;
-  let qualityAdded = 0;
 
   const catSpeedBonus = buffs.categorySpeed[project.category] ?? 0;
-  const catQualityBonus = buffs.categoryQuality[project.category] ?? 0;
   const assignedIds = assignedDogs.map((d) => d.id);
   const chainBoost = getTeamChainBoost(ctx.toolMap, assignedIds);
   for (const dog of assignedDogs) {
     const toolSpeed = getToolSpeedBoost(ctx.toolMap, dog.id);
-    const toolQuality = getToolQualityBoost(ctx.toolMap, dog.id);
     const speed = dog.stats.speed + buffs.speedBoost + catSpeedBonus + toolSpeed;
-    const quality = dog.stats.quality + buffs.qualityBoost + catQualityBonus + toolQuality;
     const roleMatch = isRoleMatched(dog, project.category) ? 1.15 : 1.0;
     const traitSpeed = getDogSpeedMul(dog);
-    const traitQuality = getDogQualityMul(dog);
     const toolSpeedMul = getToolSelfSpeedMul(ctx.toolMap, dog.id);
-    const toolQualityMul = getToolSelfQualityMul(ctx.toolMap, dog.id, project.clientTier);
     const guardedFatigueMul = getToolGuardedFatigueMul(ctx.toolMap, dog.id, fatigueMul(dog));
 
     const contrib =
@@ -201,54 +186,89 @@ function pushProjectProgress(
       chainBoost;
 
     workAdded += contrib;
-    qualityAdded +=
-      quality *
-      catMul.qualityMul *
-      effChemQuality *
-      traitQuality *
-      toolQualityMul *
-      contrib;
   }
 
   return {
     project: {
       ...project,
       workDone: Math.round(project.workDone + workAdded),
-      qualitySum: Math.round(project.qualitySum + qualityAdded),
     },
     chemTriggered: chem.triggered,
     assignedDogs,
   };
 }
 
+// === 計算隊伍「有效品質」加總（結算用，不依賴每日累積、不取平均）===
+export function computeTeamEffectiveQuality(
+  dogs: Dog[],
+  category: ProjectCategory,
+  buffs: CompanyBuffs,
+  toolMap: Map<string, Tool> = new Map(),
+  clientTier: number = 1,
+): number {
+  if (dogs.length === 0) return 0;
+  const catMul = categoryMulFor(category);
+  const chem = computeChemistry(dogs, category);
+  const chemBoost = getProjectChemBoost(dogs);
+  const effChemQuality = 1 + (chem.qualityMul - 1) * chemBoost;
+  const catQualityBonus = buffs.categoryQuality[category] ?? 0;
+
+  let total = 0;
+  for (const dog of dogs) {
+    const toolQuality = getToolQualityBoost(toolMap, dog.id);
+    const quality = dog.stats.quality + buffs.qualityBoost + catQualityBonus + toolQuality;
+    const traitQuality = getDogQualityMul(dog);
+    const toolQualityMul = getToolSelfQualityMul(toolMap, dog.id, clientTier);
+    total +=
+      quality *
+      catMul.qualityMul *
+      effChemQuality *
+      traitQuality *
+      toolQualityMul;
+  }
+  return total;
+}
+
+// === 品質倍率（payoutMul）===
+// 有效品質加總 / 80，clamp [1, 3.5]，取小數第二位
+export function computeQualityPayoutMul(effectiveQuality: number): number {
+  const raw = effectiveQuality / 80;
+  return Math.round(clamp(raw, 1, 3.5) * 100) / 100;
+}
+
 // === 結算完成案 ===
 function settleProject(
   project: Project,
   assignedDogs: Dog[],
+  buffs: CompanyBuffs,
+  toolMap: Map<string, Tool>,
 ): {
   project: Project;
   finalReward: number;
-  qualityRatio: number;
+  payoutMul: number;
 } {
   if (project.workDone < project.workRequired || project.status !== 'active') {
-    return { project, finalReward: 0, qualityRatio: 0 };
+    return { project, finalReward: 0, payoutMul: 0 };
   }
-  const avgQuality = project.workDone > 0 ? project.qualitySum / project.workDone : 0;
-  const qualityRatio = avgQuality / Math.max(1, project.expectedQuality);
-  const payoutMul = clamp(0.5 + qualityRatio * 0.6, 0.5, 1.5);
+  const avgEffQuality = computeTeamEffectiveQuality(
+    assignedDogs,
+    project.category,
+    buffs,
+    toolMap,
+    project.clientTier,
+  );
+  const payoutMul = computeQualityPayoutMul(avgEffQuality);
   const bargain = bargainMulFor(assignedDogs);
   const traitReward = getProjectRewardMul(assignedDogs);
   const finalReward = Math.max(
     0,
-    Math.round(
-      project.reward * payoutMul * project.rewardMul * project.qualityMul * bargain * traitReward,
-    ),
+    Math.round(project.reward * payoutMul * bargain * traitReward),
   );
 
   return {
     project: { ...project, status: 'done' },
     finalReward,
-    qualityRatio,
+    payoutMul,
   };
 }
 
@@ -358,10 +378,10 @@ export function runProjectsDay(state: GameState): DayResult {
     levelUps: [],
   };
 
-  // 1. 每日 fatigue / loyalty
+  // 1. 每日 fatigue / daysAtCompany
   const initialToolMap = buildToolMap(s.staff, s.tools, s.teams);
   s.staff = applyDailyFatigue(s.staff, s.companyBuffs.patienceBoost ?? 0, initialToolMap);
-  s.staff = applyDailyLoyalty(s.staff);
+  s.staff = applyDailyDaysAtCompany(s.staff);
   s.staff = s.staff.map((d) =>
     d.onLeaveDay != null && d.onLeaveDay < s.day ? { ...d, onLeaveDay: null } : d,
   );
@@ -395,7 +415,7 @@ export function runProjectsDay(state: GameState): DayResult {
       const assignedDogs = project.assignedStaffIds
         .map((id) => ctx.staffById.get(id))
         .filter((d): d is Dog => !!d);
-      const settled = settleProject(project, assignedDogs);
+      const settled = settleProject(project, assignedDogs, s.companyBuffs, ctx.toolMap);
       settledClients.push(settled.project);
       projectsCompletedAdd += 1;
       s.money += settled.finalReward;
@@ -405,7 +425,6 @@ export function runProjectsDay(state: GameState): DayResult {
         if (!assignedIds.has(d.id)) return d;
         return {
           ...d,
-          loyalty: clamp(d.loyalty + 2, 0, 100),
           assignedProjectId: null,
         };
       });

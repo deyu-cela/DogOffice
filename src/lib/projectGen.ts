@@ -180,7 +180,12 @@ export function fillInbox(
   const keptIds = new Set(Array.from(keptByIndustry.values()).map((p) => p.id));
   const cappedClients = culled.filter((c) => c.status !== 'offered' || keptIds.has(c.id));
   // 3. 為缺席的 open 產業各補 1 張（受 liveSlotsLeft 限制）
-  const missingIndustries = openIndustries.filter((ind) => !keptByIndustry.has(ind));
+  //    缺席 = 該產業沒有 offered 也沒有 active（active 也算佔位）
+  const occupiedInds = new Set<ProjectCategory>([
+    ...keptByIndustry.keys(),
+    ...active.map((p) => p.category),
+  ]);
+  const missingIndustries = openIndustries.filter((ind) => !occupiedInds.has(ind));
   const slotsAvailable = Math.max(0, liveSlotsLeft - keptByIndustry.size);
   const toGenerate = Math.min(missingIndustries.length, slotsAvailable);
   const fresh: Project[] = [];
@@ -205,12 +210,15 @@ export function rerollInbox(
 ): Project[] {
   const others = clients.filter((c) => c.status !== 'offered');
   if (openIndustries.length === 0) return others;
-  const activeCount = others.filter((c) => c.status === 'active').length;
-  const offeredSlots = Math.max(0, INBOX_SIZE - activeCount);
-  const toGenerate = Math.min(openIndustries.length, offeredSlots);
+  const activeList = others.filter((c) => c.status === 'active');
+  const activeInds = new Set(activeList.map((c) => c.category));
+  const offeredSlots = Math.max(0, INBOX_SIZE - activeList.length);
+  // 已有 active 的產業不再補 offered（同產業只能 1 張）
+  const eligibleInds = openIndustries.filter((ind) => !activeInds.has(ind));
+  const toGenerate = Math.min(eligibleInds.length, offeredSlots);
   const fresh: Project[] = [];
   for (let i = 0; i < toGenerate; i++) {
-    fresh.push(generateProject(tierBudget, currentDay, officeLevel, true, undefined, openIndustries[i]));
+    fresh.push(generateProject(tierBudget, currentDay, officeLevel, true, undefined, eligibleInds[i]));
   }
   return [...fresh, ...others];
 }

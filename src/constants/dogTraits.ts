@@ -29,7 +29,7 @@ export const DOG_TRAITS: DogTraitDef[] = [
     id: 'perfectionist',
     name: '完美主義',
     emoji: '',
-    desc: '案件品質 +20%，但推進速度 -10%。',
+    desc: '案件專業 +20%，但推進速度 -10%。',
   },
   {
     id: 'haggler',

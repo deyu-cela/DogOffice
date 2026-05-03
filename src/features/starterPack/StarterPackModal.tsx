@@ -57,13 +57,13 @@ export function StarterPackModal() {
         >
           <img
             src={ROLE_IMAGE_MAP[CEO_DOG.role]}
-            alt="任勞任怨狗"
+            alt="刀霸翎"
             className="w-16 h-16 rounded-lg object-cover"
             draggable={false}
           />
           <div className="flex-1 min-w-0">
             <div className="text-lg font-extrabold" style={{ color: '#173b78' }}>
-              任勞任怨狗
+              刀霸翎
             </div>
             <div className="text-xs font-bold mb-1" style={{ color: '#5a8ce6' }}>
               CEO · S 級 · 月薪 $0

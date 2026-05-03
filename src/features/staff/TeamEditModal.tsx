@@ -4,7 +4,12 @@ import { useGameStore, teamMaxMembers, dogPrimaryIndustry } from '@/store/gameSt
 import { DogAvatar } from '@/components/DogAvatar';
 import { SvgIcon, type SvgIconName } from '@/components/SvgIcon';
 import { dogPowerStars, dogGrade, type DogGradeUI } from '@/lib/utils';
-import { dogPowerWithTools } from '@/lib/toolsEngine';
+import { dogPowerWithTools, buildToolMap } from '@/lib/toolsEngine';
+import {
+  computeTeamEffectiveQuality,
+  computeQualityPayoutMul,
+  estimateDailyContrib,
+} from '@/lib/projectEngine';
 import type { Dog, Project, ProjectCategory, Team, Tool } from '@/types';
 import { CHEMISTRY_COMBOS } from '@/constants/chemistryCombo';
 import './staff.css';
@@ -125,7 +130,7 @@ function chemistryBonusText(bonus: {
   revenueMul?: number;
 }) {
   const parts: string[] = [];
-  if (bonus.qualityMul !== undefined) parts.push(`品質 ×${bonus.qualityMul}`);
+  if (bonus.qualityMul !== undefined) parts.push(`專業 ×${bonus.qualityMul}`);
   if (bonus.speedMul !== undefined) parts.push(`速度 ×${bonus.speedMul}`);
   if (bonus.revenueMul !== undefined) parts.push(`收入 ×${bonus.revenueMul}`);
   if (bonus.moraleAdd !== undefined) parts.push(`士氣 ${bonus.moraleAdd > 0 ? '+' : ''}${bonus.moraleAdd}`);
@@ -138,6 +143,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
   const tools = useGameStore((s) => s.tools);
   const clients = useGameStore((s) => s.clients);
   const officeLevel = useGameStore((s) => s.officeLevel);
+  const companyBuffs = useGameStore((s) => s.companyBuffs);
   const addDog = useGameStore((s) => s.addDogToTeam);
   const removeDog = useGameStore((s) => s.removeDogFromTeam);
   const autoFillTeam = useGameStore((s) => s.autoFillTeam);
@@ -159,6 +165,7 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
   const [sortKey, setSortKey] = useState<SortKey>('power');
   const [editMode, setEditMode] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [qualityInfoOpen, setQualityInfoOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -221,6 +228,22 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
   const teamTotalStars = teamMembers.length
     ? Math.round(teamMembers.reduce((n, d) => n + dogPowerStars(dogPowerWithTools(d, tools, teams)), 0) / teamMembers.length)
     : 0;
+
+  const teamToolMap = useMemo(
+    () => buildToolMap(staff, tools, teams),
+    [staff, tools, teams],
+  );
+  const teamEffQuality = useMemo(
+    () => computeTeamEffectiveQuality(teamMembers, activeIndustry, companyBuffs, teamToolMap, 1),
+    [teamMembers, activeIndustry, companyBuffs, teamToolMap],
+  );
+  const teamHasBargain = teamMembers.some((d) => d.role === '業務' || d.role === '行銷');
+  const teamPayoutMul = teamMembers.length ? computeQualityPayoutMul(teamEffQuality) : 0;
+  const teamRewardMul = teamPayoutMul * (teamHasBargain ? 1.1 : 1);
+  const teamDailyWork = useMemo(
+    () => Math.round(estimateDailyContrib(activeIndustry, teamMembers, companyBuffs, teamToolMap)),
+    [activeIndustry, teamMembers, companyBuffs, teamToolMap],
+  );
 
   const modal = (
     <div
@@ -290,6 +313,18 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
             </div>
             <button
               type="button"
+              onClick={() => setQualityInfoOpen(true)}
+              className="staff-chip-btn text-[10px] whitespace-nowrap inline-flex items-center gap-1"
+              style={{
+                padding: '1px 8px',
+              }}
+              title="查看獎勵倍率對照表"
+            >
+              <SvgIcon name="chart" size={12} />
+              獎勵倍率
+            </button>
+            <button
+              type="button"
               onClick={() => setEditMode((v) => !v)}
               className="staff-chip-btn text-[10px] whitespace-nowrap"
               data-active={editMode ? 'true' : 'false'}
@@ -349,6 +384,34 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
                   </span>
                 ))}
               </div>
+            )}
+          </div>
+          <div className="staff-total-card px-3 py-1 flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-bold" style={{ color: '#6b3c2b' }}>預估表現</span>
+            {teamMembers.length > 0 ? (
+              <>
+                <span
+                  className="text-[13px] font-black"
+                  style={{ color: '#3a7a3f' }}
+                  title={`有效專業加總 ${teamEffQuality.toFixed(2)}・專業倍率 ×${teamPayoutMul.toFixed(2)}`}
+                >
+                  💰 ×{teamRewardMul.toFixed(2)}
+                </span>
+                <span
+                  className="text-[13px] font-black"
+                  style={{ color: headerColor }}
+                  title="每天可推進的工作量（含化學反應、疲勞、工具加成）"
+                >
+                  📅 {teamDailyWork} / 天
+                </span>
+                {teamHasBargain && (
+                  <span className="text-[10px]" style={{ color: '#886153' }}>
+                    含議價 ×1.1
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-[11px]" style={{ color: '#886153' }}>尚未配置成員</span>
             )}
           </div>
           <div className="staff-total-card px-3 py-1 flex items-center gap-2 flex-wrap">
@@ -515,10 +578,121 @@ export function TeamEditModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
       </div>
+      {qualityInfoOpen && (
+        <QualityMulInfoModal
+          teamEffQuality={teamEffQuality}
+          teamPayoutMul={teamPayoutMul}
+          color={headerColor}
+          onClose={() => setQualityInfoOpen(false)}
+        />
+      )}
     </div>
   );
 
   return createPortal(modal, document.body);
+}
+
+const QUALITY_TABLE: Array<{ eff: number; mul: number }> = [
+  { eff: 80, mul: 1.0 },
+  { eff: 100, mul: 1.25 },
+  { eff: 120, mul: 1.5 },
+  { eff: 140, mul: 1.75 },
+  { eff: 160, mul: 2.0 },
+  { eff: 180, mul: 2.25 },
+  { eff: 200, mul: 2.5 },
+  { eff: 220, mul: 2.75 },
+  { eff: 240, mul: 3.0 },
+  { eff: 260, mul: 3.25 },
+  { eff: 280, mul: 3.5 },
+];
+
+function QualityMulInfoModal({
+  teamEffQuality,
+  teamPayoutMul,
+  color,
+  onClose,
+}: {
+  teamEffQuality: number;
+  teamPayoutMul: number;
+  color: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[890] flex items-center justify-center p-4"
+      style={{ background: 'rgba(15,23,42,0.45)' }}
+      onClick={onClose}
+    >
+      <div
+        className="staff-scrapbook-modal w-full max-w-md p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-base font-extrabold" style={{ color: '#173b78' }}>
+            獎勵倍率對照表
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="staff-close-pill text-[11px] px-2 py-[2px] font-bold"
+          >
+            X
+          </button>
+        </div>
+        <div
+          className="staff-paper-card px-3 py-2 mb-3 flex items-baseline gap-3 flex-wrap"
+          style={{ borderColor: `${color}66` }}
+        >
+          <span className="text-[11px] font-bold" style={{ color: 'var(--muted)' }}>
+            目前該隊
+          </span>
+          <span className="text-sm font-black" style={{ color: '#7a4a1c' }}>
+            有效專業 {teamEffQuality.toFixed(1)}
+          </span>
+          <span className="text-sm font-black" style={{ color: '#3a7a3f' }}>
+            → ×{teamPayoutMul.toFixed(2)}
+          </span>
+        </div>
+        <div className="overflow-hidden rounded-md mt-3 mx-auto" style={{ border: '1px solid var(--line)', maxWidth: 320 }}>
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr style={{ background: '#f0f6ff' }}>
+                <th className="text-center px-2 py-1 font-bold" style={{ color: 'var(--muted)' }}>
+                  有效專業加總
+                </th>
+                <th className="text-center px-2 py-1 font-bold" style={{ color: 'var(--muted)' }}>
+                  獎勵倍率
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {QUALITY_TABLE.map((row) => {
+                const isHere =
+                  teamEffQuality >= row.eff &&
+                  (QUALITY_TABLE[QUALITY_TABLE.indexOf(row) + 1]?.eff ?? Infinity) > teamEffQuality;
+                return (
+                  <tr
+                    key={row.eff}
+                    style={{
+                      background: isHere ? '#fff5b8' : 'transparent',
+                      fontWeight: isHere ? 800 : 500,
+                    }}
+                  >
+                    <td className="text-center px-2 py-1">
+                      {row.eff === 80 ? `≤ ${row.eff}` : row.eff === 280 ? `≥ ${row.eff}` : row.eff}
+                    </td>
+                    <td className="text-center px-2 py-1" style={{ color: '#3a7a3f' }}>
+                      ×{row.mul.toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ProjectChip({ project, color }: { project: Project; color: string }) {
@@ -686,18 +860,33 @@ function SlotCell({
         <GradeGem grade={grade} size={22} />
       </div>
 
-      <span
-        className="absolute top-1.5 right-1.5 z-10 text-[9px] font-extrabold rounded-sm"
-        style={{
-          padding: '1px 4px',
-          background: 'linear-gradient(180deg,#ffe066,#f0a818)',
-          color: '#6a3d05',
-          border: '1px solid rgba(255,255,255,0.6)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
-        }}
-      >
-        Lv.{dog.level}
-      </span>
+      <div className="absolute top-1.5 right-1.5 z-10 flex flex-col items-end gap-0.5">
+        <span
+          className="text-[9px] font-extrabold rounded-sm"
+          style={{
+            padding: '1px 4px',
+            background: 'linear-gradient(180deg,#ffe066,#f0a818)',
+            color: '#6a3d05',
+            border: '1px solid rgba(255,255,255,0.6)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+          }}
+        >
+          Lv.{dog.level}
+        </span>
+        <span
+          className="text-[9px] font-extrabold rounded-sm leading-none"
+          style={{
+            padding: '1px 4px',
+            background: 'linear-gradient(180deg,#ffd6f3,#ff7eb6)',
+            color: '#5a1a3a',
+            border: '1px solid rgba(255,255,255,0.6)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+          }}
+          title={`已突破 ${dog.breakthroughs ?? 0} 次`}
+        >
+          ✦{dog.breakthroughs ?? 0}
+        </span>
+      </div>
 
       <div
         className="absolute z-10 rounded-full flex items-center justify-center"
@@ -919,18 +1108,33 @@ function StaffCell({
       </div>
 
       {/* 右上 Lv chip */}
-      <span
-        className="absolute top-1.5 right-1.5 z-10 text-[9px] font-extrabold rounded-sm"
-        style={{
-          padding: '1px 4px',
-          background: 'linear-gradient(180deg,#ffe066,#f0a818)',
-          color: '#6a3d05',
-          border: '1px solid rgba(255,255,255,0.6)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
-        }}
-      >
-        Lv.{dog.level}
-      </span>
+      <div className="absolute top-1.5 right-1.5 z-10 flex flex-col items-end gap-0.5">
+        <span
+          className="text-[9px] font-extrabold rounded-sm"
+          style={{
+            padding: '1px 4px',
+            background: 'linear-gradient(180deg,#ffe066,#f0a818)',
+            color: '#6a3d05',
+            border: '1px solid rgba(255,255,255,0.6)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+          }}
+        >
+          Lv.{dog.level}
+        </span>
+        <span
+          className="text-[9px] font-extrabold rounded-sm leading-none"
+          style={{
+            padding: '1px 4px',
+            background: 'linear-gradient(180deg,#ffd6f3,#ff7eb6)',
+            color: '#5a1a3a',
+            border: '1px solid rgba(255,255,255,0.6)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+          }}
+          title={`已突破 ${dog.breakthroughs ?? 0} 次`}
+        >
+          ✦{dog.breakthroughs ?? 0}
+        </span>
+      </div>
 
       {/* 右下產業 icon（在姓名條上方） */}
       <div

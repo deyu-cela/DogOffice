@@ -3,7 +3,7 @@ import { useUiStore } from '@/store/uiStore';
 import { ConstructionPanel } from '@/features/shop/ConstructionPanel';
 
 const TITLE = {
-  construction: '營建',
+  construction: '擴建',
 } as const;
 
 const SUBTITLE = {

@@ -176,7 +176,7 @@ export function GachaCard({ result, revealed, flyDelay, onReveal, size = 120 }: 
                 border: '1px solid #5fa0e8',
               }}
             >
-              {result.fragmentGained > 0 ? `+${result.fragmentGained}碎片` : `+$${result.refunded}`}
+              {result.breakthroughGained > 0 ? `✨突破+${result.breakthroughGained}` : `+$${result.refunded}`}
             </div>
           )}
           {!result.duplicate && (

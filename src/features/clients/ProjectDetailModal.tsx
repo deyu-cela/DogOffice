@@ -161,7 +161,7 @@ export function ProjectDetailModal({
 
           {/* 案件資訊 */}
           <div className="px-4">
-            <div className="grid grid-cols-4 gap-1.5 text-[11px] p-2.5 rounded-lg" style={{ background: '#f7fbff', border: '1px solid var(--line)' }}>
+            <div className="grid grid-cols-3 gap-1.5 text-[11px] p-2.5 rounded-lg" style={{ background: '#f7fbff', border: '1px solid var(--line)' }}>
               <div className="text-center">
                 <div style={{ color: 'var(--muted)' }}>酬勞</div>
                 <div className="text-base font-extrabold" style={{ color: '#3a7a3f' }}>${project.reward}</div>
@@ -169,10 +169,6 @@ export function ProjectDetailModal({
               <div className="text-center">
                 <div style={{ color: 'var(--muted)' }}>工作量</div>
                 <div className="text-base font-extrabold">{project.workRequired}</div>
-              </div>
-              <div className="text-center">
-                <div style={{ color: 'var(--muted)' }}>期望品質</div>
-                <div className="text-base font-extrabold">{project.expectedQuality}</div>
               </div>
               <div className="text-center">
                 <div style={{ color: 'var(--muted)' }}>違約金</div>

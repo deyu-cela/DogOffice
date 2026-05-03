@@ -2,8 +2,8 @@ import { DogAvatar } from '@/components/DogAvatar';
 import {
   useGameStore,
   dogLevelUpCost,
-  dogLevelUpFragmentCost,
   DOG_LEVEL_MAX,
+  DOG_BREAKTHROUGH_MAX,
 } from '@/store/gameStore';
 import { dogPowerStars, dogGrade } from '@/lib/utils';
 import { DOG_TRAITS_MAP, type DogTraitId } from '@/constants/dogTraits';
@@ -65,9 +65,7 @@ export function StaffActionModal() {
   const staff = useGameStore((s) => s.staff);
   const money = useGameStore((s) => s.money);
   const close = useGameStore((s) => s.closeStaffAction);
-  const fire = useGameStore((s) => s.fireStaff);
   const upgradeDog = useGameStore((s) => s.upgradeDogLevel);
-  const upgradeDogFrag = useGameStore((s) => s.upgradeDogWithFragments);
   const openTraitChoice = useGameStore((s) => s.openTraitChoiceModal);
   const tools = useGameStore((s) => s.tools);
   const teams = useGameStore((s) => s.teams);
@@ -76,7 +74,6 @@ export function StaffActionModal() {
   if (!modal) return null;
   const dog = staff[modal.staffIndex];
   if (!dog) return null;
-  const idx = modal.staffIndex;
   const grade = dogGrade(dog);
   const power = dogPowerWithTools(dog, tools, teams);
   const stars = dogPowerStars(power);
@@ -84,11 +81,10 @@ export function StaffActionModal() {
 
   const canUpgrade = dog.level < DOG_LEVEL_MAX;
   const cost = canUpgrade ? dogLevelUpCost(dog.level) : 0;
-  const fragNeed = canUpgrade ? dogLevelUpFragmentCost(dog.level) : 0;
   const nextLevel = dog.level + 1;
   const unlocksTrait = canUpgrade && TRAIT_UNLOCK_LEVELS.has(nextLevel);
   const moneyOK = money >= cost;
-  const fragOK = dog.fragments >= fragNeed;
+  const breakthroughs = dog.breakthroughs ?? 0;
 
   return (
     <div
@@ -135,54 +131,6 @@ export function StaffActionModal() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-lg font-extrabold">{dog.name}</span>
-              {(() => {
-                const equipped = dog.equippedToolId
-                  ? tools.find((t) => t.instanceId === dog.equippedToolId) ?? null
-                  : null;
-                const isLocked = !!equipped?.lockedToDogId;
-                const toolCat = getDogToolCategory(dog);
-                // 一般狗：沒 toolCat 就不顯示；CEO 例外（顯示鎖定 U 工具）
-                if (!toolCat && !(dog.isCEO && equipped)) return null;
-                const clickable = !isLocked && !!toolCat;
-                return (
-                  <button
-                    type="button"
-                    onClick={clickable ? () => openToolPicker(dog.id) : undefined}
-                    disabled={!clickable}
-                    className="staff-chip-btn flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-bold"
-                    style={{
-                      color: equipped ? '#7a4a1c' : '#6b7a8a',
-                      cursor: clickable ? 'pointer' : 'default',
-                    }}
-                    title={
-                      isLocked
-                        ? `${equipped!.name}（${equipped!.grade}・永久綁定）`
-                        : equipped
-                        ? `${equipped.name}（${equipped.grade}）`
-                        : '裝備玩具'
-                    }
-                  >
-                    <SvgIcon name="tool" size={14} />
-                    {equipped ? (
-                      <>
-                        <SvgIcon name={equipped.iconName} size={14} />
-                        <span
-                          className="text-[10px] px-1 rounded font-black"
-                          style={{
-                            background: TOOL_GRADE_BG[equipped.grade],
-                            color: TOOL_GRADE_TEXT[equipped.grade],
-                          }}
-                        >
-                          {equipped.grade}
-                        </span>
-                        {isLocked && <span className="text-[10px]">🔒</span>}
-                      </>
-                    ) : (
-                      <span>無</span>
-                    )}
-                  </button>
-                );
-              })()}
               <span
                 className="text-[11px] px-1.5 rounded-md font-extrabold"
                 style={{
@@ -203,16 +151,100 @@ export function StaffActionModal() {
               >
                 Lv.{dog.level}
               </span>
+              <span
+                className="text-[11px] px-1.5 rounded-md font-extrabold"
+                style={{
+                  background: 'linear-gradient(180deg,#ffd6f3,#ff7eb6)',
+                  color: '#5a1a3a',
+                  border: '1px solid rgba(255,255,255,0.6)',
+                }}
+                title={`已突破 ${breakthroughs} 次（全能力 +${breakthroughs}）`}
+              >
+                ✦突破{breakthroughs}/{DOG_BREAKTHROUGH_MAX}
+              </span>
             </div>
             <div className="text-sm" style={{ color: 'var(--muted)' }}>
               {dog.breed}・{dog.role}
             </div>
           </div>
+          {/* 右側裝備格（80x80 與頭像同尺寸） */}
+          {(() => {
+            const equipped = dog.equippedToolId
+              ? tools.find((t) => t.instanceId === dog.equippedToolId) ?? null
+              : null;
+            const isLocked = !!equipped?.lockedToDogId;
+            const toolCat = getDogToolCategory(dog);
+            const canEquip = !!toolCat;
+            const clickable = canEquip || !!equipped; // 有 toolCat 或已裝備（CEO 唯讀）才可點
+            const borderColor = equipped
+              ? `${GRADE_RING_COLOR[grade]}99`
+              : canEquip
+              ? '#9aacc5'
+              : '#cbd3df';
+            return (
+              <button
+                type="button"
+                onClick={clickable ? () => openToolPicker(dog.id) : undefined}
+                disabled={!clickable}
+                className="relative flex flex-col items-center justify-center"
+                style={{
+                  width: 80,
+                  height: 80,
+                  flexShrink: 0,
+                  borderRadius: 10,
+                  border: `2px dashed ${borderColor}`,
+                  background: equipped ? '#fffaf0' : '#f8fafc',
+                  cursor: clickable ? 'pointer' : 'not-allowed',
+                  padding: 0,
+                }}
+                title={
+                  !canEquip && !equipped
+                    ? '此職業不可裝備玩具'
+                    : isLocked
+                    ? `${equipped!.name}（${equipped!.grade}・永久綁定，點擊看詳情）`
+                    : equipped
+                    ? `${equipped.name}（${equipped.grade}）點擊更換`
+                    : '點擊裝備玩具'
+                }
+              >
+                {equipped ? (
+                  <>
+                    <SvgIcon name={equipped.iconName} size={44} />
+                    <span
+                      className="absolute top-1 right-1 text-[10px] px-1 rounded font-black leading-none"
+                      style={{
+                        background: TOOL_GRADE_BG[equipped.grade],
+                        color: TOOL_GRADE_TEXT[equipped.grade],
+                        padding: '2px 4px',
+                      }}
+                    >
+                      {equipped.grade}
+                    </span>
+                    {isLocked && (
+                      <span
+                        className="absolute bottom-1 left-1 text-[10px] leading-none"
+                        title="永久綁定"
+                      >
+                        🔒
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span
+                    className="text-sm font-extrabold"
+                    style={{ color: canEquip ? '#6b7a8a' : '#b8c1cf' }}
+                  >
+                    {canEquip ? '玩具' : '不可裝備'}
+                  </span>
+                )}
+              </button>
+            );
+          })()}
         </div>
 
-        {/* B. Power */}
+        {/* B. Power（壓低高度） */}
         <div
-            className="staff-paper-card p-3 mb-3"
+            className="staff-paper-card px-3 py-1.5 mb-2"
           style={{
               background:
                 'repeating-linear-gradient(0deg, rgba(186,121,82,0.06) 0 1px, transparent 1px 16px), linear-gradient(180deg, #fff5b8 0%, #ffe87a 100%)',
@@ -221,74 +253,137 @@ export function StaffActionModal() {
         >
           <div className="flex items-baseline gap-2">
             <span className="text-[11px] font-bold" style={{ color: 'var(--muted)' }}>工作能力</span>
-            <span className="text-2xl font-black" style={{ color: '#7a4a1c' }}>💼 {power}</span>
-            <span className="ml-auto" style={{ fontSize: 14, letterSpacing: 2 }}>
+            <span className="text-lg font-black leading-none" style={{ color: '#7a4a1c' }}>💼 {power}</span>
+            <div
+              className="staff-meter-track ml-2 flex-1 h-1.5 rounded-full overflow-hidden"
+              title={`${powerPct}%`}
+            >
+              <div
+                className="h-full"
+                style={{
+                  width: `${powerPct}%`,
+                  background: 'linear-gradient(90deg, #ffd95a, #f0a818)',
+                }}
+              />
+            </div>
+            <span style={{ fontSize: 12, letterSpacing: 1 }}>
               <span style={{ color: '#f0a818' }}>{'★'.repeat(stars)}</span>
               <span style={{ color: '#d0d8e4' }}>{'★'.repeat(5 - stars)}</span>
             </span>
           </div>
-          <div className="staff-meter-track mt-1.5 h-2 rounded-full overflow-hidden">
-            <div
-              className="h-full"
-              style={{
-                width: `${powerPct}%`,
-                background: 'linear-gradient(90deg, #ffd95a, #f0a818)',
-              }}
-            />
-          </div>
         </div>
 
-        {/* C. 4 stats */}
+        {/* C. stats（速度/專業/耐心/疲勞，2 欄；疲勞落在專業下方） */}
         {(() => {
           const toolBoost = getDogToolStatBoost(dog, tools, teams);
+          // 順序：速度、專業、耐心、疲勞 → grid-cols-2 排成
+          //   速度  專業
+          //   耐心  疲勞 → 不對，要「疲勞在專業下面」（同欄）→ 改順序：速度、專業、疲勞、耐心？
+          // 用 grid-flow-col 兩欄佈局：左欄 [速度, 耐心]、右欄 [專業, 疲勞]
           return (
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-3">
-              {STAT_LABELS.map(({ key, label, color }) => {
-                const base = dog.stats[key];
-                const bonus = key === 'speed' ? toolBoost.speed : key === 'quality' ? toolBoost.quality : 0;
-                const total = base + bonus;
-                const display = Math.round(base);
-                const bonusDisplay = bonus > 0 ? `+${bonus.toFixed(1)}` : null;
-                const basePct = Math.max(0, Math.min(100, base * 10));
-                const totalPct = Math.max(0, Math.min(100, total * 10));
+            <div className="grid grid-cols-2 grid-rows-2 grid-flow-col gap-x-3 gap-y-1.5 mb-3">
+              {/* 左欄：速度、耐心 */}
+              {(['speed', 'patience'] as const).map((key) => {
+                const meta = STAT_LABELS.find((s) => s.key === key)!;
+                const current = dog.stats[key];
+                const breakBonus = breakthroughs;
+                const baseOnly = Math.max(0, current - breakBonus);
+                const toolBonus = key === 'speed' ? toolBoost.speed : 0;
+                const baseDisplay = Math.round(baseOnly);
+                const breakDisplay = breakBonus > 0 ? `✦+${breakBonus}` : null;
+                const toolDisplay = toolBonus > 0 ? `+${toolBonus.toFixed(1)}` : null;
+                const basePct = Math.max(0, Math.min(100, (baseOnly / 30) * 100));
+                const breakPct = Math.max(0, Math.min(100, ((baseOnly + breakBonus) / 30) * 100));
+                const totalPct = Math.max(0, Math.min(100, ((baseOnly + breakBonus + toolBonus) / 30) * 100));
                 return (
                   <div key={key}>
                     <div className="flex justify-between items-baseline text-[11px] mb-0.5">
-                      <span style={{ color: 'var(--muted)' }}>{label}</span>
+                      <span style={{ color: 'var(--muted)' }}>{meta.label}</span>
                       <span className="flex items-baseline gap-1">
-                        <span className="font-extrabold" style={{ color }}>{display}</span>
-                        {bonusDisplay && (
-                          <span
-                            className="font-extrabold text-[10px]"
-                            style={{ color: '#16a77f' }}
-                            title="玩具加成"
-                          >
-                            {bonusDisplay}
+                        <span className="font-extrabold" style={{ color: meta.color }}>{baseDisplay}</span>
+                        {breakDisplay && (
+                          <span className="font-extrabold text-[10px]" style={{ color: '#c2185b' }} title={`突破加成 +${breakBonus}`}>
+                            {breakDisplay}
+                          </span>
+                        )}
+                        {toolDisplay && (
+                          <span className="font-extrabold text-[10px]" style={{ color: '#16a77f' }} title="玩具加成">
+                            {toolDisplay}
                           </span>
                         )}
                       </span>
                     </div>
-                    <div
-                      className="relative h-1.5 rounded-full overflow-hidden"
-                      style={{ background: '#e4eefc' }}
-                    >
-                      {bonus > 0 && (
-                        <div
-                          className="absolute inset-y-0 left-0"
-                          style={{
-                            width: `${totalPct}%`,
-                            background: 'rgba(22,167,127,0.55)',
-                          }}
-                        />
+                    <div className="relative h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
+                      {toolBonus > 0 && (
+                        <div className="absolute inset-y-0 left-0" style={{ width: `${totalPct}%`, background: 'rgba(22,167,127,0.55)' }} />
                       )}
-                      <div
-                        className="absolute inset-y-0 left-0"
-                        style={{ width: `${basePct}%`, background: color }}
-                      />
+                      {breakBonus > 0 && (
+                        <div className="absolute inset-y-0 left-0" style={{ width: `${breakPct}%`, background: 'rgba(255,126,182,0.65)' }} />
+                      )}
+                      <div className="absolute inset-y-0 left-0" style={{ width: `${basePct}%`, background: meta.color }} />
                     </div>
                   </div>
                 );
               })}
+              {/* 右欄：專業、疲勞（疲勞落在專業下方） */}
+              {(() => {
+                const meta = STAT_LABELS.find((s) => s.key === 'quality')!;
+                const current = dog.stats.quality;
+                const breakBonus = breakthroughs;
+                const baseOnly = Math.max(0, current - breakBonus);
+                const toolBonus = toolBoost.quality;
+                const baseDisplay = Math.round(baseOnly);
+                const breakDisplay = breakBonus > 0 ? `✦+${breakBonus}` : null;
+                const toolDisplay = toolBonus > 0 ? `+${toolBonus.toFixed(1)}` : null;
+                const basePct = Math.max(0, Math.min(100, (baseOnly / 30) * 100));
+                const breakPct = Math.max(0, Math.min(100, ((baseOnly + breakBonus) / 30) * 100));
+                const totalPct = Math.max(0, Math.min(100, ((baseOnly + breakBonus + toolBonus) / 30) * 100));
+                return (
+                  <div key="quality">
+                    <div className="flex justify-between items-baseline text-[11px] mb-0.5">
+                      <span style={{ color: 'var(--muted)' }}>{meta.label}</span>
+                      <span className="flex items-baseline gap-1">
+                        <span className="font-extrabold" style={{ color: meta.color }}>{baseDisplay}</span>
+                        {breakDisplay && (
+                          <span className="font-extrabold text-[10px]" style={{ color: '#c2185b' }} title={`突破加成 +${breakBonus}`}>
+                            {breakDisplay}
+                          </span>
+                        )}
+                        {toolDisplay && (
+                          <span className="font-extrabold text-[10px]" style={{ color: '#16a77f' }} title="玩具加成">
+                            {toolDisplay}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="relative h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
+                      {toolBonus > 0 && (
+                        <div className="absolute inset-y-0 left-0" style={{ width: `${totalPct}%`, background: 'rgba(22,167,127,0.55)' }} />
+                      )}
+                      {breakBonus > 0 && (
+                        <div className="absolute inset-y-0 left-0" style={{ width: `${breakPct}%`, background: 'rgba(255,126,182,0.65)' }} />
+                      )}
+                      <div className="absolute inset-y-0 left-0" style={{ width: `${basePct}%`, background: meta.color }} />
+                    </div>
+                  </div>
+                );
+              })()}
+              {/* 疲勞（位於專業下方） */}
+              <div key="fatigue">
+                <div className="flex justify-between items-baseline text-[11px] mb-0.5">
+                  <span style={{ color: 'var(--muted)' }}>疲勞</span>
+                  <span className="font-extrabold" style={{ color: '#d97706' }}>{Math.round(dog.fatigue)}</span>
+                </div>
+                <div className="relative h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
+                  <div
+                    className="absolute inset-y-0 left-0"
+                    style={{
+                      width: `${Math.max(0, Math.min(100, dog.fatigue))}%`,
+                      background: '#ffc35c',
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           );
         })()}
@@ -316,12 +411,6 @@ export function StaffActionModal() {
           </div>
         )}
 
-        {/* F. meters */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <MeterMini label="疲勞" value={dog.fatigue} color="#ffc35c" />
-          <MeterMini label="忠誠" value={dog.loyalty} color="#2f8df4" />
-        </div>
-
         {/* motto */}
         <div
           className="staff-paper-card text-sm mb-3 p-3"
@@ -330,50 +419,10 @@ export function StaffActionModal() {
           {dog.motto}
         </div>
 
-        {/* D. Upgrade actions */}
-        {canUpgrade && (
-          <div className="mb-3 flex flex-col gap-1.5">
-            {unlocksTrait && (
-              <div className="text-[11px] text-center font-extrabold" style={{ color: '#c0610a' }}>
-                ✦ 升 Lv.{nextLevel} 解鎖新特性
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => upgradeDog(dog.id)}
-                disabled={!moneyOK}
-                className="staff-soft-btn py-2 font-extrabold text-xs"
-                style={{
-                  background: moneyOK
-                    ? 'linear-gradient(180deg, #ffd95a, #f0a818)'
-                    : '#e9f1ff',
-                  color: moneyOK ? '#6a3d05' : '#8aa2c8',
-                  border: '1px solid rgba(176,107,15,0.4)',
-                  cursor: moneyOK ? 'pointer' : 'not-allowed',
-                }}
-                title={moneyOK ? `花 $${cost} 升級` : `需要 $${cost}`}
-              >
-                $升級 ${cost}
-              </button>
-              <button
-                type="button"
-                onClick={() => upgradeDogFrag(dog.id)}
-                disabled={!fragOK}
-                className="staff-soft-btn py-2 font-extrabold text-xs"
-                style={{
-                  background: fragOK
-                    ? 'linear-gradient(180deg, #ff8aa3, #ff5a7a)'
-                    : 'rgba(255,240,237,0.68)',
-                  color: fragOK ? '#ffffff' : '#a98a80',
-                  border: '1px solid rgba(214,60,100,0.3)',
-                  cursor: fragOK ? 'pointer' : 'not-allowed',
-                }}
-                title={fragOK ? `用 ${fragNeed} 碎片升級` : `碎片不足（${dog.fragments}/${fragNeed}）`}
-              >
-                碎片強化 {dog.fragments}/{fragNeed}
-              </button>
-            </div>
+        {/* D. 升等解鎖特性提示 */}
+        {canUpgrade && unlocksTrait && (
+          <div className="mb-2 text-[11px] text-center font-extrabold" style={{ color: '#c0610a' }}>
+            ✦ 升 Lv.{nextLevel} 解鎖新特性
           </div>
         )}
 
@@ -401,36 +450,41 @@ export function StaffActionModal() {
           >
             關閉
           </button>
-          <button
-            onClick={() => fire(idx)}
-            className="staff-kawaii-btn py-2 font-bold"
-            style={{
-              background: 'linear-gradient(180deg, #ff8d8d, #e24c4c)',
-              color: 'white',
-            }}
-          >
-            資遣 ${dog.severance}
-          </button>
+          {canUpgrade ? (
+            <button
+              type="button"
+              onClick={() => upgradeDog(dog.id)}
+              disabled={!moneyOK}
+              className="staff-soft-btn py-2 font-extrabold"
+              style={{
+                background: moneyOK
+                  ? 'linear-gradient(180deg, #ffd95a, #f0a818)'
+                  : '#e9f1ff',
+                color: moneyOK ? '#6a3d05' : '#8aa2c8',
+                border: '1px solid rgba(176,107,15,0.4)',
+                cursor: moneyOK ? 'pointer' : 'not-allowed',
+              }}
+              title={moneyOK ? `花 $${cost} 升級` : `需要 $${cost}`}
+            >
+              $升級 ${cost}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="staff-soft-btn py-2 font-extrabold"
+              style={{
+                background: '#e9f1ff',
+                color: '#8aa2c8',
+                cursor: 'not-allowed',
+              }}
+            >
+              已滿等
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function MeterMini({ label, value, color }: { label: string; value: number; color: string }) {
-  const display = Math.round(value);
-  return (
-    <div>
-      <div className="flex justify-between text-[11px] mb-0.5">
-        <span style={{ color: 'var(--muted)' }}>{label}</span>
-        <span style={{ color: 'var(--muted)' }}>{display}</span>
-      </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#e4eefc' }}>
-        <div
-          className="h-full"
-          style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color }}
-        />
-      </div>
-    </div>
-  );
-}

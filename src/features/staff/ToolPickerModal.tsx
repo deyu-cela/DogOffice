@@ -46,18 +46,23 @@ export function ToolPickerModal() {
     return m;
   }, [staff]);
 
-  if (!modal || !dog || !dogCategory) return null;
+  if (!modal || !dog) return null;
 
   const equippedTool = dog.equippedToolId
     ? tools.find((t) => t.instanceId === dog.equippedToolId) ?? null
     : null;
 
-  const candidates = tools.filter(
-    (t) =>
-      !t.lockedToDogId &&
-      t.category === dogCategory &&
-      (!equipBy.has(t.instanceId) || equipBy.get(t.instanceId) === dog.id),
-  );
+  // 唯讀模式：CEO/PM 沒 toolCategory，或裝備已被永久綁定
+  const readOnly = !dogCategory || !!equippedTool?.lockedToDogId;
+
+  const candidates = !readOnly && dogCategory
+    ? tools.filter(
+        (t) =>
+          !t.lockedToDogId &&
+          t.category === dogCategory &&
+          (!equipBy.has(t.instanceId) || equipBy.get(t.instanceId) === dog.id),
+      )
+    : [];
 
   return (
     <div
@@ -76,7 +81,7 @@ export function ToolPickerModal() {
             <div className="min-w-0">
             <div className="text-base font-extrabold">{dog.name} 的裝備</div>
             <div className="text-xs" style={{ color: 'var(--muted)' }}>
-              {CATEGORY_LABEL[dogCategory]} 產業玩具
+              {dogCategory ? `${CATEGORY_LABEL[dogCategory]} 產業玩具` : dog.isCEO ? 'CEO 專屬神兵（永久綁定）' : '此職業不可裝備玩具'}
             </div>
             </div>
           </div>
@@ -93,23 +98,29 @@ export function ToolPickerModal() {
           <div
             className="tool-equipped-card p-3 mb-3 mx-4"
           >
-            <div className="text-[11px] font-bold mb-2" style={{ color: '#7a4a1c' }}>已裝備</div>
+            <div className="text-[11px] font-bold mb-2" style={{ color: '#7a4a1c' }}>
+              已裝備{equippedTool.lockedToDogId ? '（永久綁定）' : ''}
+            </div>
             <ToolCard tool={equippedTool} />
-            <button
-              type="button"
-              onClick={() => unequip(dog.id)}
-              className="tool-action-danger mt-2 w-full py-2 font-bold text-sm"
-            >
-              卸下
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => unequip(dog.id)}
+                className="tool-action-danger mt-2 w-full py-2 font-bold text-sm"
+              >
+                卸下
+              </button>
+            )}
           </div>
         )}
 
-        <div className="tool-count-chip text-[11px] font-bold">
-          可用玩具（{candidates.length}）
-        </div>
+        {!readOnly && (
+          <div className="tool-count-chip text-[11px] font-bold">
+            可用玩具（{candidates.length}）
+          </div>
+        )}
 
-        {candidates.length === 0 ? (
+        {readOnly ? null : candidates.length === 0 ? (
           <div
             className="tool-paper-empty text-sm text-center py-8 mx-4"
             style={{ color: '#886153' }}

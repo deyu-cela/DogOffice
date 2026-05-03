@@ -1,30 +1,17 @@
 import { SvgIcon } from '@/components/SvgIcon';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
+import { SHOP_ITEMS } from '@/constants/shopItems';
 import {
-  SPECIAL_TASK_BASELINE_LEVEL,
-  SPECIAL_TASK_BASE_DAYS,
-} from '@/constants/specialTasks';
-import { estimateSpecialTaskRemainingDays, teamTotalAbility, useGameStore } from '@/store/gameStore';
+  estimateSpecialTaskRemainingDays,
+  OFFICE_DAILY_EXPENSE,
+  teamTotalAbility,
+  useGameStore,
+} from '@/store/gameStore';
 import './shop.css';
-
-const OFFICE_TIER_BONUS = [0, 5, 12, 22, 35];
-const OFFICE_TIER_CAP = [3, 3, 4, 4, 5];
 
 const cardStyle: React.CSSProperties = {
   color: '#5b382d',
 };
-
-function upgradeBenefits(curLv: number): string[] {
-  const next = curLv + 1;
-  const benefits: string[] = [];
-  const curBonus = OFFICE_TIER_BONUS[curLv] ?? 0;
-  const nextBonus = OFFICE_TIER_BONUS[next] ?? 0;
-  if (nextBonus > curBonus) benefits.push(`能力加成 +${nextBonus - curBonus}`);
-  const curCap = OFFICE_TIER_CAP[curLv] ?? 3;
-  const nextCap = OFFICE_TIER_CAP[next] ?? 3;
-  if (nextCap > curCap) benefits.push(`隊伍上限 ${nextCap} 位`);
-  return benefits;
-}
 
 export function ConstructionPanel() {
   const money = useGameStore((s) => s.money);
@@ -32,11 +19,13 @@ export function ConstructionPanel() {
   const upgrade = useGameStore((s) => s.upgradeOffice);
   const specialTasks = useGameStore((s) => s.specialTasks);
   const startSpecialTask = useGameStore((s) => s.startSpecialTask);
+  const purchases = useGameStore((s) => s.purchases);
 
   const curLv = OFFICE_LEVELS[officeLevel];
   const nextLv = OFFICE_LEVELS[officeLevel + 1];
   const atMax = !nextLv;
-  const benefits = atMax ? [] : upgradeBenefits(officeLevel);
+  const curUpkeep = OFFICE_DAILY_EXPENSE[officeLevel] ?? 0;
+  const nextUpkeep = OFFICE_DAILY_EXPENSE[officeLevel + 1] ?? 0;
 
   const targetLevel = officeLevel + 1;
   const task = specialTasks?.[targetLevel];
@@ -44,7 +33,15 @@ export function ConstructionPanel() {
   const taskInProgress = task?.status === 'inProgress';
   const taskAvailable = task?.status === 'available';
 
-  const canUpgrade = !atMax && taskCompleted && money >= (nextLv?.upgradeCost ?? 0);
+  const requiredItems = nextLv?.requiredItems ?? [];
+  const requiredItemStatuses = requiredItems.map((id) => {
+    const item = SHOP_ITEMS.find((i) => i.id === id);
+    return { id, name: item?.name ?? id, owned: (purchases[id] ?? 0) >= 1 };
+  });
+  const itemsReady = requiredItemStatuses.every((it) => it.owned);
+
+  const canUpgrade =
+    !atMax && taskCompleted && itemsReady && money >= (nextLv?.upgradeCost ?? 0);
 
   const rawAbility = useGameStore((s) => teamTotalAbility(s));
   const currentAbility = Number.isFinite(rawAbility) ? rawAbility : 0;
@@ -69,7 +66,7 @@ export function ConstructionPanel() {
           <span>目前辦公室：{curLv.name}（Lv.{officeLevel + 1}）</span>
         </div>
         <div className="text-[11px] mt-1" style={{ color: '#886153' }}>
-          能力加成 +{OFFICE_TIER_BONUS[officeLevel] ?? 0}，隊伍上限 {OFFICE_TIER_CAP[officeLevel] ?? 3} 位
+          每日維護成本 ${curUpkeep}
         </div>
       </div>
 
@@ -105,7 +102,7 @@ export function ConstructionPanel() {
               {taskAvailable && (
                 <>
                   <div className="text-[11px] mt-1" style={{ color: '#886153' }}>
-                    派出 team 累積工作量完成挑戰。基準：全員 Lv{SPECIAL_TASK_BASELINE_LEVEL[targetLevel]} 約 {SPECIAL_TASK_BASE_DAYS[targetLevel]} 天。
+                    派出 team 累積工作量完成挑戰。
                   </div>
                   <button
                     onClick={() => startSpecialTask(targetLevel)}
@@ -143,7 +140,34 @@ export function ConstructionPanel() {
             </div>
           )}
 
-          <div className="shop-paper-card" style={{ ...cardStyle, opacity: taskCompleted ? 1 : 0.82 }}>
+          {requiredItemStatuses.length > 0 && (
+            <div className="shop-paper-card" style={cardStyle}>
+              <div className="font-bold flex items-center gap-1.5" style={{ color: '#5b382d' }}>
+                <span>升級條件</span>
+                {itemsReady ? (
+                  <StatusPill color="#6f966d">已滿足</StatusPill>
+                ) : (
+                  <StatusPill color="#c87e78">未滿足</StatusPill>
+                )}
+              </div>
+              <div className="flex flex-col gap-0.5 mt-1.5">
+                {requiredItemStatuses.map((it) => (
+                  <div
+                    key={it.id}
+                    className="text-[11px] font-bold"
+                    style={{ color: it.owned ? '#6f966d' : '#d74e63' }}
+                  >
+                    {it.owned ? '✓' : '✗'} 已購買「{it.name}」
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div
+            className="shop-paper-card"
+            style={{ ...cardStyle, opacity: taskCompleted && itemsReady ? 1 : 0.82 }}
+          >
             <div className="flex justify-between items-start gap-2">
               <div className="flex-1">
                 <div className="font-bold flex items-center gap-1.5" style={{ color: '#5b382d' }}>
@@ -151,12 +175,17 @@ export function ConstructionPanel() {
                   <span>升級到 {nextLv.name}</span>
                 </div>
                 <div className="flex flex-col gap-0.5 mt-1.5">
-                  {benefits.map((b, i) => (
-                    <div key={i} className="text-[11px]" style={{ color: '#886153' }}>{b}</div>
-                  ))}
+                  <div className="text-[11px]" style={{ color: '#886153' }}>
+                    每日維護成本 ${nextUpkeep}
+                  </div>
                   {!taskCompleted && (
                     <div className="text-[11px] font-bold" style={{ color: '#d74e63' }}>
                       需要先完成特殊任務
+                    </div>
+                  )}
+                  {taskCompleted && !itemsReady && (
+                    <div className="text-[11px] font-bold" style={{ color: '#d74e63' }}>
+                      需要先滿足升級條件
                     </div>
                   )}
                 </div>

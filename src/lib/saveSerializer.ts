@@ -60,14 +60,11 @@ function clampInt(v: number, min: number, max: number): number {
 
 function estimateReputation(state: GameState): number {
   const staff = state.staff;
-  const avgLoyalty = staff.length
-    ? staff.reduce((sum, dog) => sum + dog.loyalty, 0) / staff.length
-    : 55;
   const avgFatigue = staff.length
     ? staff.reduce((sum, dog) => sum + dog.fatigue, 0) / staff.length
     : 20;
   const projectScore = clampInt(50 + state.projectsCompleted * 2 - state.projectsFailed * 5, 0, 100);
-  return clampInt(avgLoyalty * 0.45 + (100 - avgFatigue) * 0.25 + projectScore * 0.3, 0, 100);
+  return clampInt((100 - avgFatigue) * 0.4 + projectScore * 0.6, 0, 100);
 }
 
 function serializeStaff(state: GameState): GameSaveData['staff'] {
@@ -76,7 +73,7 @@ function serializeStaff(state: GameState): GameSaveData['staff'] {
     stats: {
       ...dog.stats,
       teamwork: dog.stats.teamwork ?? dog.stats.patience,
-      charisma: dog.stats.charisma ?? clampInt(dog.loyalty / 14, 1, 10),
+      charisma: dog.stats.charisma ?? 5,
     },
   })) as GameSaveData['staff'];
 }
@@ -130,9 +127,8 @@ function roundDogFields(dog: Record<string, unknown>): Record<string, unknown> {
   return {
     ...dog,
     fatigue: asInt(dog.fatigue, 0),
-    loyalty: asInt(dog.loyalty, 50),
     level: asInt(dog.level, 1),
-    fragments: asInt(dog.fragments, 0),
+    breakthroughs: asInt(dog.breakthroughs, 0),
     daysAtCompany: asInt(dog.daysAtCompany, 0),
     stats: {
       speed: asInt(stats.speed, 1),

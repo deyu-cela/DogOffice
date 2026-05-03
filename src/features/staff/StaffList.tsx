@@ -9,7 +9,7 @@ import { TeamEditModal } from './TeamEditModal';
 import './staff.css';
 
 type FilterKey = 'all' | 'I' | 'II' | 'III';
-type SortKey = 'power' | 'level' | 'grade' | 'loyalty' | 'fatigue';
+type SortKey = 'power' | 'level' | 'grade' | 'fatigue';
 
 const FILTERS: Array<{ key: FilterKey; label: string }> = [
   { key: 'all', label: 'ALL' },
@@ -22,7 +22,6 @@ const SORT_LABEL: Record<SortKey, string> = {
   power: '戰鬥力',
   level: '等級',
   grade: '稀有度',
-  loyalty: '忠誠',
   fatigue: '疲勞低',
 };
 
@@ -87,9 +86,6 @@ function compareStaff(a: StaffRow, b: StaffRow, sortKey: SortKey, desc: boolean)
       break;
     case 'grade':
       result = GRADE_ORDER[b.grade] - GRADE_ORDER[a.grade];
-      break;
-    case 'loyalty':
-      result = a.dog.loyalty - b.dog.loyalty;
       break;
     case 'fatigue':
       result = b.dog.fatigue - a.dog.fatigue;
@@ -330,8 +326,19 @@ function StaffCard({ row, onClick }: { row: StaffRow; onClick: () => void }) {
           style={{ background: GRADE_BAND_BG[grade], color: GRADE_BAND_TEXT[grade] }}
         >
           <div className="flex items-end justify-between gap-1">
-            <div className="relative text-[10px] font-black leading-none">
-              Lv.{dog.level}
+            <div className="relative text-[10px] font-black leading-none flex items-center gap-1">
+              <span>Lv.{dog.level}</span>
+              <span
+                className="px-1 rounded-sm leading-none"
+                style={{
+                  fontSize: 9,
+                  background: 'linear-gradient(180deg,#ffd6f3,#ff7eb6)',
+                  color: '#5a1a3a',
+                }}
+                title={`已突破 ${dog.breakthroughs ?? 0} 次`}
+              >
+                ✦{dog.breakthroughs ?? 0}
+              </span>
             </div>
             <div className="relative text-[10px] leading-none">
               {'★'.repeat(stars)}

@@ -652,7 +652,7 @@ function ConstructionDog3D() {
             boxShadow: '0 2px 6px rgba(180,96,34,0.18)',
           }}
         >
-          營建
+          擴建
         </div>
       </Html>
     </group>

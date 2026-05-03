@@ -27,7 +27,7 @@ function effectLines(combo: ChemistryCombo): EffectLine[] {
   const lines: EffectLine[] = [];
   const b = combo.bonus;
   if (b.speedMul != null) lines.push({ icon: 'speed', label: '速度', value: `×${b.speedMul}` });
-  if (b.qualityMul != null) lines.push({ icon: 'quality', label: '品質', value: `×${b.qualityMul}` });
+  if (b.qualityMul != null) lines.push({ icon: 'quality', label: '專業', value: `×${b.qualityMul}` });
   return lines;
 }
 

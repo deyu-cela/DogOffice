@@ -9,14 +9,14 @@ export const CHEMISTRY_COMBOS: ChemistryCombo[] = [
     type: 'positive',
     category: 'tech',
     bonus: { qualityMul: 1.2, speedMul: 0.9 },
-    msg: '⚗ 工程師+QA：品質大幅提升，但拖慢速度（吵架但精細）',
+    msg: '⚗ 工程師+QA：專業大幅提升，但拖慢速度（吵架但精細）',
   },
   {
     roles: ['業務', '行銷'],
     type: 'positive',
     category: 'marketing',
     bonus: { qualityMul: 1.25 },
-    msg: ' 業務+行銷：行銷案品質 ×1.25（業績火箭式）',
+    msg: ' 業務+行銷：行銷案專業 ×1.25（業績火箭式）',
   },
   {
     roles: ['PM', '工程師'],
@@ -30,14 +30,14 @@ export const CHEMISTRY_COMBOS: ChemistryCombo[] = [
     type: 'positive',
     category: 'design',
     bonus: { qualityMul: 1.2, speedMul: 1.1 },
-    msg: ' 企劃+美術：design 案品質×1.2、速度×1.1（創意火花）',
+    msg: ' 企劃+美術：design 案專業×1.2、速度×1.1（創意火花）',
   },
   {
     roles: ['客服', '業務'],
     type: 'positive',
     category: 'service',
     bonus: { speedMul: 1.15, qualityMul: 1.1 },
-    msg: ' 客服+業務：service 案速度×1.15、品質×1.1',
+    msg: ' 客服+業務：service 案速度×1.15、專業×1.1',
   },
   {
     roles: ['工程師', '業務'],

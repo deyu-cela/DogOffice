@@ -100,20 +100,18 @@ export function dogPrimaryIndustry(role: string): ProjectCategory {
   return ROLE_PRIMARY_INDUSTRY[role] ?? 'tech';
 }
 
-// 碎片轉錢：每碎片折抵 $50（也是 Lv10 重複時的退款單位）
-export const FRAGMENT_TO_MONEY = 50;
-
-// Lv N → Lv N+1 需要的碎片數
-export function dogLevelUpFragmentCost(currentLevel: number): number {
-  if (currentLevel >= DOG_LEVEL_MAX) return Infinity;
-  return currentLevel; // Lv1→2 需 1，Lv2→3 需 2，依此類推；總 1+2+..+9 = 45
-}
+// 突破上限：超過後重複抽到 → 自動轉錢
+export const DOG_BREAKTHROUGH_MAX = 10;
+// 突破滿後再抽到重複的折抵金額
+export const FRAGMENT_TO_MONEY = 10;
+// 突破後 stats 上限放寬（一般升級仍走 20 上限）
+export const DOG_STAT_BREAKTHROUGH_MAX = 30;
 
 export type GachaResult = {
   dog: Dog;
   duplicate: boolean;
-  fragmentGained: number;  // 重複時加幾個碎片（通常 1）
-  refunded: number;        // Lv 10 重複時：(碎片+1) × $50
+  breakthroughGained: number; // 重複時觸發幾次突破（通常 1，已滿則 0）
+  refunded: number;           // 已滿突破時：1 × $10
 };
 
 // 把 RosterEntry 實例化成完整 Dog
@@ -143,7 +141,6 @@ function instantiateRosterDog(entry: RosterEntry): Dog {
     image: ROLE_IMAGE_MAP[entry.role] ?? '',
     isCEO: entry.grade === 'U',
     fatigue: 0,
-    loyalty: 50,
     assignedProjectId: null,
     daysAtCompany: 0,
     unhappyLeaveDays: 0,
@@ -151,7 +148,7 @@ function instantiateRosterDog(entry: RosterEntry): Dog {
     learnedTraits: [],
     pendingTraitChoice: null,
     level: 1,
-    fragments: 0,
+    breakthroughs: 0,
     equippedToolId: null,
   };
 }
@@ -242,7 +239,6 @@ type Actions = {
   removeDogFromTeam: (industry: ProjectCategory, dogId: string) => void;
   autoFillTeam: (industry: ProjectCategory) => void;
   upgradeDogLevel: (dogId: string) => void;          // 用 $
-  upgradeDogWithFragments: (dogId: string) => void;  // 用碎片
 
   // === 新手禮包 ===
   claimStarterPack: () => void;
@@ -918,6 +914,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (nextLevel >= OFFICE_LEVELS.length) return;
     const task = s.specialTasks[nextLevel];
     if (!task || task.status !== 'completed') return;  // 必須先完成特殊任務
+    const requiredItems = OFFICE_LEVELS[nextLevel].requiredItems ?? [];
+    const itemsReady = requiredItems.every((id) => (s.purchases[id] ?? 0) >= 1);
+    if (!itemsReady) return;  // 必須先購買升級條件物品
     const cost = OFFICE_LEVELS[nextLevel].upgradeCost;
     if (s.money < cost) return;
     // 升級後解鎖下一級任務（從 locked → available）
@@ -961,10 +960,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...c,
       assignedStaffIds: c.assignedStaffIds.filter((id) => id !== dog.id),
     }));
-    // 同事 loyalty -3
-    const newStaff = s.staff
-      .filter((_, i) => i !== index)
-      .map((d) => ({ ...d, loyalty: clamp(d.loyalty - 3, 0, 100) }));
+    const newStaff = s.staff.filter((_, i) => i !== index);
     let next: GameState = {
       ...s,
       staff: newStaff,
@@ -1281,13 +1277,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const avgTier = Math.round(1 + next.tierBudget / 25);
       const forced = Math.min(5, Math.max(1, avgTier + 1));
       const liveCount = next.clients.filter((c) => c.status === 'offered' || c.status === 'active').length;
-      if (liveCount < 5) {
+      const openInds = INDUSTRIES.filter((ind) => next.teams[ind].memberIds.length > 0);
+      const occupiedInds = new Set(
+        next.clients
+          .filter((c) => c.status === 'offered' || c.status === 'active')
+          .map((c) => c.category),
+      );
+      const availableInds = openInds.filter((ind) => !occupiedInds.has(ind));
+      if (liveCount < 5 && availableInds.length > 0) {
+        const pickInd = availableInds[Math.floor(Math.random() * availableInds.length)];
         next.clients = [
           ...next.clients,
-          generateProject(next.tierBudget, next.day, next.officeLevel, false, forced as 1 | 2 | 3 | 4 | 5),
+          generateProject(next.tierBudget, next.day, next.officeLevel, false, forced as 1 | 2 | 3 | 4 | 5, pickInd),
         ];
+        next = pushLog(next, ` Pitch Memory 全配對！inbox 多了 1 個 tier${forced} 案`);
+      } else {
+        next = pushLog(next, ` Pitch Memory 全配對！但目前無可補位產業`);
       }
-      next = pushLog(next, ` Pitch Memory 全配對！inbox 多了 1 個 tier${forced} 案`);
     }
     const cashMsg = cashReward > 0 ? `，回饋 $${cashReward}` : '';
     next = pushLog(next, `翻牌結束！配對 ${mg.matches}/8${cashMsg}。`);
@@ -1679,29 +1685,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const owned = s.staff.find((d) => d.rosterId === entry.rosterId);
 
     if (owned) {
-      // 重複：Lv 10 → 全碎片 + 1 都轉錢；未滿級 → 加 1 碎片
+      // 重複：未滿突破 → 自動觸發 1 次突破（全能力+1）；已滿 → +$10
       let next: GameState = { ...s, money: s.money - GACHA_COST };
-      if (owned.level >= DOG_LEVEL_MAX) {
-        const totalFragments = owned.fragments + 1;
-        const refund = totalFragments * FRAGMENT_TO_MONEY;
-        next = {
-          ...next,
-          money: next.money + refund,
-          staff: next.staff.map((d) => (d.id === owned.id ? { ...d, fragments: 0 } : d)),
-        };
-        next = pushLog(next, ` 抽到重複：${owned.name} 已 Lv.10 → ${totalFragments} 碎片轉成 $${refund}`);
+      if (owned.breakthroughs >= DOG_BREAKTHROUGH_MAX) {
+        const refund = FRAGMENT_TO_MONEY;
+        next = { ...next, money: next.money + refund };
+        next = pushLog(next, ` 抽到重複：${owned.name} 突破已滿 → +$${refund}`);
         set(next as Partial<GameStore>);
-        const updated = next.staff.find((d) => d.id === owned.id) ?? owned;
-        return { dog: updated, duplicate: true, fragmentGained: 0, refunded: refund };
+        return { dog: owned, duplicate: true, breakthroughGained: 0, refunded: refund };
       }
+      const newBreak = owned.breakthroughs + 1;
+      const newStats = {
+        speed: clamp(owned.stats.speed + 1, 1, DOG_STAT_BREAKTHROUGH_MAX),
+        quality: clamp(owned.stats.quality + 1, 1, DOG_STAT_BREAKTHROUGH_MAX),
+        patience: clamp(owned.stats.patience + 1, 1, DOG_STAT_BREAKTHROUGH_MAX),
+      };
       next = {
         ...next,
-        staff: next.staff.map((d) => (d.id === owned.id ? { ...d, fragments: d.fragments + 1 } : d)),
+        staff: next.staff.map((d) =>
+          d.id === owned.id ? { ...d, breakthroughs: newBreak, stats: newStats } : d,
+        ),
       };
-      next = pushLog(next, ` 抽到重複：${owned.name} +1 碎片（${owned.fragments + 1} 個）`);
+      next = pushLog(next, `✨ ${owned.name} 觸發突破！全能力 +1（${newBreak}/${DOG_BREAKTHROUGH_MAX}）`);
       set(next as Partial<GameStore>);
       const updated = next.staff.find((d) => d.id === owned.id) ?? owned;
-      return { dog: updated, duplicate: true, fragmentGained: 1, refunded: 0 };
+      return { dog: updated, duplicate: true, breakthroughGained: 1, refunded: 0 };
     }
 
     // 新狗：實例化、加入 staff、自動分配 team
@@ -1740,7 +1748,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     next = applyAutoAccept(next);
     set(next as Partial<GameStore>);
     get().checkAchievements('hire', { dog: hired, prevStaffCount: s.staff.length });
-    return { dog: hired, duplicate: false, fragmentGained: 0, refunded: 0 };
+    return { dog: hired, duplicate: false, breakthroughGained: 0, refunded: 0 };
   },
 
   recruitFromGachaTen: () => {
@@ -1840,24 +1848,35 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set(applyDogLevelUp({ ...s, money: s.money - cost }, dog.id) as Partial<GameStore>);
   },
 
-  upgradeDogWithFragments: (dogId) => {
-    const s = get();
-    const dog = s.staff.find((d) => d.id === dogId);
-    if (!dog) return;
-    if (dog.level >= DOG_LEVEL_MAX) return;
-    const need = dogLevelUpFragmentCost(dog.level);
-    if (dog.fragments < need) return;
-    // 先扣碎片
-    const reduced = {
-      ...s,
-      staff: s.staff.map((d) => (d.id === dogId ? { ...d, fragments: d.fragments - need } : d)),
-    };
-    set(applyDogLevelUp(reduced, dog.id) as Partial<GameStore>);
-  },
-
   claimStarterPack: () => {
     const s = get();
     if (s.claimedStarterPack) return;
+    // 若玩家已從 gacha 抽到 u-1（同一隻 CEO），不重複加入 → 視為突破一次
+    const existing = s.staff.find((d) => d.rosterId === 'u-1');
+    if (existing) {
+      let next: GameState = { ...s, claimedStarterPack: true };
+      if (existing.breakthroughs < DOG_BREAKTHROUGH_MAX) {
+        const newBreak = existing.breakthroughs + 1;
+        const newStats = {
+          speed: clamp(existing.stats.speed + 1, 1, DOG_STAT_BREAKTHROUGH_MAX),
+          quality: clamp(existing.stats.quality + 1, 1, DOG_STAT_BREAKTHROUGH_MAX),
+          patience: clamp(existing.stats.patience + 1, 1, DOG_STAT_BREAKTHROUGH_MAX),
+        };
+        next = {
+          ...next,
+          staff: next.staff.map((d) =>
+            d.id === existing.id ? { ...d, breakthroughs: newBreak, stats: newStats } : d,
+          ),
+        };
+        next = pushLog(next, `✨ 開局禮包：${existing.name} 已在隊伍中 → 觸發突破（${newBreak}/${DOG_BREAKTHROUGH_MAX}）`);
+      } else {
+        next = { ...next, money: next.money + FRAGMENT_TO_MONEY };
+        next = pushLog(next, ` 開局禮包：${existing.name} 突破已滿 → +$${FRAGMENT_TO_MONEY}`);
+      }
+      next.tierBudget = recomputeTierBudget(next);
+      set(next as Partial<GameStore>);
+      return;
+    }
     const dog = createStarterCeo();
     let next: GameState = {
       ...s,
@@ -1954,7 +1973,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const s = get();
     const dog = s.staff.find((d) => d.id === dogId);
     if (!dog) return;
-    if (!getDogToolCategory(dog)) return; // PM/CEO 不開
+    // CEO/PM 也可開啟（唯讀模式，由 ToolPickerModal 處理）
     set({ toolPickerModal: { dogId } });
   },
 
@@ -1981,20 +2000,10 @@ function applyDogLevelUp(state: GameState, dogId: string): GameState {
     const choices = pickTraitChoices(updatedDog, 3);
     if (choices.length > 0) pendingTraitChoice = { choices, roundsLeft: 1 };
   }
-  // 升到 Lv10 → 把剩下的碎片轉成錢
-  let extraMoney = 0;
-  let finalFragments = updatedDog.fragments;
-  if (newLevel >= DOG_LEVEL_MAX && updatedDog.fragments > 0) {
-    extraMoney = updatedDog.fragments * FRAGMENT_TO_MONEY;
-    finalFragments = 0;
-  }
   let next: GameState = {
     ...state,
-    money: state.money + extraMoney,
     staff: state.staff.map((d) =>
-      d.id === dogId
-        ? { ...updatedDog, pendingTraitChoice, fragments: finalFragments }
-        : d,
+      d.id === dogId ? { ...updatedDog, pendingTraitChoice } : d,
     ),
   };
   next = pushLog(
@@ -2003,9 +2012,6 @@ function applyDogLevelUp(state: GameState, dogId: string): GameState {
       ? ` ${dog.name} 強化至 Lv.${newLevel} → 解鎖新特性！`
       : ` ${dog.name} 強化至 Lv.${newLevel}`,
   );
-  if (extraMoney > 0) {
-    next = pushLog(next, ` ${dog.name} 已 Lv.10，剩餘碎片轉成 $${extraMoney}`);
-  }
   return next;
 }
 

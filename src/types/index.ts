@@ -44,9 +44,8 @@ export type Dog = {
 
   // 接案制欄位
   fatigue: number;               // 疲勞 0-100，初始 0
-  loyalty: number;               // 忠誠度 0-100，初始 50
   assignedProjectId: string | null; // 目前指派到的案子 id
-  daysAtCompany: number;         // 在公司多少天（loyalty 自然累積）
+  daysAtCompany: number;         // 在公司多少天
   unhappyLeaveDays: number;      // 連續被拒請假的次數（連 3 直接離職）
   onLeaveDay: number | null;     // 准假當天的 day 編號（該日 0 貢獻；隔天自動清空）
 
@@ -55,9 +54,9 @@ export type Dog = {
   pendingTraitChoice: { choices: string[]; roundsLeft?: number } | null; // 升級後待玩家選的 3 選項；roundsLeft > 1 代表選完還會接下一輪（S 直接面試會一次給 2 輪）
 
   // === 新團隊重構：強化系統 ===
-  level: number;                                // 1-10，玩家用 $ 或碎片升級
-  rosterId?: string;                            // 對應 DOG_ROSTER 條目；圖鑑唯一（重抽 → 加碎片）
-  fragments: number;                            // 累積碎片：升 Lv N→N+1 需要 N 個（與 $ 二擇一）；Lv 10 後抽到 → 全轉錢
+  level: number;                                // 1-10，玩家用 $ 升級
+  rosterId?: string;                            // 對應 DOG_ROSTER 條目；圖鑑唯一（重抽 → 觸發突破）
+  breakthroughs: number;                        // 突破次數 0-10；每次抽到重複自動觸發（全能力+1）；滿 10 後重複 → 自動 +$10
 
   // === 工具系統 ===
   equippedToolId?: string | null;               // 裝備中的工具 instanceId，null/undefined = 沒裝
@@ -159,6 +158,7 @@ export type OfficeLevel = {
   coffee: number;
   lights: number;
   lounge: number;
+  requiredItems?: ShopItemEffectKey[];
 };
 
 export type ShopItemEffectKey =

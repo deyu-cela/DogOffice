@@ -91,9 +91,8 @@ export function DogStatusModal({ dog, onClose }: { dog: Dog; onClose: () => void
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-1.5 mb-3 text-[10px]">
+        <div className="grid grid-cols-1 gap-1.5 mb-3 text-[10px]">
           <Meter label="疲勞" value={dog.fatigue} color="#ffc35c" />
-          <Meter label="忠誠" value={dog.loyalty} color="#2f8df4" />
         </div>
 
         {(dog.learnedTraits ?? []).length > 0 && (
