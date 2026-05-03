@@ -32,6 +32,15 @@ export function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
+export function shade(hex: string, amt: number): string {
+  const c = hex.replace('#', '');
+  const n = parseInt(c, 16);
+  const r = Math.max(0, Math.min(255, ((n >> 16) & 0xff) + amt));
+  const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+  const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+
 // 金額縮寫：>=1M 顯示 1.2M，>=10K 顯示 12.3K，否則千分位
 export function moneyShort(value: number): string {
   if (Math.abs(value) >= 1000000) return `${(value / 1000000).toFixed(1)}M`;

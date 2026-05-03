@@ -2,6 +2,14 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useGameStore } from '@/store/gameStore';
 import { useSaveStore } from '@/store/saveStore';
+import { HangingClipButton } from './HangingClipButton';
+
+const RESTART_ICON = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 12a9 9 0 1 1-3-6.7" />
+    <path d="M21 4v5h-5" />
+  </svg>
+);
 
 export function RestartButton() {
   const [open, setOpen] = useState(false);
@@ -22,21 +30,16 @@ export function RestartButton() {
 
   return (
     <>
-      <button
-        type="button"
+      <HangingClipButton
+        bgColor="#ffe0c8"
+        iconColor="#a86438"
+        clipColor="#d8a888"
+        tilt={3}
+        hangY={1}
+        icon={RESTART_ICON}
+        label="重新開始"
         onClick={() => setOpen(true)}
-        className="grid h-12 w-12 place-items-center rounded-xl text-xl"
-        style={{
-          background: 'linear-gradient(180deg, #ffffff, #f4f9ff)',
-          color: 'var(--text)',
-          border: '1px solid rgba(121, 164, 224, 0.34)',
-          boxShadow: '0 4px 12px rgba(46,104,180,0.1), inset 0 1px 0 rgba(255,255,255,0.95)',
-        }}
-        title="重新開始"
-        aria-label="重新開始"
-      >
-        <RestartIcon />
-      </button>
+      />
       {open &&
         createPortal(
           <div className="fixed inset-0 z-[920] flex items-center justify-center bg-slate-950/50 p-5 backdrop-blur-sm">
@@ -90,34 +93,5 @@ export function RestartButton() {
           document.body,
         )}
     </>
-  );
-}
-
-function RestartIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
-      <defs>
-        <linearGradient id="restart-icon-blue" x1="0" x2="0" y1="4" y2="28">
-          <stop stopColor="#4f95ef" />
-          <stop offset="1" stopColor="#1d5fb8" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M23.8 9.2A10 10 0 1 0 25 20.5"
-        fill="none"
-        stroke="url(#restart-icon-blue)"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M23.4 5.8v6.4H17"
-        fill="none"
-        stroke="url(#restart-icon-blue)"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="16" cy="16" r="3.2" fill="#ffd96a" stroke="#1d5fb8" strokeWidth="1.4" />
-    </svg>
   );
 }

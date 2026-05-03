@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { SvgIcon } from '@/components/SvgIcon';
 import type { LeaderboardEntry } from '@/types';
 import {
   bestLocal,
@@ -9,12 +8,27 @@ import {
   type MyBestResult,
 } from '@/lib/leaderboardApi';
 import { useAuthStore } from '@/store/authStore';
+import './leaderboardPanel.css';
 
 const UNNAMED_COMPANY = '未命名公司';
+const ASSET = (name: string) => `${import.meta.env.BASE_URL}assets/leaderboard/${name}`;
 
 function entryDisplayName(entry: LeaderboardEntry): string {
   const name = (entry.companyName ?? '').trim();
   return name.length > 0 ? name : UNNAMED_COMPANY;
+}
+
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' });
+}
+
+function fmtMoney(n: number): string {
+  return `$${n.toLocaleString()}`;
+}
+
+function isMeEntry(entry: LeaderboardEntry, myBest: MyBestResult | null): boolean {
+  if (!myBest) return false;
+  return entry.date === myBest.entry.date && entry.days === myBest.entry.days;
 }
 
 export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
@@ -59,151 +73,203 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
     };
   }, [authedUser]);
 
+  const top3 = global.slice(0, 3);
+  const rest = global.slice(3, 10);
+  const showMyBest = !!authedUser && !!myBest && myBest.rank > 3;
+
   return (
-    <div
-      className="fixed inset-0 z-[820] flex items-center justify-center bg-[#08204d]/45 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="p-5 rounded-xl max-w-md w-full max-h-[88vh] overflow-hidden flex flex-col"
-        style={{
-          backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,255,0.96))',
-          border: '1px solid var(--line)',
-          boxShadow: '0 24px 70px rgba(30,90,180,0.28)',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#eef6ff', border: '1px solid var(--line)' }}>
-              <SvgIcon name="trophy" size={27} />
-            </div>
-            <div>
-              <h2 className="text-lg font-extrabold">排行榜</h2>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>最先達成豪華總部的紀錄</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm px-3 py-1.5 rounded-lg font-bold"
-            style={{ backgroundColor: '#ffffff', color: 'var(--blue)', border: '1px solid var(--line)' }}
-          >
-            關閉
-          </button>
-        </div>
-
-        {myBest && (
+    <div className="lb-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="lb-title">
+      <div className="lb-stack" onClick={(e) => e.stopPropagation()}>
+        <div className="lb-back lb-back--1" aria-hidden="true" />
+        <div className="lb-back lb-back--2" aria-hidden="true" />
+        <div className="lb-card">
           <div
-            className="mb-3 p-2.5 rounded-lg"
-            style={{ backgroundImage: 'linear-gradient(180deg, #eef6ff, #f7fbff)', border: '1px solid #7fb2ef' }}
-          >
-            <div className="text-[11px] font-bold mb-1" style={{ color: 'var(--blue)' }}>
-              你的最佳成績 #{myBest.rank}
-            </div>
-            <EntryRow rank={myBest.rank} entry={myBest.entry} highlight compact showName={false} />
-          </div>
-        )}
+            className="lb-card__watermark"
+            style={{ backgroundImage: `url(${ASSET('bg-paper-watermark.png')})` }}
+            aria-hidden="true"
+          />
 
-        {loading && <div className="text-center py-2 text-xs" style={{ color: 'var(--muted)' }}>載入中...</div>}
-        {error && (
-          <div className="text-center py-1.5 rounded-lg text-[11px] mb-2" style={{ backgroundColor: '#fff8e8', color: '#c07a20' }}>
-            {error}
-          </div>
-        )}
+          <span className="lb-tape lb-tape--left" aria-hidden="true" />
+          <span className="lb-tape lb-tape--right" aria-hidden="true" />
 
-        <div className="text-[11px] font-bold mb-1.5" style={{ color: 'var(--muted)' }}>Top 10</div>
-        <div className="flex-1 overflow-y-auto">
-          {global.length === 0 ? (
-            <div className="text-center py-10 text-sm" style={{ color: 'var(--muted)' }}>
-              還沒有排行榜紀錄。
+          <img
+            className="lb-trophy"
+            src={ASSET('trophy-badge.png')}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+          />
+          <img
+            className="lb-sparkle lb-sparkle--a"
+            src={ASSET('sparkle-b.png')}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+          />
+          <img
+            className="lb-sparkle lb-sparkle--b"
+            src={ASSET('sparkle-a.png')}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+          />
+
+          <button type="button" onClick={onClose} className="lb-close">關閉</button>
+
+          <div className="lb-header">
+            <div className="lb-eyebrow">LEADERBOARD · 排行榜</div>
+            <h2 id="lb-title" className="lb-title">豪華總部達成榜</h2>
+            <div className="lb-subpill">
+              <span className="lb-subpill__dot" />
+              最先達成豪華總部的紀錄
+              <span className="lb-subpill__dot" />
             </div>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              {global.map((entry, i) => (
-                <EntryRow
-                  key={`${entry.date}-${i}`}
-                  rank={i + 1}
-                  entry={entry}
-                  highlight={!!authedUser && !!myBest && entry.date === myBest.entry.date && entry.days === myBest.entry.days}
-                  showName
-                />
-              ))}
+          </div>
+
+          {showMyBest && (
+            <div className="lb-mybest">
+              <div className="lb-mybest__head">你的最佳成績 #{myBest!.rank}</div>
+              <RowSlim rank={myBest!.rank} entry={myBest!.entry} variant="me" />
+            </div>
+          )}
+
+          {loading && <div className="lb-status">載入中...</div>}
+          {error && <div className="lb-error">{error}</div>}
+
+          {!loading && global.length === 0 && !error && (
+            <div className="lb-empty">還沒有排行榜紀錄。</div>
+          )}
+
+          {top3.length > 0 && (
+            <div className="lb-podium">
+              <div className="lb-podium__top3">★ TOP 3</div>
+              <div className="lb-podium__grid">
+                {top3[1] ? (
+                  <PodiumCard place={2} entry={top3[1]} isMe={isMeEntry(top3[1], myBest)} />
+                ) : (
+                  <div />
+                )}
+                {top3[0] ? (
+                  <PodiumCard place={1} entry={top3[0]} isMe={isMeEntry(top3[0], myBest)} />
+                ) : (
+                  <div />
+                )}
+                {top3[2] ? (
+                  <PodiumCard place={3} entry={top3[2]} isMe={isMeEntry(top3[2], myBest)} />
+                ) : (
+                  <div />
+                )}
+              </div>
+            </div>
+          )}
+
+          {rest.length > 0 && (
+            <>
+              <div className="lb-divider-row">
+                <span className="lb-divider" />
+                <span className="lb-divider-pill">#4 — #10</span>
+                <span className="lb-divider" />
+              </div>
+              <div className="lb-rest">
+                {rest.map((entry, i) => (
+                  <RowSlim
+                    key={`${entry.date}-${i}`}
+                    rank={i + 4}
+                    entry={entry}
+                    variant={isMeEntry(entry, myBest) ? 'me' : i % 2 === 1 ? 'zebra' : 'default'}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {!loading && authedUser && !myBest && global.length > 0 && (
+            <div className="lb-footer">
+              <img className="lb-footer__paw" src={ASSET('paw-stamp.png')} alt="" aria-hidden="true" draggable={false} />
+              把辦公室升級到豪華總部就能登榜！
             </div>
           )}
         </div>
-
-        {!loading && authedUser && !myBest && global.length > 0 && (
-          <div className="mt-3 text-center py-2 rounded-lg text-xs" style={{ backgroundColor: '#f7fbff', color: 'var(--muted)', border: '1px solid var(--line)' }}>
-            你還沒有上榜，把辦公室升級到豪華總部就能登榜！
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-function EntryRow({
+const MEDAL_BY_PLACE: Record<1 | 2 | 3, string> = {
+  1: 'medal-gold.png',
+  2: 'medal-silver.png',
+  3: 'medal-bronze.png',
+};
+
+function PodiumCard({
+  place,
+  entry,
+  isMe,
+}: {
+  place: 1 | 2 | 3;
+  entry: LeaderboardEntry;
+  isMe: boolean;
+}) {
+  const name = entryDisplayName(entry);
+  return (
+    <div className={`lb-podiumcard lb-podiumcard--${place}${isMe ? ' lb-podiumcard--me' : ''}`}>
+      <span className="lb-podiumcard__tape" aria-hidden="true" />
+      {place === 1 && (
+        <img
+          className="lb-podiumcard__crown"
+          src={ASSET('crown-tag.png')}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+        />
+      )}
+      <img
+        className="lb-podiumcard__medal"
+        src={ASSET(MEDAL_BY_PLACE[place])}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+      />
+      <div className="lb-podiumcard__rank">#{place}</div>
+      <div className="lb-podiumcard__name" title={name}>{name}</div>
+      <div className="lb-podiumcard__data">
+        <div>第 {entry.days} 天</div>
+        <div className="lb-podiumcard__data-money">{fmtMoney(entry.money)}</div>
+      </div>
+    </div>
+  );
+}
+
+function RowSlim({
   rank,
   entry,
-  highlight = false,
-  showName = false,
-  compact = false,
+  variant = 'default',
 }: {
   rank: number;
   entry: LeaderboardEntry;
-  highlight?: boolean;
-  showName?: boolean;
-  compact?: boolean;
+  variant?: 'default' | 'zebra' | 'me';
 }) {
-  const isFirst = rank === 1;
-  const detail = `現金 $${entry.money.toLocaleString()} · 員工 ${entry.staffCount} 位`;
-  const company = entryDisplayName(entry);
+  const name = entryDisplayName(entry);
+  const cls =
+    variant === 'me'
+      ? 'lb-rowslim lb-rowslim--me'
+      : variant === 'zebra'
+        ? 'lb-rowslim lb-rowslim--zebra'
+        : 'lb-rowslim';
 
   return (
-    <div
-      className="flex items-center gap-3 p-2.5 rounded-lg"
-      style={{
-        backgroundImage: highlight || (isFirst && !compact) ? 'linear-gradient(180deg, #eef6ff, #f7fbff)' : 'none',
-        backgroundColor: highlight || (isFirst && !compact) ? 'transparent' : '#ffffff',
-        border: highlight || (isFirst && !compact) ? '1px solid #7fb2ef' : '1px solid var(--line)',
-      }}
-    >
-      <div className="text-base font-extrabold w-8 text-center" style={{ color: rank <= 3 ? 'var(--blue)' : 'var(--muted)' }}>
-        #{rank}
-      </div>
-      <div className="flex-1 min-w-0">
-        {showName ? (
-          <>
-            <div className="flex items-baseline gap-1.5 min-w-0">
-              <div className="text-sm font-extrabold truncate" style={{ color: 'var(--ink)' }} title={company}>
-                {company}
-              </div>
-              {entry.nickname && (
-                <div
-                  className="text-[11px] truncate shrink-0"
-                  style={{ color: 'var(--muted)' }}
-                  title={`帳號 ${entry.nickname}`}
-                >
-                  @{entry.nickname}
-                </div>
-              )}
-            </div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>
-              <span className="tabular-nums">第 {entry.days} 天</span>
-              <span> · {detail}</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="text-sm font-bold tabular-nums">第 {entry.days} 天達成</div>
-            <div className="text-xs" style={{ color: 'var(--muted)' }}>{detail}</div>
-          </>
+    <div className={cls}>
+      <div className="lb-rowslim__rank">#{rank}</div>
+      <div className="lb-rowslim__main">
+        <span className="lb-rowslim__name" title={name}>{name}</span>
+        {entry.nickname && (
+          <span className="lb-rowslim__nick" title={`帳號 ${entry.nickname}`}>@{entry.nickname}</span>
         )}
+        <span className="lb-rowslim__detail">
+          第 {entry.days} 天 · {fmtMoney(entry.money)} · 員工 {entry.staffCount}
+        </span>
       </div>
-      <div className="text-[10px] text-right whitespace-nowrap" style={{ color: 'var(--muted)' }}>
-        {new Date(entry.date).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}
-      </div>
+      <div className="lb-rowslim__date">{shortDate(entry.date)}</div>
     </div>
   );
 }

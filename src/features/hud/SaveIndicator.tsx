@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSaveStore } from '@/store/saveStore';
+import { HangingClipButton } from './HangingClipButton';
 
 function formatRelative(ts: number): string {
   const diff = Math.max(0, Math.floor((Date.now() - ts) / 1000));
@@ -8,6 +9,22 @@ function formatRelative(ts: number): string {
   if (diff < 3600) return `${Math.floor(diff / 60)} 分鐘前儲存`;
   return `${Math.floor(diff / 3600)} 小時前儲存`;
 }
+
+const SAVE_ICON = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 3h12l4 4v14H3V5a2 2 0 0 1 2-2z" />
+    <path d="M7 3v6h9V3" />
+    <rect x="7" y="13" width="10" height="6" />
+  </svg>
+);
+
+const WARNING_ICON = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3 22 21H2L12 3Z" />
+    <path d="M12 10v5" />
+    <path d="M12 18v.01" />
+  </svg>
+);
 
 export function SaveIndicator() {
   const status = useSaveStore((s) => s.status);
@@ -22,19 +39,19 @@ export function SaveIndicator() {
     return () => clearInterval(id);
   }, []);
 
-  let label: 'save' | 'busy' | 'warning' = 'save';
+  let state: 'default' | 'warning' | 'busy' = 'default';
   let tooltip = '手動儲存到雲端';
   let disabled = false;
 
   if (status === 'saving') {
-    label = 'busy';
+    state = 'busy';
     tooltip = '正在儲存';
     disabled = true;
   } else if (status === 'conflict') {
-    label = 'warning';
+    state = 'warning';
     tooltip = '雲端存檔衝突，請選擇要保留的版本';
   } else if (status === 'error') {
-    label = 'warning';
+    state = 'warning';
     tooltip = `儲存失敗${error ? `：${error}` : ''}`;
   } else if (lastSavedAt) {
     tooltip = `${formatRelative(lastSavedAt)}，點擊可再次儲存`;
@@ -43,51 +60,20 @@ export function SaveIndicator() {
   }
 
   return (
-    <button
-      type="button"
+    <HangingClipButton
+      bgColor="#d6efd0"
+      iconColor="#3a7a4a"
+      clipColor="#9ac890"
+      tilt={-2}
+      hangY={4}
+      icon={state === 'warning' ? WARNING_ICON : SAVE_ICON}
+      label={tooltip}
+      state={state}
+      disabled={disabled}
       onClick={() => {
         if (disabled) return;
         saveToCloud();
       }}
-      disabled={disabled}
-      title={tooltip}
-      aria-label={tooltip}
-      className="grid h-12 w-12 place-items-center rounded-xl"
-      style={{
-        background: 'linear-gradient(180deg, #ffffff, #f4f9ff)',
-        border: '1px solid rgba(121, 164, 224, 0.34)',
-        boxShadow: '0 4px 12px rgba(46,104,180,0.1), inset 0 1px 0 rgba(255,255,255,0.95)',
-        color: 'var(--text)',
-        cursor: disabled ? 'wait' : 'pointer',
-      }}
-    >
-      {label === 'save' && <SaveIcon />}
-      {label === 'busy' && <span className="text-lg">...</span>}
-      {label === 'warning' && <span className="text-lg">!</span>}
-    </button>
-  );
-}
-
-function SaveIcon() {
-  return (
-    <svg width="27" height="27" viewBox="0 0 32 32" aria-hidden="true">
-      <defs>
-        <linearGradient id="save-icon-blue" x1="0" x2="0" y1="4" y2="28">
-          <stop stopColor="#4f95ef" />
-          <stop offset="1" stopColor="#1d5fb8" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M7 5h15l3 3v19H7V5Z"
-        fill="url(#save-icon-blue)"
-        stroke="#17356f"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path d="M11 5h9v8h-9V5Z" fill="#f7fbff" opacity="0.95" />
-      <path d="M13 20h6" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M21 6.5v4.5" stroke="#17356f" strokeWidth="1.4" strokeLinecap="round" opacity="0.6" />
-      <path d="M10 18h12v9H10v-9Z" fill="#ffffff" opacity="0.18" />
-    </svg>
+    />
   );
 }
