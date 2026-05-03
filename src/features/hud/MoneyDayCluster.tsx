@@ -1,10 +1,16 @@
 import { useState } from 'react';
-import { useGameStore, OFFICE_DAILY_EXPENSE } from '@/store/gameStore';
+import {
+  useGameStore,
+  OFFICE_DAILY_EXPENSE,
+  estimateSpecialTaskRemainingDays,
+} from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
+import { useUiStore } from '@/store/uiStore';
 import { BASE_DAY_MS } from '@/constants/officeLevels';
 import { moneyShort } from '@/lib/utils';
 import { displayCompanyName } from '@/lib/companyName';
+import { SvgIcon } from '@/components/SvgIcon';
 import './leftHud.css';
 
 const PAW_ICON = (
@@ -147,6 +153,8 @@ export function MoneyDayCluster() {
             <span className="lhud-sticky__text lhud-sticky__text--lg">{speedMultiplier}x</span>
           </div>
         </StickyA>
+
+        <SpecialTaskBadge />
       </div>
     </div>
   );
@@ -185,3 +193,80 @@ function StickyA({ tilt, variant, width, children, onClick, ariaLabel }: StickyA
     </div>
   );
 }
+function SpecialTaskBadge() {
+  const officeLevel = useGameStore((s) => s.officeLevel);
+  const targetLevel = officeLevel + 1;
+  const task = useGameStore((s) => s.specialTasks?.[targetLevel]);
+  const estRemaining = useGameStore((s) =>
+    estimateSpecialTaskRemainingDays(s, targetLevel),
+  );
+  const acknowledged = useUiStore((s) =>
+    s.acknowledgedSpecialTaskLevels.includes(targetLevel),
+  );
+  const acknowledgeSpecialTask = useUiStore((s) => s.acknowledgeSpecialTask);
+  const openDrawer = useUiStore((s) => s.openDrawer);
+
+  if (!task) return null;
+  if (acknowledged) return null;
+
+  if (task.status === 'inProgress') {
+    const label =
+      !Number.isFinite(estRemaining)
+        ? '特殊任務能力不足'
+        : `特殊任務倒數 ${Math.max(0, estRemaining)} 天完成`;
+    return (
+      <div
+        className="shrink-0 inline-flex items-center gap-1"
+        title={`擴建任務「${task.name}」進行中`}
+        style={{
+          minWidth: 54,
+          height: 36,
+          padding: '0 12px',
+          borderRadius: 999,
+          border: '1px solid rgba(214,150,90,0.36)',
+          color: '#8a4a16',
+          background: 'linear-gradient(180deg, #fffefe, #ffe9c8)',
+          boxShadow: '0 4px 10px rgba(185,128,55,0.12)',
+          fontSize: 12,
+          fontWeight: 900,
+          lineHeight: 1,
+        }}
+      >
+        <SvgIcon name="hourglass" size={14} />
+        <span className="tabular-nums">{label}</span>
+      </div>
+    );
+  }
+
+  if (task.status === 'completed') {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          acknowledgeSpecialTask(targetLevel);
+          openDrawer('construction');
+        }}
+        className="shrink-0"
+        title={`擴建任務「${task.name}」已完成，前往升級`}
+        style={{
+          minWidth: 54,
+          height: 36,
+          padding: '0 12px',
+          borderRadius: 999,
+          border: '1px solid rgba(111,150,109,0.4)',
+          color: '#3f7440',
+          background: 'linear-gradient(180deg, #fffefe, #d6f3cf)',
+          boxShadow: '0 4px 10px rgba(63,116,64,0.18)',
+          fontSize: 12,
+          fontWeight: 900,
+          cursor: 'pointer',
+        }}
+      >
+        完成 ✓
+      </button>
+    );
+  }
+
+  return null;
+}
+

@@ -882,15 +882,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const BASE_DAY_MS = 15000;
     const newElapsed = s.dayElapsed + dt * s.speedMultiplier;
     if (newElapsed >= BASE_DAY_MS) {
-      const prevToolCount = s.tools.length;
       const prevDay = s.day;
       const next = runAdvanceDay({ ...s, dayElapsed: 0 });
       set(next as Partial<GameStore>);
       get().checkAchievements('day_end');
-      // hint 觸發點：第一次拿玩具 / 跨過第 30 天
-      if (prevToolCount === 0 && next.tools.length > 0) {
-        get().triggerHint('toy');
-      }
+      // hint 觸發點：跨過第 30 天（玩具 hint 改在玩家首次點玩具區時觸發）
       if (prevDay < 30 && next.day >= 30) {
         get().triggerHint('leaderboard');
       }
