@@ -54,6 +54,10 @@ type UIState = {
   facilityInfoId: ShopItemEffectKey | null;
   openFacilityInfo: (id: ShopItemEffectKey) => void;
   closeFacilityInfo: () => void;
+
+  // 特殊任務「完成」提示按鈕已被使用者點掉的目標等級集合
+  acknowledgedSpecialTaskLevels: number[];
+  acknowledgeSpecialTask: (targetLevel: number) => void;
 };
 
 export const useUiStore = create<UIState>((set, get) => ({
@@ -117,4 +121,12 @@ export const useUiStore = create<UIState>((set, get) => ({
   facilityInfoId: null,
   openFacilityInfo: (id) => set({ facilityInfoId: id }),
   closeFacilityInfo: () => set({ facilityInfoId: null }),
+
+  acknowledgedSpecialTaskLevels: [],
+  acknowledgeSpecialTask: (targetLevel) =>
+    set((s) =>
+      s.acknowledgedSpecialTaskLevels.includes(targetLevel)
+        ? s
+        : { acknowledgedSpecialTaskLevels: [...s.acknowledgedSpecialTaskLevels, targetLevel] },
+    ),
 }));

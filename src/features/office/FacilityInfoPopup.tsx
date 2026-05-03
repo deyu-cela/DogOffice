@@ -36,6 +36,7 @@ export function FacilityInfoPopup() {
   const id = useUiStore((s) => s.facilityInfoId);
   const close = useUiStore((s) => s.closeFacilityInfo);
   const level = useGameStore((s) => (id ? s.purchases[id] ?? 0 : 0));
+  const triggerHint = useGameStore((s) => s.triggerHint);
 
   useEffect(() => {
     if (!id) return;
@@ -45,6 +46,11 @@ export function FacilityInfoPopup() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [id, close]);
+
+  // 首次點玩具區彈一次教學（seenHints 已寫入存檔，不會重複跳）
+  useEffect(() => {
+    if (id === 'toy') triggerHint('toy');
+  }, [id, triggerHint]);
 
   if (!id) return null;
   // 狗狗玩具區改用工具庫存介面
