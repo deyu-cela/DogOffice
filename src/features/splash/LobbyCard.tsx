@@ -43,8 +43,6 @@ export function LobbyCard({
   onLeaderboard,
   onAchievements,
 }: Props) {
-  const office = OFFICE_LEVELS[officeLevel];
-  const maxStaff = office?.maxStaff ?? 0;
   const officeMaxLevel = OFFICE_LEVELS.length - 1;
   const officeReached = officeLevel >= officeMaxLevel;
 
@@ -88,7 +86,7 @@ export function LobbyCard({
 
       <div className="lobby-stats">
         <StatChip icon="log" label="DAY" value={`第 ${day} 天`} />
-        <StatChip icon="people" label="STAFF" value={`${staffCount} / ${maxStaff}`} />
+        <StatChip icon="people" label="STAFF" value={`${staffCount}`} />
         <StatChip icon="money" label="MONEY" value={`$${money.toLocaleString()}`} />
         <StatChip
           icon="office"

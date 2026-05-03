@@ -50,15 +50,15 @@ const TIER_TABLE: Record<ClientTier, TierStats> = {
   1: { rewardMin: 80, rewardMax: 130, workMin: 12, workMax: 18, deadlineDays: 4, expectedQuality: 2 },
   2: { rewardMin: 200, rewardMax: 300, workMin: 50, workMax: 70, deadlineDays: 5, expectedQuality: 3 },
   3: { rewardMin: 450, rewardMax: 650, workMin: 90, workMax: 120, deadlineDays: 6, expectedQuality: 5 },
-  4: { rewardMin: 950, rewardMax: 1300, workMin: 160, workMax: 200, deadlineDays: 7, expectedQuality: 6 },
-  5: { rewardMin: 1900, rewardMax: 2600, workMin: 250, workMax: 320, deadlineDays: 8, expectedQuality: 8 },
+  4: { rewardMin: 950, rewardMax: 1300, workMin: 400, workMax: 500, deadlineDays: 7, expectedQuality: 6 },
+  5: { rewardMin: 1900, rewardMax: 2600, workMin: 750, workMax: 960, deadlineDays: 8, expectedQuality: 8 },
 };
 
 // 辦公室加成（plan §3.5）
 const OFFICE_TIER_BONUS = [0, 5, 12, 22, 35];
 
 // 辦公室解鎖最高 tier（plan §3.5）
-const OFFICE_TIER_CAP: ClientTier[] = [3, 3, 4, 4, 5];
+const OFFICE_TIER_CAP: ClientTier[] = [2, 3, 4, 4, 5];
 
 // ---- tierBudget 計算（員工總 quality + officeBonus） ----
 export function computeTierBudget(state: Pick<GameState, 'staff' | 'officeLevel'>): number {

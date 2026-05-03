@@ -170,6 +170,8 @@ export type OfficeLevel = {
   lights: number;
   lounge: number;
   requiredItems?: ShopItemEffectKey[];
+  // 升豪華總部需要：商店所有設施全部升到最高等級
+  requireAllShopMax?: boolean;
 };
 
 export type ShopItemEffectKey =

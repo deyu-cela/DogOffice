@@ -87,12 +87,20 @@ export function teamMaxMembers(officeLevel: number): number {
 }
 export const GACHA_COST = 100;
 export const DOG_LEVEL_MAX = 10;
-// 強化升級成本：Lv n→n+1 = base × ratio^(n-1)，整數
-export function dogLevelUpCost(currentLevel: number): number {
+// 強化升級成本：以 base 表（D 級）為基準，依 grade 加乘
+// 加乘：D 1.0 / C 1.2 / B 1.4 / A 1.6 / S 1.8 / U 2.0（U = isCEO）
+const DOG_LEVEL_UP_BASE_COST: Record<number, number> = {
+  1: 30, 2: 60, 3: 120, 4: 240, 5: 370, 6: 500, 7: 800, 8: 1500, 9: 3000,
+};
+const DOG_GRADE_COST_MULT: Record<'U' | 'S' | 'A' | 'B' | 'C' | 'D', number> = {
+  D: 1.0, C: 1.2, B: 1.4, A: 1.6, S: 1.8, U: 2.0,
+};
+export function dogLevelUpCost(dog: Dog): number {
+  const currentLevel = dog.level;
   if (currentLevel >= DOG_LEVEL_MAX) return Infinity;
-  const base = 80;
-  const ratio = 1.5;
-  return Math.round(base * Math.pow(ratio, currentLevel - 1));
+  const grade = dog.isCEO ? 'U' : dog.grade;
+  const base = DOG_LEVEL_UP_BASE_COST[currentLevel];
+  return Math.round(base * DOG_GRADE_COST_MULT[grade]);
 }
 
 function emptyTeams(): Record<ProjectCategory, Team> {
@@ -333,7 +341,7 @@ function rebuildBuffsFromPurchases(
         buffs.categorySpeed.marketing += lv;
         break;
       case 'toy': /* 暫無作用 */ break;
-      case 'gym': buffs.patienceBoost += lv; break;
+      case 'gym': buffs.qualityBoost += lv; break;
       case 'sofa': /* 每日結算讀 purchases.sofa，不寫入 buffs */ break;
     }
   }
@@ -617,6 +625,36 @@ function sanitizeProjectAssignments(state: GameState): GameState {
 // 在抽卡、team 變動、結算後呼叫
 function applyAutoAccept(state: GameState): GameState {
   let s = sanitizeProjectAssignments(state);
+  // Phase A: 把 team 中尚未指派、未過勞的成員補進該 team 對應產業的 active 案
+  for (const industry of INDUSTRIES) {
+    const team = s.teams[industry];
+    if (team.memberIds.length === 0) continue;
+    const active = s.clients.find(
+      (c) => c.status === 'active' && c.category === industry && c.assignedStaffIds.length > 0,
+    );
+    if (!active) continue;
+    const assignedSet = new Set(active.assignedStaffIds);
+    const toAdd = team.memberIds.filter((id) => {
+      if (assignedSet.has(id)) return false;
+      const dog = s.staff.find((d) => d.id === id);
+      return !!dog && dog.assignedProjectId == null && dog.fatigue < 100;
+    });
+    if (toAdd.length === 0) continue;
+    const projectId = active.id;
+    s = {
+      ...s,
+      clients: s.clients.map((c) =>
+        c.id === projectId
+          ? { ...c, assignedStaffIds: [...c.assignedStaffIds, ...toAdd] }
+          : c,
+      ),
+      staff: s.staff.map((d) =>
+        toAdd.includes(d.id) ? { ...d, assignedProjectId: projectId } : d,
+      ),
+    };
+    s = pushLog(s, ` ${industry} team 補位「${active.title}」（+${toAdd.length} 人）`);
+  }
+  // Phase B: 對閒置的 team（無人在做案）→ 撿孤兒或接最前 offered
   for (const industry of INDUSTRIES) {
     const team = s.teams[industry];
     if (team.memberIds.length === 0) continue;
@@ -983,8 +1021,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         next = pushLog(next, '狗狗玩具區啟用，狗狗們很開心。');
         break;
       case 'gym':
-        buffs.patienceBoost += 1;
-        next = pushLog(next, '狗狗健身區開放，全員耐心 +1。');
+        buffs.qualityBoost += 1;
+        next = pushLog(next, '狗狗健身區開放，全 team 專業 +1。');
         break;
       case 'sofa': {
         const lv = currentLevel + 1;
@@ -1009,6 +1047,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const requiredItems = OFFICE_LEVELS[nextLevel].requiredItems ?? [];
     const itemsReady = requiredItems.every((id) => (s.purchases[id] ?? 0) >= 1);
     if (!itemsReady) return;  // 必須先購買升級條件物品
+    if (OFFICE_LEVELS[nextLevel].requireAllShopMax) {
+      const allMax = SHOP_ITEMS.every((item) => {
+        const cap = item.maxLevel ?? MAX_SHOP_LEVEL;
+        return (s.purchases[item.id] ?? 0) >= cap;
+      });
+      if (!allMax) return;  // 商店設施必須全部升到上限
+    }
     const cost = OFFICE_LEVELS[nextLevel].upgradeCost;
     if (s.money < cost) return;
     // 升級後解鎖下一級任務（從 locked → available）
@@ -1954,7 +1999,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const dog = s.staff.find((d) => d.id === dogId);
     if (!dog) return;
     if (dog.level >= DOG_LEVEL_MAX) return;
-    const cost = dogLevelUpCost(dog.level);
+    const cost = dogLevelUpCost(dog);
     if (s.money < cost) return;
     set(applyDogLevelUp({ ...s, money: s.money - cost }, dog.id) as Partial<GameStore>);
   },

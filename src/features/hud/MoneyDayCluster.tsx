@@ -103,7 +103,7 @@ export function MoneyDayCluster() {
             <div className="lhud-wallet__avatar">{PAW_ICON}</div>
 
             <div className="lhud-wallet__money" title={`$${money.toLocaleString()}`}>
-              <div className="lhud-wallet__money-row">
+              <div className="lhud-wallet__money-row" data-money-target>
                 {MONEY_ICON}
                 <span className="lhud-wallet__money-amt tabular-nums">${moneyShort(money)}</span>
               </div>

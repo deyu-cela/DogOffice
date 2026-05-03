@@ -3,6 +3,7 @@ import { OFFICE_LEVELS } from '@/constants/officeLevels';
 import { SHOP_ITEMS } from '@/constants/shopItems';
 import {
   estimateSpecialTaskRemainingDays,
+  MAX_SHOP_LEVEL,
   OFFICE_DAILY_EXPENSE,
   teamTotalAbility,
   useGameStore,
@@ -40,8 +41,18 @@ export function ConstructionPanel() {
   });
   const itemsReady = requiredItemStatuses.every((it) => it.owned);
 
+  const requireAllShopMax = nextLv?.requireAllShopMax ?? false;
+  const shopMaxStatuses = requireAllShopMax
+    ? SHOP_ITEMS.map((item) => {
+        const cap = item.maxLevel ?? MAX_SHOP_LEVEL;
+        const lv = purchases[item.id] ?? 0;
+        return { id: item.id, name: item.name, lv, cap, ready: lv >= cap };
+      })
+    : [];
+  const shopMaxReady = !requireAllShopMax || shopMaxStatuses.every((it) => it.ready);
+
   const canUpgrade =
-    !atMax && taskCompleted && itemsReady && money >= (nextLv?.upgradeCost ?? 0);
+    !atMax && taskCompleted && itemsReady && shopMaxReady && money >= (nextLv?.upgradeCost ?? 0);
 
   const rawAbility = useGameStore((s) => teamTotalAbility(s));
   const currentAbility = Number.isFinite(rawAbility) ? rawAbility : 0;
@@ -164,9 +175,33 @@ export function ConstructionPanel() {
             </div>
           )}
 
+          {requireAllShopMax && (
+            <div className="shop-paper-card" style={cardStyle}>
+              <div className="font-bold flex items-center gap-1.5" style={{ color: '#5b382d' }}>
+                <span>升級條件：商店全升滿</span>
+                {shopMaxReady ? (
+                  <StatusPill color="#6f966d">已滿足</StatusPill>
+                ) : (
+                  <StatusPill color="#c87e78">未滿足</StatusPill>
+                )}
+              </div>
+              <div className="flex flex-col gap-0.5 mt-1.5">
+                {shopMaxStatuses.map((it) => (
+                  <div
+                    key={it.id}
+                    className="text-[11px] font-bold"
+                    style={{ color: it.ready ? '#6f966d' : '#d74e63' }}
+                  >
+                    {it.ready ? '✓' : '✗'} 「{it.name}」 Lv.{it.lv}/{it.cap}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div
             className="shop-paper-card"
-            style={{ ...cardStyle, opacity: taskCompleted && itemsReady ? 1 : 0.82 }}
+            style={{ ...cardStyle, opacity: taskCompleted && itemsReady && shopMaxReady ? 1 : 0.82 }}
           >
             <div className="flex justify-between items-start gap-2">
               <div className="flex-1">
@@ -186,6 +221,11 @@ export function ConstructionPanel() {
                   {taskCompleted && !itemsReady && (
                     <div className="text-[11px] font-bold" style={{ color: '#d74e63' }}>
                       需要先滿足升級條件
+                    </div>
+                  )}
+                  {taskCompleted && itemsReady && !shopMaxReady && (
+                    <div className="text-[11px] font-bold" style={{ color: '#d74e63' }}>
+                      需要把商店所有設施升到滿級
                     </div>
                   )}
                 </div>

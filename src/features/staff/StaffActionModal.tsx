@@ -80,7 +80,7 @@ export function StaffActionModal() {
   const powerPct = Math.round((power / 400) * 100);
 
   const canUpgrade = dog.level < DOG_LEVEL_MAX;
-  const cost = canUpgrade ? dogLevelUpCost(dog.level) : 0;
+  const cost = canUpgrade ? dogLevelUpCost(dog) : 0;
   const nextLevel = dog.level + 1;
   const unlocksTrait = canUpgrade && TRAIT_UNLOCK_LEVELS.has(nextLevel);
   const moneyOK = money >= cost;

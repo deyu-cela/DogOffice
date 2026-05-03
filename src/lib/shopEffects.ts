@@ -31,7 +31,7 @@ export function describeShopEffect(id: ShopItemEffectKey, lv: number): string[] 
     case 'toy':
       return ['可愛裝飾，目前無數值效果。'];
     case 'gym':
-      return [`全員 耐心 +${lv}（疲勞累積變慢）`];
+      return [`全 team 專業 +${lv}`];
     case 'sofa':
       return [`每日全員疲勞 −${3 + lv * 2}`];
     default:

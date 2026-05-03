@@ -64,7 +64,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'toy',
     name: '狗狗玩具區',
-    cost: 2000,
+    cost: 1000,
     category: 'all',
     maxLevel: 1,
     desc: '購買後狗狗完成案件會撿到玩具（庫存上限 50 件），裝備可加成速度與專業。',
@@ -75,8 +75,8 @@ export const SHOP_ITEMS: ShopItem[] = [
     name: '狗狗健身區',
     cost: 780,
     category: 'all',
-    desc: '體力好脾氣才好，全員耐心 +1（疲勞累積變慢）。',
-    statTags: [{ label: '全員 耐心+1', type: 'up' }],
+    desc: '訓練有素，全 team 專業 +1。',
+    statTags: [{ label: '全 team 專業+1', type: 'up' }],
   },
   {
     id: 'sofa',
