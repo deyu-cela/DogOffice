@@ -769,16 +769,20 @@ function runAdvanceDay(prev: GameState): GameState {
   s.money -= expense;
 
   // === Phase 3: sofa 休息區 + 暖光吊燈每日疲勞回復 ===
+  // 過勞中（fatigue >= 100）不回復，保持 100 讓下個早上走 −15 強制休假分支，
+  // 否則會卡在 99 ↔ 100 永遠 0 貢獻。
   const sofaLv = s.purchases.sofa ?? 0;
   const lampBonus = s.companyBuffs.fatigueRecoveryBonus ?? 0;
   const sofaRecover = sofaLv > 0 ? sofaLv + 1 : 0;
   const totalRecover = sofaRecover + lampBonus;
   if (totalRecover > 0 && s.staff.length > 0) {
-    s.staff = s.staff.map((d) => ({ ...d, fatigue: clamp(d.fatigue - totalRecover, 0, 100) }));
+    s.staff = s.staff.map((d) =>
+      d.fatigue >= 100 ? d : { ...d, fatigue: clamp(d.fatigue - totalRecover, 0, 100) },
+    );
     const parts: string[] = [];
     if (sofaRecover > 0) parts.push(`休息區 −${sofaRecover}`);
     if (lampBonus > 0) parts.push(`暖光吊燈 −${lampBonus}`);
-    s = pushLog(s, `${parts.join('、')}，全員疲勞共 −${totalRecover}。`);
+    s = pushLog(s, `${parts.join('、')}，疲勞 −${totalRecover}（過勞中員工除外）。`);
   }
 
   // === Phase 4: 推天數 + 重算 tierBudget ===

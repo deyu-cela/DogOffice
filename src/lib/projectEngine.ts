@@ -273,6 +273,9 @@ function settleProject(
 }
 
 // === 多日模擬 ===
+// dailyRecover: sofa+lamp 每日全員回復值（呼叫端依 purchases/buffs 算好傳入）
+//   呼應 gameStore Phase 3：過勞中（fatigue >= 100）不回復，
+//   讓下個早上走 −15 強制休假分支。
 export function simulateProjectDays(
   dogs: Dog[],
   workRequired: number,
@@ -281,6 +284,7 @@ export function simulateProjectDays(
   buffs: CompanyBuffs,
   maxDays = 60,
   toolMap: Map<string, Tool> = new Map(),
+  dailyRecover: number = 0,
 ): { days: number; finalDogs: Dog[]; complete: boolean } {
   if (dogs.length === 0 || workRequired <= 0) {
     return {
@@ -292,6 +296,7 @@ export function simulateProjectDays(
   let workDone = workDoneStart;
   let current = dogs.map((d) => ({ ...d }));
   for (let day = 1; day <= maxDays; day++) {
+    // Phase 1: 累積 / 過勞 −15
     current = current.map((d) => {
       let nextFatigue = d.fatigue;
       if (d.fatigue >= 100) {
@@ -309,6 +314,12 @@ export function simulateProjectDays(
     workDone += contrib;
     if (workDone >= workRequired) {
       return { days: day, finalDogs: current, complete: true };
+    }
+    // Phase 3: sofa+lamp 每日回復（過勞中除外）
+    if (dailyRecover > 0) {
+      current = current.map((d) =>
+        d.fatigue >= 100 ? d : { ...d, fatigue: clamp(d.fatigue - dailyRecover, 0, 100) },
+      );
     }
   }
   return { days: maxDays, finalDogs: current, complete: false };
