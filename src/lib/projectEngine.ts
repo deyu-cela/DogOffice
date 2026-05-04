@@ -357,6 +357,7 @@ export type DaySummaryPartial = {
   income: number;
   completedCount: number;
   failedCount: number;
+  penaltyTotal: number;
   levelUps: { name: string; to: Dog['grade'] }[];
 };
 
@@ -375,6 +376,7 @@ export function runProjectsDay(state: GameState): DayResult {
     income: 0,
     completedCount: 0,
     failedCount: 0,
+    penaltyTotal: 0,
     levelUps: [],
   };
 
@@ -557,6 +559,36 @@ export function runProjectsDay(state: GameState): DayResult {
   s.clients = settledClients;
   s.projectsCompleted += projectsCompletedAdd;
   summary.completedCount = projectsCompletedAdd;
+
+  // 4. 處理超期失敗：active 案件 day > deadlineDay + graceDays 即失敗
+  const expiredClients: Project[] = [];
+  let projectsFailedAdd = 0;
+  for (const project of s.clients) {
+    if (project.status !== 'active' || project.deadlineDay < 0) {
+      expiredClients.push(project);
+      continue;
+    }
+    const expiry = project.deadlineDay + project.graceDays;
+    if (s.day > expiry) {
+      s.money = Math.max(0, s.money - project.penalty);
+      summary.penaltyTotal += project.penalty;
+      projectsFailedAdd += 1;
+      const ids = new Set(project.assignedStaffIds);
+      s.staff = s.staff.map((d) =>
+        ids.has(d.id) ? { ...d, assignedProjectId: null } : d,
+      );
+      expiredClients.push({ ...project, status: 'failed' });
+      newLogs.push({
+        day: s.day,
+        msg: `❌ 「${project.title}」(${project.clientName}) 超期失敗，違約金 $${project.penalty}`,
+      });
+    } else {
+      expiredClients.push(project);
+    }
+  }
+  s.clients = expiredClients;
+  s.projectsFailed += projectsFailedAdd;
+  summary.failedCount += projectsFailedAdd;
 
   return { state: s, newLogs, toast, summary };
 }

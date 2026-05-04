@@ -687,7 +687,13 @@ function applyAutoAccept(state: GameState): GameState {
         c.id === projectId
           ? isOrphan
             ? { ...c, assignedStaffIds: validIds }
-            : { ...c, status: 'active', acceptedDay: s.day, assignedStaffIds: validIds }
+            : {
+                ...c,
+                status: 'active',
+                acceptedDay: s.day,
+                deadlineDay: s.day + c.defaultDeadlineDays,
+                assignedStaffIds: validIds,
+              }
           : c,
       ),
       staff: s.staff.map((d) =>
@@ -857,7 +863,7 @@ function runAdvanceDay(prev: GameState): GameState {
   );
 
   // === Phase 8.5: 組裝每日摘要（toast 用）===
-  const totalExpense = expense + loanPaidToday;
+  const totalExpense = expense + loanPaidToday + projSummary.penaltyTotal;
   s.dailySummary = {
     day: s.day,
     income: projSummary.income,
@@ -1131,7 +1137,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...s,
       clients: s.clients.map((c) =>
         c.id === projectId
-          ? { ...c, status: 'active', acceptedDay: s.day, assignedStaffIds: validIds }
+          ? {
+              ...c,
+              status: 'active',
+              acceptedDay: s.day,
+              deadlineDay: s.day + c.defaultDeadlineDays,
+              assignedStaffIds: validIds,
+            }
           : c,
       ),
       staff: s.staff.map((d) =>
