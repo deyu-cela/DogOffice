@@ -33,7 +33,7 @@ export function describeShopEffect(id: ShopItemEffectKey, lv: number): string[] 
     case 'gym':
       return [`全 team 專業 +${lv}`];
     case 'sofa':
-      return [`每日全員疲勞 −${lv}`];
+      return [`每日全員疲勞 −${lv + 1}`];
     default:
       return [];
   }

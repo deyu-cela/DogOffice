@@ -83,7 +83,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     name: '懶骨頭休息區',
     cost: 720,
     category: 'all',
-    desc: '每日結算時，全員疲勞 −等級。',
+    desc: '每日結算時，全員疲勞 −(等級+1)。',
     statTags: [{ label: '每日疲勞−', type: 'up' }],
   },
 ];

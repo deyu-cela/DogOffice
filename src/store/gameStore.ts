@@ -771,7 +771,7 @@ function runAdvanceDay(prev: GameState): GameState {
   // === Phase 3: sofa 休息區 + 暖光吊燈每日疲勞回復 ===
   const sofaLv = s.purchases.sofa ?? 0;
   const lampBonus = s.companyBuffs.fatigueRecoveryBonus ?? 0;
-  const sofaRecover = sofaLv;
+  const sofaRecover = sofaLv > 0 ? sofaLv + 1 : 0;
   const totalRecover = sofaRecover + lampBonus;
   if (totalRecover > 0 && s.staff.length > 0) {
     s.staff = s.staff.map((d) => ({ ...d, fatigue: clamp(d.fatigue - totalRecover, 0, 100) }));
@@ -1026,7 +1026,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         break;
       case 'sofa': {
         const lv = currentLevel + 1;
-        next = pushLog(next, `休息區升級到 Lv ${lv}，每日全員疲勞 −${lv}。`);
+        next = pushLog(next, `休息區升級到 Lv ${lv}，每日全員疲勞 −${lv + 1}。`);
         break;
       }
     }

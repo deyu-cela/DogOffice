@@ -80,7 +80,7 @@ export function ShopPanel() {
                   className="shop-stat-tag"
                   style={{ background: 'rgba(223,238,218,0.68)', color: '#6f966d' }}
                 >
-                  每日疲勞 -{Math.max(level, 1)}
+                  每日疲勞 -{Math.max(level, 1) + 1}
                 </span>
               ) : (
                 item.statTags.map((tag, i) => (
