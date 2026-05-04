@@ -1,5 +1,13 @@
 @import 'tailwindcss';
 
+@font-face {
+  font-family: 'jf-openhuninn';
+  src: url('./assets/fonts/jf-openhuninn-2.1.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --color-bg: #eaf4ff;
   --color-panel: rgba(255, 255, 255, 0.9);
@@ -12,8 +20,8 @@
   --color-ok: #29b98f;
   --color-warn: #f6a63a;
   --color-danger: #ef5b5b;
-  --font-rounded: ui-rounded, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-  --font-handwritten: 'Yuanti TC', 'Comic Sans MS', 'Marker Felt', cursive;
+  --font-rounded: 'jf-openhuninn', ui-rounded, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  --font-handwritten: 'jf-openhuninn', 'Yuanti TC', 'Comic Sans MS', 'Marker Felt', cursive;
 }
 
 :root {
