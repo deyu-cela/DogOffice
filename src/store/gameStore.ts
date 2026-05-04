@@ -2047,6 +2047,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     next = pushLog(next, `🗡 ${dog.name} 帶著武士刀（U 級）登場，永遠綁定。`);
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
+    get().checkAchievements('hire', { dog, prevStaffCount: s.staff.length });
     if (get().activeHint === 'starter-pack') get().dismissHint();
   },
 
