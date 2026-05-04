@@ -109,9 +109,6 @@ export type Project = {
   expectedQuality: number;
   reward: number;
   penalty: number;
-  defaultDeadlineDays: number;   // tier 對應的期限天數（接案時用來算 deadlineDay）
-  deadlineDay: number;           // 絕對 day 數，offered 狀態 = -1 表示未啟動
-  graceDays: number;             // 容忍超期
   assignedStaffIds: string[];
   status: ProjectStatus;
   createdDay: number;

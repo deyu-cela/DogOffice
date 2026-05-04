@@ -42,16 +42,15 @@ type TierStats = {
   rewardMax: number;
   workMin: number;
   workMax: number;
-  deadlineDays: number;
   expectedQuality: number;
 };
 
 const TIER_TABLE: Record<ClientTier, TierStats> = {
-  1: { rewardMin: 80, rewardMax: 130, workMin: 12, workMax: 18, deadlineDays: 4, expectedQuality: 2 },
-  2: { rewardMin: 200, rewardMax: 300, workMin: 50, workMax: 70, deadlineDays: 5, expectedQuality: 3 },
-  3: { rewardMin: 450, rewardMax: 650, workMin: 90, workMax: 120, deadlineDays: 6, expectedQuality: 5 },
-  4: { rewardMin: 950, rewardMax: 1300, workMin: 400, workMax: 500, deadlineDays: 7, expectedQuality: 6 },
-  5: { rewardMin: 1900, rewardMax: 2600, workMin: 750, workMax: 960, deadlineDays: 8, expectedQuality: 8 },
+  1: { rewardMin: 80, rewardMax: 130, workMin: 12, workMax: 18, expectedQuality: 2 },
+  2: { rewardMin: 200, rewardMax: 300, workMin: 50, workMax: 70, expectedQuality: 3 },
+  3: { rewardMin: 450, rewardMax: 650, workMin: 90, workMax: 120, expectedQuality: 5 },
+  4: { rewardMin: 950, rewardMax: 1300, workMin: 400, workMax: 500, expectedQuality: 6 },
+  5: { rewardMin: 1900, rewardMax: 2600, workMin: 750, workMax: 960, expectedQuality: 8 },
 };
 
 // 辦公室加成（plan §3.5）
@@ -132,10 +131,6 @@ export function generateProject(
     expectedQuality: stats.expectedQuality,
     reward,
     penalty: Math.round(reward * 0.4),
-    defaultDeadlineDays: stats.deadlineDays,
-    // offered 狀態 deadlineDay = -1 表示尚未啟動，接案時才設為 state.day + defaultDeadlineDays
-    deadlineDay: -1,
-    graceDays: 2,
     assignedStaffIds: [],
     status: 'offered',
     createdDay: currentDay,
