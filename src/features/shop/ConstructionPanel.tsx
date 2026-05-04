@@ -53,6 +53,7 @@ export function ConstructionPanel() {
 
   const canUpgrade =
     !atMax && taskCompleted && itemsReady && shopMaxReady && money >= (nextLv?.upgradeCost ?? 0);
+  const canStartTask = !atMax && taskAvailable && itemsReady && shopMaxReady;
 
   const rawAbility = useGameStore((s) => teamTotalAbility(s));
   const currentAbility = Number.isFinite(rawAbility) ? rawAbility : 0;
@@ -87,70 +88,6 @@ export function ConstructionPanel() {
         </div>
       ) : (
         <>
-          {task && (
-            <div
-              className="shop-paper-card shop-paper-card--pink"
-              style={{
-                ...cardStyle,
-                background:
-                  'linear-gradient(180deg, rgba(255,254,254,0.7), rgba(255,232,233,0.58)), repeating-linear-gradient(0deg, rgba(186,121,82,0.05) 0 1px, transparent 1px 15px)',
-              }}
-            >
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="font-bold flex items-center gap-1.5" style={{ color: '#5b382d' }}>
-                  <span>特殊任務</span>
-                  <span className="text-[11px] font-normal" style={{ color: '#886153' }}>
-                    升級前置
-                  </span>
-                </div>
-                {taskCompleted && <StatusPill color="#6f966d">已完成</StatusPill>}
-                {taskInProgress && <StatusPill color="#d74e63">進行中</StatusPill>}
-                {taskAvailable && <StatusPill color="#c87e78">可開始</StatusPill>}
-              </div>
-              <div className="text-sm font-bold" style={{ color: '#5b382d' }}>
-                {task.name}
-              </div>
-              {taskAvailable && (
-                <>
-                  <div className="text-[11px] mt-1" style={{ color: '#886153' }}>
-                    派出 team 累積工作量完成挑戰。
-                  </div>
-                  <button
-                    onClick={() => startSpecialTask(targetLevel)}
-                    className="shop-action-btn mt-2 w-full text-sm font-bold py-1.5"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    開始任務
-                  </button>
-                </>
-              )}
-              {taskInProgress && (
-                <>
-                  <div className="shop-progress-track mt-2">
-                    <div
-                      className="shop-progress-fill"
-                      style={{
-                        width: `${progressPct}%`,
-                      }}
-                    />
-                  </div>
-                  <div className="mt-1 flex justify-between text-[11px] font-bold" style={{ color: '#6e4638' }}>
-                    <span>{Math.round(safeWorkDone)} / {safeWorkRequired} 工作量</span>
-                    <span>{remainingLabel}</span>
-                  </div>
-                  <div className="text-[10px]" style={{ color: '#886153' }}>
-                    每日隊伍能力：{Math.round(currentAbility * 10) / 10}
-                  </div>
-                </>
-              )}
-              {taskCompleted && (
-                <div className="text-[11px] mt-1" style={{ color: '#6f966d' }}>
-                  任務完成，可以進行辦公室升級。
-                </div>
-              )}
-            </div>
-          )}
-
           {requiredItemStatuses.length > 0 && (
             <div className="shop-paper-card" style={cardStyle}>
               <div className="font-bold flex items-center gap-1.5" style={{ color: '#5b382d' }}>
@@ -199,6 +136,75 @@ export function ConstructionPanel() {
             </div>
           )}
 
+          {task && (
+            <div
+              className="shop-paper-card shop-paper-card--pink"
+              style={{
+                ...cardStyle,
+                background:
+                  'linear-gradient(180deg, rgba(255,254,254,0.7), rgba(255,232,233,0.58)), repeating-linear-gradient(0deg, rgba(186,121,82,0.05) 0 1px, transparent 1px 15px)',
+              }}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="font-bold flex items-center gap-1.5" style={{ color: '#5b382d' }}>
+                  <span>特殊任務</span>
+                  <span className="text-[11px] font-normal" style={{ color: '#886153' }}>
+                    升級前置
+                  </span>
+                </div>
+                {taskCompleted && <StatusPill color="#6f966d">已完成</StatusPill>}
+                {taskInProgress && <StatusPill color="#d74e63">進行中</StatusPill>}
+                {taskAvailable && <StatusPill color="#c87e78">可開始</StatusPill>}
+              </div>
+              <div className="text-sm font-bold" style={{ color: '#5b382d' }}>
+                {task.name}
+              </div>
+              {taskAvailable && (
+                <>
+                  <div className="text-[11px] mt-1" style={{ color: '#886153' }}>
+                    {!itemsReady
+                      ? '需要先滿足升級條件才能開始任務。'
+                      : !shopMaxReady
+                        ? '需要把商店所有設施升到滿級才能開始任務。'
+                        : '派出 team 累積工作量完成挑戰。'}
+                  </div>
+                  <button
+                    disabled={!canStartTask}
+                    onClick={() => startSpecialTask(targetLevel)}
+                    className="shop-action-btn mt-2 w-full text-sm font-bold py-1.5"
+                    style={{ cursor: canStartTask ? 'pointer' : 'not-allowed' }}
+                  >
+                    開始任務
+                  </button>
+                </>
+              )}
+              {taskInProgress && (
+                <>
+                  <div className="shop-progress-track mt-2">
+                    <div
+                      className="shop-progress-fill"
+                      style={{
+                        width: `${progressPct}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="mt-1 flex justify-between text-[11px] font-bold" style={{ color: '#6e4638' }}>
+                    <span>{Math.round(safeWorkDone)} / {safeWorkRequired} 工作量</span>
+                    <span>{remainingLabel}</span>
+                  </div>
+                  <div className="text-[10px]" style={{ color: '#886153' }}>
+                    每日隊伍能力：{Math.round(currentAbility * 10) / 10}
+                  </div>
+                </>
+              )}
+              {taskCompleted && (
+                <div className="text-[11px] mt-1" style={{ color: '#6f966d' }}>
+                  任務完成，可以進行辦公室升級。
+                </div>
+              )}
+            </div>
+          )}
+
           <div
             className="shop-paper-card"
             style={{ ...cardStyle, opacity: taskCompleted && itemsReady && shopMaxReady ? 1 : 0.82 }}
@@ -213,19 +219,19 @@ export function ConstructionPanel() {
                   <div className="text-[11px]" style={{ color: '#886153' }}>
                     每日維護成本 ${nextUpkeep}
                   </div>
-                  {!taskCompleted && (
-                    <div className="text-[11px] font-bold" style={{ color: '#d74e63' }}>
-                      需要先完成特殊任務
-                    </div>
-                  )}
-                  {taskCompleted && !itemsReady && (
+                  {!itemsReady && (
                     <div className="text-[11px] font-bold" style={{ color: '#d74e63' }}>
                       需要先滿足升級條件
                     </div>
                   )}
-                  {taskCompleted && itemsReady && !shopMaxReady && (
+                  {itemsReady && !shopMaxReady && (
                     <div className="text-[11px] font-bold" style={{ color: '#d74e63' }}>
                       需要把商店所有設施升到滿級
+                    </div>
+                  )}
+                  {itemsReady && shopMaxReady && !taskCompleted && (
+                    <div className="text-[11px] font-bold" style={{ color: '#d74e63' }}>
+                      需要先完成特殊任務
                     </div>
                   )}
                 </div>

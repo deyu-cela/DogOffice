@@ -181,8 +181,8 @@ function instantiateRosterDog(entry: RosterEntry): Dog {
 // === 設施升級上限 + 成本公式 ===
 export const MAX_SHOP_LEVEL = 5;
 export function nextShopCost(baseCost: number, currentLevel: number): number {
-  // Lv1: 1×、Lv2: 1.5×、Lv3: 2×、Lv4: 2.5×、Lv5: 3×
-  return Math.round(baseCost * (1 + 0.5 * currentLevel));
+  // Lv1: 1×、Lv2: 2×、Lv3: 4×、Lv4: 8×、Lv5: 16×
+  return Math.round(baseCost * Math.pow(2, currentLevel));
 }
 
 // 開局教學總步數（1=welcome, 2=三建築, 3=抽卡, 4=關閉招募, 5=員工宿舍, 6=三維+疲勞, 7=關閉隊伍, 8=完成）
@@ -771,7 +771,7 @@ function runAdvanceDay(prev: GameState): GameState {
   // === Phase 3: sofa 休息區 + 暖光吊燈每日疲勞回復 ===
   const sofaLv = s.purchases.sofa ?? 0;
   const lampBonus = s.companyBuffs.fatigueRecoveryBonus ?? 0;
-  const sofaRecover = sofaLv > 0 ? 3 + sofaLv * 2 : 0;
+  const sofaRecover = sofaLv;
   const totalRecover = sofaRecover + lampBonus;
   if (totalRecover > 0 && s.staff.length > 0) {
     s.staff = s.staff.map((d) => ({ ...d, fatigue: clamp(d.fatigue - totalRecover, 0, 100) }));
@@ -1026,7 +1026,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         break;
       case 'sofa': {
         const lv = currentLevel + 1;
-        next = pushLog(next, `休息區升級到 Lv ${lv}，每日全員疲勞 −${3 + lv * 2}。`);
+        next = pushLog(next, `休息區升級到 Lv ${lv}，每日全員疲勞 −${lv}。`);
         break;
       }
     }
@@ -2047,6 +2047,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     next = pushLog(next, `🗡 ${dog.name} 帶著武士刀（U 級）登場，永遠綁定。`);
     next.tierBudget = recomputeTierBudget(next);
     set(next as Partial<GameStore>);
+    get().checkAchievements('hire', { dog, prevStaffCount: s.staff.length });
     if (get().activeHint === 'starter-pack') get().dismissHint();
   },
 
@@ -2055,6 +2056,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const task = s.specialTasks[targetLevel];
     if (!task || task.status !== 'available') return;
     if (targetLevel !== s.officeLevel + 1) return;
+    const requiredItems = OFFICE_LEVELS[targetLevel].requiredItems ?? [];
+    const itemsReady = requiredItems.every((id) => (s.purchases[id] ?? 0) >= 1);
+    if (!itemsReady) return;
+    if (OFFICE_LEVELS[targetLevel].requireAllShopMax) {
+      const allMax = SHOP_ITEMS.every((item) => {
+        const cap = item.maxLevel ?? MAX_SHOP_LEVEL;
+        return (s.purchases[item.id] ?? 0) >= cap;
+      });
+      if (!allMax) return;
+    }
     const maxStaff = OFFICE_LEVELS[s.officeLevel].maxStaff;
     const workRequired = specialTaskWorkRequired(targetLevel, maxStaff);
     const updated: SpecialTask = {

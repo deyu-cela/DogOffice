@@ -47,12 +47,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     hint: '招到第一隻狗狗員工。',
     cgPath: `${BASE}first_hire.png`,
     triggerEvents: ['hire', 'retroactive'],
-    check: (state, payload) => {
-      if (payload && typeof payload.prevStaffCount === 'number') {
-        return payload.prevStaffCount === 0 && state.staff.length >= 1;
-      }
-      return state.staff.length >= 1;
-    },
+    check: (state) => state.staff.length >= 1,
   },
   {
     id: 'border_collie',

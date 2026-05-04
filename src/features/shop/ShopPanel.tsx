@@ -1,9 +1,7 @@
-import { useCallback, useState } from 'react';
 import { SHOP_ITEMS } from '@/constants/shopItems';
 import { MAX_SHOP_LEVEL, nextShopCost, useGameStore } from '@/store/gameStore';
 import { FACILITY_ART_BY_ID } from '@/lib/shopEffects';
-import { UpgradeDialog } from '@/components/UpgradeDialog';
-import type { ProjectCategory, ShopItemEffectKey } from '@/types';
+import type { ProjectCategory } from '@/types';
 import './shop.css';
 
 type CategoryStyle = { label: string; color: string; bg: string };
@@ -19,11 +17,9 @@ const CATEGORY_STYLE: Record<ProjectCategory | 'all', CategoryStyle> = {
 export function ShopPanel() {
   const money = useGameStore((s) => s.money);
   const purchases = useGameStore((s) => s.purchases);
-  const [selected, setSelected] = useState<ShopItemEffectKey | null>(null);
-  const closeDialog = useCallback(() => setSelected(null), []);
+  const buy = useGameStore((s) => s.buyShopItem);
 
   return (
-    <>
     <div className="shop-grid">
       {SHOP_ITEMS.map((item) => {
         const level = purchases[item.id] ?? 0;
@@ -84,7 +80,7 @@ export function ShopPanel() {
                   className="shop-stat-tag"
                   style={{ background: 'rgba(223,238,218,0.68)', color: '#6f966d' }}
                 >
-                  每日疲勞 -{3 + Math.max(level, 1) * 2}
+                  每日疲勞 -{Math.max(level, 1)}
                 </span>
               ) : (
                 item.statTags.map((tag, i) => (
@@ -104,7 +100,8 @@ export function ShopPanel() {
 
             <button
               type="button"
-              onClick={() => setSelected(item.id)}
+              onClick={() => buy(item.id)}
+              disabled={isMax || !canAfford}
               className="shop-buy-btn"
               data-state={isMax ? 'max' : canAfford ? 'buy' : 'locked'}
               title={isMax ? '已滿級' : level === 0 ? `購買 $${cost}` : `升級到 ${level + 1}，花費 $${cost}`}
@@ -115,7 +112,5 @@ export function ShopPanel() {
         );
       })}
     </div>
-    {selected && <UpgradeDialog itemId={selected} onClose={closeDialog} />}
-    </>
   );
 }

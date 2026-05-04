@@ -80,6 +80,11 @@ export function pickBestTeamForIndustry(
     let bestScore = -Infinity;
     for (let i = 0; i < pool.length; i++) {
       const d = pool[i];
+      // S 級狗狗只能配到自己職業所屬的產業（CEO 全產業通用，不受限）
+      if (d.grade === 'S' && d.role !== 'CEO') {
+        const allowedCats = ROLE_CATEGORY[d.role] ?? [];
+        if (!allowedCats.includes(category)) continue;
+      }
       const baseScore = dogScoreFor(d, category);
       const traitScore = traitScoreFor(d, category, result);
       const newRoles = new Set([...result.map((r) => r.role), d.role]);
