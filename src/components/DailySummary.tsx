@@ -1,18 +1,24 @@
 import { useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
+import { useUiStore } from '@/store/uiStore';
 import './dailySummary.css';
 
 export function DailySummary() {
   const summary = useGameStore((s) => s.dailySummary);
   const dismiss = useGameStore((s) => s.dismissDailySummary);
+  // 鍛造爐期間遊戲時間繼續推進，但結算彈窗先壓住，避免蓋掉鍛造畫面；
+  // 鍛造爐關閉後若還有 summary 才會跳出來，timer 也才開始倒數
+  const forgeModalOpen = useUiStore((s) => s.forgeModalOpen);
 
   useEffect(() => {
     if (!summary) return;
+    if (forgeModalOpen) return;
     const id = setTimeout(() => dismiss(), 3500);
     return () => clearTimeout(id);
-  }, [summary, dismiss]);
+  }, [summary, dismiss, forgeModalOpen]);
 
   if (!summary) return null;
+  if (forgeModalOpen) return null;
 
   const hasContent =
     summary.completedCount > 0 ||

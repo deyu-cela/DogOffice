@@ -21,8 +21,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['assets/dog-profiles/ceo.png', 'assets/start-screen.png'],
       manifest: {
-        name: '狗狗公司',
-        short_name: 'DogOffice',
+        name: '帕特邦Pawtopia',
+        short_name: 'Pawtopia',
         description: '可愛又療癒的狗狗公司經營小遊戲',
         theme_color: '#ffb347',
         background_color: '#fff1dc',

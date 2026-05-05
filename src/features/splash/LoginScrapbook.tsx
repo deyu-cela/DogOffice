@@ -177,7 +177,7 @@ export function LoginScrapbook({ base, children }: Props) {
         <FooterLink label="隱私政策" />
         <span className="login-footer-dot" aria-hidden>•</span>
         <span className="login-footer-version">
-          <SvgIcon name="appDog" size={14} />
+          <SvgIcon name="paw" size={24} />
           v{__APP_VERSION__}
         </span>
       </footer>

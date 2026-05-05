@@ -94,6 +94,7 @@ export default function App() {
   const closeTeamModal = useUiStore((s) => s.closeTeamModal);
   const projectDetailId = useUiStore((s) => s.projectDetailId);
   const closeProjectDetail = useUiStore((s) => s.closeProjectDetail);
+  const forgeModalOpen = useUiStore((s) => s.forgeModalOpen);
   const tutorialStep = useGameStore((s) => s.tutorialStep);
 
   useEffect(() => {
@@ -128,9 +129,9 @@ export default function App() {
         className="relative mx-auto h-screen overflow-hidden"
         style={{ width: 'min(100vw, calc(100vh * 26 / 21 + 100px), 1600px)' }}
       >
-        {/* 工作室背景 */}
+        {/* 工作室背景：鍛造爐開啟時整層卸載，把 GPU 讓給 iframe Phaser */}
         <div className="absolute inset-0 overflow-hidden">
-          <OfficeScene />
+          {!forgeModalOpen && <OfficeScene />}
         </div>
 
         {/* HUD overlay（受 max-width 容器限制） */}
