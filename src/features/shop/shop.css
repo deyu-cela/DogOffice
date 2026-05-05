@@ -353,3 +353,25 @@
     transform: none;
   }
 }
+
+.shop-forge-btn {
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #ffd86b, #ffb838);
+  color: #5a3a00;
+  border: 1px solid rgba(120, 80, 0, 0.35);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(180, 120, 40, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.shop-forge-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: 0 4px 8px rgba(180, 120, 40, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+

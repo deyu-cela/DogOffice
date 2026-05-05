@@ -1,0 +1,60 @@
+.forge-backdrop {
+  background: rgba(8, 8, 10, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.forge-modal {
+  position: relative;
+  width: min(880px, 100%);
+  max-width: 100%;
+  height: min(720px, 92vh);
+  background: #130e06;
+  border: 1px solid #5a3c10;
+  border-radius: 8px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.forge-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: linear-gradient(180deg, #2a1c0c, #1a1108);
+  border-bottom: 1px solid #5a3c10;
+}
+
+.forge-modal__title {
+  color: #ffdd88;
+  font-family: 'Consolas', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+.forge-modal__close {
+  padding: 4px 12px;
+  background: #2a1c0c;
+  border: 1px solid #7a4f21;
+  color: #ffdd88;
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.forge-modal__close:hover {
+  background: #3a2a14;
+  border-color: #cc7733;
+  color: #ffeeaa;
+}
+
+.forge-modal__iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #0d0d0d;
+  display: block;
+}

@@ -477,6 +477,7 @@ export type LeaderboardEntry = {
   date: string;
   companyName?: string;  // 公司名（取代 nickname 顯示）
   nickname?: string;     // 舊欄位保留，新版不顯示
+  rank?: number;         // server 回傳順序對應的真實名次（filter/sort 後仍保持正確）
 };
 
 export type LeaderboardSubmitModal = {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { DOG_ROSTER } from '@/constants/dogRoster';
+import { GACHA_ROSTER } from '@/constants/dogRoster';
 import { useGameStore, GACHA_COST, type GachaResult } from '@/store/gameStore';
 import { useUiStore } from '@/store/uiStore';
 import { GachaCard } from './GachaCard';
@@ -345,9 +345,9 @@ function PullingView({
 }
 
 function makeRateRows() {
-  const total = DOG_ROSTER.length || 1;
+  const total = GACHA_ROSTER.length || 1;
   return GRADE_ORDER.map((grade) => {
-    const count = DOG_ROSTER.filter((dog) => dog.grade === grade).length;
+    const count = GACHA_ROSTER.filter((dog) => dog.grade === grade).length;
     return { grade, count, percent: `${((count / total) * 100).toFixed(1)}%` };
   }).filter((row) => row.count > 0);
 }

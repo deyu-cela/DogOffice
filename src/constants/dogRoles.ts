@@ -132,6 +132,10 @@ export const ROLE_IMAGE_MAP: Record<string, string> = {
   CEO: `${base}assets/dog-profiles/ceo.png`,
 };
 
+export const ROSTER_IMAGE_MAP: Partial<Record<string, string>> = {
+  'u-2': `${base}assets/dog-profiles/jensen-doberman.png`,
+};
+
 export const ROLE_WAITING_IMAGE_MAP: Partial<Record<string, string>> = {
   工程師: `${base}assets/dog-sprites/engineering-waiting.png`,
   QA: `${base}assets/dog-sprites/qa-waiting.png`,
@@ -142,6 +146,10 @@ export const ROLE_WAITING_IMAGE_MAP: Partial<Record<string, string>> = {
   客服: `${base}assets/dog-sprites/customer-service-waiting.png`,
   PM: `${base}assets/dog-sprites/pm-waiting.png`,
   CEO: `${base}assets/dog-sprites/ceo-waiting.png`,
+};
+
+export const ROSTER_WAITING_IMAGE_MAP: Partial<Record<string, string>> = {
+  'u-2': `${base}assets/dog-sprites/jensen-doberman-waiting.png`,
 };
 
 export const ROLE_WAITING_SPRITE_MAP: Partial<Record<string, string>> = {
@@ -156,4 +164,20 @@ export const ROLE_WAITING_SPRITE_MAP: Partial<Record<string, string>> = {
   CEO: `${base}assets/dog-sprites/ceo-waiting-idle-sheet.png`,
 };
 
+export const ROSTER_WAITING_SPRITE_MAP: Partial<Record<string, string>> = {
+  'u-2': `${base}assets/dog-sprites/jensen-doberman-waiting-idle-sheet.png`,
+};
+
 export const ROLE_WAITING_SPRITE_FRAMES: Partial<Record<string, number>> = {};
+
+export function getDogProfileImage(role: string, rosterId?: string): string {
+  return (rosterId ? ROSTER_IMAGE_MAP[rosterId] : undefined) ?? ROLE_IMAGE_MAP[role] ?? '';
+}
+
+export function getDogWaitingImage(role: string, rosterId?: string): string {
+  return (rosterId ? ROSTER_WAITING_IMAGE_MAP[rosterId] : undefined) ?? ROLE_WAITING_IMAGE_MAP[role] ?? '';
+}
+
+export function getDogWaitingSprite(role: string, rosterId?: string): string {
+  return (rosterId ? ROSTER_WAITING_SPRITE_MAP[rosterId] : undefined) ?? ROLE_WAITING_SPRITE_MAP[role] ?? '';
+}

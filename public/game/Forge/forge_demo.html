@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>鐵匠鋪 - 鍛造Demo (Standalone)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d0d0d;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px 0;
+        }
+        #gameWrap { line-height: 0; position: relative; }
+        canvas { cursor: none; display: block; }
+
+        /* ── 結果彈窗 ── */
+        #resultPanel {
+            display: none;
+            width: 800px;
+            max-width: 100%;
+            background: #130e06;
+            border: 1px solid #5a3c10;
+            border-top: 2px solid #7a4f21;
+            padding: 18px 24px;
+            margin-top: 6px;
+            color: #ccaa66;
+            font-family: 'Consolas', monospace;
+            text-align: center;
+        }
+        #resultPanel h2 {
+            color: #ffdd88;
+            font-size: 22px;
+            letter-spacing: 4px;
+            margin-bottom: 12px;
+        }
+        #resultPanel .qval {
+            color: #ffcc55; font-size: 36px; font-weight: bold; margin: 6px 0 14px;
+        }
+        #resultPanel .sub { color: #997744; font-size: 13px; margin-bottom: 14px; }
+        #btnRestart {
+            background: #2a1c0c; border: 1px solid #7a4f21; color: #ffdd88;
+            font-family: 'Consolas', monospace; font-size: 14px;
+            padding: 8px 22px; cursor: pointer; letter-spacing: 2px;
+        }
+        #btnRestart:hover { background: #3a2a14; border-color: #cc7733; color: #ffeeaa; }
+
+        /* ── Mobile overrides ── */
+        #mobileHeatBtn {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            padding: 14px 0;
+            background: #1e1408;
+            border: 1px solid #4a3010;
+            color: #ccaa66;
+            font-family: 'Consolas', monospace;
+            font-size: 18px;
+            text-align: center;
+            cursor: pointer;
+            letter-spacing: 2px;
+        }
+        #mobileHeatBtn.active { background: #3a1e04; color: #ffdd88; border-color: #cc7733; }
+        @media (max-width: 600px), (pointer: coarse) and (orientation: portrait) {
+            body { padding: 0; }
+            canvas { cursor: auto; }
+            #mobileHeatBtn { display: block; }
+            #resultPanel { width: 100%; }
+            #btnEndForge { max-width: 100%; }
+        }
+
+        /* ── 完成鍛造按鈕 ── */
+        #btnEndForge {
+            display: block;
+            width: 100%;
+            max-width: 800px;
+            padding: 13px 0;
+            background: #1e1408;
+            border: 1px solid #6a4820;
+            border-top: none;
+            color: #ccaa66;
+            font-family: 'Consolas', monospace;
+            font-size: 16px;
+            text-align: center;
+            cursor: pointer;
+            letter-spacing: 3px;
+        }
+        #btnEndForge:hover { background: #2e2010; color: #ffdd88; border-color: #cc7733; }
+        #btnEndForge:disabled { opacity: 0.35; cursor: default; }
+    </style>
+</head>
+<body>
+<audio id="sfx-click"       preload="auto"><source src="assets/click.mp3"       type="audio/mpeg"></audio>
+<audio id="sfx-heat"        preload="auto"><source src="assets/heat.mp3"        type="audio/mpeg"></audio>
+<audio id="sfx-hit-success" preload="auto"><source src="assets/hit_success.mp3" type="audio/mpeg"></audio>
+<audio id="sfx-hit-fail"    preload="auto"><source src="assets/hit_fail.mp3"    type="audio/mpeg"></audio>
+<div id="gameWrap"></div>
+
+<div id="resultPanel">
+    <h2>★ 鍛造完成 ★</h2>
+    <div>最終品質</div>
+    <div class="qval"><span id="resultQ">0</span> / <span id="resultCap">20</span></div>
+    <div class="sub" id="resultSub">敲打次數已用盡</div>
+    <button id="btnRestart">↺ 重新開始</button>
+</div>
+
+<button id="btnEndForge">完成鍛造</button>
+<button id="mobileHeatBtn">🔥 永久加熱：OFF</button>
+
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════════
+// FORGE DEMO – Standalone (extracted from BlackSmithSim.html)
+// ════════════════════════════════════════════════════════════════
+
+// ── FORGE_CONFIG（寫死，不需要選材料） ─────────────────
+let FORGE_CONFIG = {
+    matId: 'demo',
+    matName: '劍身',
+    quality: 0,
+    qualityCap: 20,
+    maxHeats: 6,
+    auxBonuses: { qualityFlat: 0, qualityMult: 0, heatBonus: 0, rcChanceBonus: 0, comboBonus: 0, extraHeats: 0 },
+    gemBonuses: { qualityBonus: 0, attackBonus: 0, element: 'none', gripTrait: null },
+    useRefinedOil: false,
+    useGreenPowder: false,
+    hitBonusFlat: 0,
+    gainMultiplier: 1
+};
+let forgeGame = null;
+
+// ── GAME stub ─────────────────────────────────────────
+const GAME = {
+    tutorial: null,
+    forgeSkin: 'artisan',
+    forgeTools: {
+        ownedSkins: ['classic', 'artisan'],
+        equipped: {},
+        modifiers: {}
+    },
+    day: 1,
+    reputation: 0
+};
+function saveGame() { /* no-op stub */ }
+
+// ── SFX 管理器 ─────────────────────────────────────────
+const SFX_MANAGER = {
+    volume: 0.7,
+    muted: false,
+    audioElements: null,
+    init() {
+        this.audioElements = {
+            click:      document.getElementById('sfx-click'),
+            heat:       document.getElementById('sfx-heat'),
+            hitSuccess: document.getElementById('sfx-hit-success'),
+            hitFail:    document.getElementById('sfx-hit-fail')
+        };
+        Object.values(this.audioElements).forEach(audio => {
+            if (audio) audio.volume = this.volume;
+        });
+    },
+    play(soundName) {
+        if (!this.audioElements) this.init();
+        if (this.muted || !this.audioElements[soundName]) return;
+        const audio = this.audioElements[soundName];
+        audio.currentTime = 0;
+        audio.play().catch(e => {});
+    },
+    stop() {
+        if (!this.audioElements) return;
+        Object.values(this.audioElements).forEach(audio => {
+            if (audio) { audio.pause(); audio.currentTime = 0; }
+        });
+    }
+};
+
+// #region [系統：鍛造系統 / Forge System]
+
+const FORGE_SKINS = {
+    classic: {
+        id:'classic',
+        name:'經典一版',
+        desc:'保留最初的怪錘、方砧與老爐火。',
+        tools:{ anvil:'classic_anvil', hammer:'classic_hammer', furnace:'classic_furnace' },
+        modifiers:{}
+    },
+    artisan: {
+        id:'artisan',
+        name:'新版工坊',
+        desc:'雕紋鐵砧、長柄鍛錘與磚砌火爐。',
+        tools:{ anvil:'artisan_anvil', hammer:'artisan_hammer', furnace:'artisan_furnace' },
+        modifiers:{}
+    }
+};
+
+function ensureForgeTools() {
+    if (!GAME.forgeTools) GAME.forgeTools = {};
+    if (!Array.isArray(GAME.forgeTools.ownedSkins)) GAME.forgeTools.ownedSkins = ['classic', 'artisan'];
+    if (GAME.forgeTools.ownedSkins.indexOf('classic') < 0) GAME.forgeTools.ownedSkins.unshift('classic');
+    if (GAME.forgeTools.ownedSkins.indexOf('artisan') < 0) GAME.forgeTools.ownedSkins.push('artisan');
+    if (!GAME.forgeSkin || !FORGE_SKINS[GAME.forgeSkin]) GAME.forgeSkin = 'artisan';
+    if (!GAME.forgeTools.equipped) GAME.forgeTools.equipped = {};
+    const skin = FORGE_SKINS[GAME.forgeSkin] || FORGE_SKINS.artisan;
+    GAME.forgeTools.equipped.skin = skin.id;
+    GAME.forgeTools.equipped.anvil = GAME.forgeTools.equipped.anvil || skin.tools.anvil;
+    GAME.forgeTools.equipped.hammer = GAME.forgeTools.equipped.hammer || skin.tools.hammer;
+    GAME.forgeTools.equipped.furnace = GAME.forgeTools.equipped.furnace || skin.tools.furnace;
+    if (!GAME.forgeTools.modifiers) GAME.forgeTools.modifiers = {};
+}
+
+function currentForgeSkin() {
+    ensureForgeTools();
+    return FORGE_SKINS[GAME.forgeSkin] || FORGE_SKINS.classic;
+}
+
+// ── 鍛造完成 / 結果畫面 (standalone) ──────────────────
+function openForgeResult() {
+    const panel = document.getElementById('resultPanel');
+    const qEl   = document.getElementById('resultQ');
+    const cEl   = document.getElementById('resultCap');
+    const sub   = document.getElementById('resultSub');
+    if (panel && qEl && cEl) {
+        qEl.textContent = String(Math.floor(st.quality));
+        cEl.textContent = String(FORGE_CONFIG.qualityCap);
+        if (sub) {
+            const ratio = st.quality / FORGE_CONFIG.qualityCap;
+            if (ratio >= 1)        sub.textContent = '✦ 完美！品質達上限';
+            else if (ratio >= 0.8) sub.textContent = '★ 上等的鍛造';
+            else if (ratio >= 0.5) sub.textContent = '── 還算不錯';
+            else if (ratio >= 0.2) sub.textContent = '… 勉強過得去';
+            else                    sub.textContent = '─ 慘不忍睹';
+        }
+        panel.style.display = 'block';
+    }
+}
+function confirmEndForge() { openForgeResult(); }
+
+function restartForge() {
+    const panel = document.getElementById('resultPanel');
+    if (panel) panel.style.display = 'none';
+    if (forgeGame) {
+        const scene = forgeGame.scene.getScene('Forge');
+        if (scene) {
+            scene.scene.restart();
+        }
+    }
+}
+
+// ── 可即時調整的參數 (由 dev tools 控制) ──────────────
+let BEAT_MS = 750;
+let COOL_MS = 12000;
+let HIT_WIN = 150;
+let TIMING_OFFSET = 160;  // ms，正值=提前判定（點亮前就算中），負值=延後
+let RC_HITS = 1;          // 紅圈消失前可敲幾次，0=停用紅圈機制
+
+// ── 裝置偵測與佈局常數 ────────────────────────────────
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+              || (window.innerWidth < window.innerHeight && window.innerWidth <= 600);
+
+let W, H;
+let FRN_CX, FRN_CY, FRN_R;
+let ANV_CX, ANV_CY, ANV_FW, ANV_FH;
+let QB_X, QB_TOP, QB_H, QB_W;
+let COMBO_CX, COMBO_Y_WORD, COMBO_Y_NUM, COMBO_Y_LV, COMBO_ORIGIN_X;
+let SWORD_SC;
+
+if (isMobile) {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    ANV_FW = Math.round(W * 0.90 * 0.80);
+    ANV_FH = Math.round(ANV_FW * 0.558);
+    ANV_CX = Math.round(W / 2);
+    ANV_CY = Math.round(H * 0.80);
+    FRN_R  = Math.round(W * 0.13 * 1.75);
+    FRN_CX = Math.round(W / 2);
+    FRN_CY = Math.round(H * 0.52);
+    QB_W   = 32;
+    QB_H   = Math.round(H * 0.44);
+    QB_X   = W - QB_W - 8;
+    QB_TOP = Math.round(H * 0.07);
+    COMBO_CX      = Math.round(W / 2);
+    COMBO_Y_NUM   = Math.round(FRN_CY - FRN_R - 85);
+    COMBO_Y_WORD  = Math.round(COMBO_Y_NUM - H * 0.06);
+    COMBO_Y_LV    = Math.round(COMBO_Y_NUM + H * 0.06);
+    COMBO_ORIGIN_X = 0.5;
+    SWORD_SC = ANV_FW / 165;
+} else {
+    W = 800; H = 600;
+    FRN_CX = 135; FRN_CY = 310; FRN_R = 58;
+    ANV_CX = 490; ANV_CY = 405; ANV_FW = 165; ANV_FH = 92;
+    QB_X = 652; QB_TOP = 148; QB_H = 274; QB_W = 22;
+    COMBO_CX      = ANV_CX - ANV_FW / 2 - 16;
+    COMBO_Y_WORD  = ANV_CY - 68;
+    COMBO_Y_NUM   = ANV_CY - 16;
+    COMBO_Y_LV    = ANV_CY + 44;
+    COMBO_ORIGIN_X = 1;
+    SWORD_SC = 1.0;
+}
+
+const HEAT_MS  = 1800;
+const FLASH_MS = 200;
+const MIN_HOT  = 0.10;
+const COLD_PEN = 7;
+const COMBO_LV = 10;
+const MAX_LV   = 5;
+let RC_CHANCE = 0.21;
+let RC_BONUS_CHANCE = 0.07;
+
+// ── 遊戲狀態 ──────────────────────────────────────────
+const st = {
+    quality:    0,
+    heat:       0,
+    furnacing:  false,
+    furnaceT:   0,
+    combo:      0,
+    comboLv:    0,
+    comboSaved: false,
+    comboSavedHits: 0,
+    lastBeatIdx:   -1,
+    lastWindowIdx:    -1,
+    hitThisWindow:    false,
+    lastClickWinIdx:  -1,
+    infiniteHeat: false,
+    hammer: { offset: 0, canHit: true },
+    mouse:  { x: W/2, y: H/2 },
+    beatOrigin: 0,
+    lastLvUpTime: 0,
+    postHeatGrace: false,
+    anvilFlash:    true,
+    borderFlash: { alpha: 0, color: 0xFFFFFF, startTime: 0 },
+    rc: { active: false, x: 0, y: 0, hitsLeft: 0 },
+    gc: { active: false, x: 0, y: 0, spawnBeatIdx: -1, expiredBeatIdx: -1 },
+    gcUsed: false,
+    heatsUsed: 0,
+    furnaceDisabled: false,
+};
+
+// ── 節奏計算 ──────────────────────────────────────────
+function beatPhase(now) {
+    return ((now - st.beatOrigin) % BEAT_MS) / BEAT_MS;
+}
+function isOnBeat(now) {
+    return beatPhase(now + TIMING_OFFSET) < (HIT_WIN * 2) / BEAT_MS;
+}
+function borderRhythmAlpha(now) {
+    const p      = beatPhase(now);
+    const winEnd = FLASH_MS / BEAT_MS;
+    if (p < winEnd) return 0.82 * (1 - p / winEnd * 0.58);
+    return Math.max(0, 0.30 - (p - winEnd) * 2.2);
+}
+
+function gainPerHit() {
+    if (!FORGE_CONFIG) return 1 + st.comboLv;
+    const base = FORGE_CONFIG.useRefinedOil ? Math.pow(2, st.comboLv) : (1 + st.comboLv);
+    return (base + (FORGE_CONFIG.hitBonusFlat || 0)) * (FORGE_CONFIG.gainMultiplier || 1);
+}
+
+// ─────────────────────────────────────────────────────────────
+// ── Phaser 場景 ───────────────────────────────────────
+class ForgeScene extends Phaser.Scene {
+    constructor() { super('Forge'); }
+
+    create() {
+        this.skin = currentForgeSkin();
+        window._fancyMode = false;
+        // Reset all forge state for new session
+        Object.assign(st, {
+            quality:0, heat:0, furnacing:false, furnaceT:0,
+            combo:0, comboLv:0, comboSaved:false, comboSavedHits:0,
+            lastBeatIdx:-1, lastWindowIdx:-1, hitThisWindow:false, lastClickWinIdx:-1,
+            infiniteHeat:false, hammer:{offset:0, canHit:true},
+            beatOrigin:Date.now(), lastLvUpTime:0, postHeatGrace:false, anvilFlash:true,
+            borderFlash:{alpha:0, color:0xFFFFFF, startTime:0},
+            rc:{active:false, x:0, y:0, hitsLeft:0},
+            gc:{active:false, x:0, y:0, spawnBeatIdx:-1, expiredBeatIdx:-1}, gcUsed:false,
+            heatsUsed:0, furnaceDisabled:false,
+        });
+        this._pv = 0;
+
+        this.drawStaticBG();
+        this.frnGfx  = this.add.graphics().setDepth(10);
+        this.drawFurnace();
+        this.anvGfx  = this.add.graphics().setDepth(10);
+        this.drawAnvil();
+
+        this.borderGfx  = this.add.graphics().setDepth(92);
+        this.timingGfx  = this.add.graphics().setDepth(91);
+        this.savedGfx   = this.add.graphics().setDepth(21);
+        this.swordGfx  = this.add.graphics().setDepth(22);
+        this.rcGfx     = this.add.graphics().setDepth(26);
+        this.gcGfx     = this.add.graphics().setDepth(27);
+        this.qbarGfx   = this.add.graphics().setDepth(30);
+        this.beatGfx   = this.add.graphics().setDepth(50);
+        this.cursorGfx = this.add.graphics().setDepth(100);
+
+        this.add.text(FRN_CX, FRN_CY + FRN_R + 18, '點擊加熱', {
+            fontSize:'12px', color:'#776655', fontFamily:'serif'
+        }).setOrigin(0.5).setDepth(20);
+
+        this._heatsText = this.add.text(FRN_CX, FRN_CY - FRN_R - 22, '', {
+            fontSize:'14px', color:'#CCAA66', fontFamily:'serif', align:'center'
+        }).setOrigin(0.5, 1).setDepth(20);
+        this._updateHeatsText();
+
+        this.add.text(QB_X + QB_W/2, QB_TOP - 38, '品質', {
+            fontSize:'12px', color:'#FFDD88', fontFamily:'serif'
+        }).setOrigin(0.5).setDepth(31);
+
+        this.qualityCapNum = this.add.text(QB_X + QB_W/2, QB_TOP - 20, '', {
+            fontSize:'11px', color:'#FFDD88', fontFamily:'serif'
+        }).setOrigin(0.5).setDepth(31);
+
+        this.qualityNum = this.add.text(QB_X + QB_W/2, QB_TOP + QB_H + 12, '0', {
+            fontSize:'14px', color:'#FFDD88', fontFamily:'serif'
+        }).setOrigin(0.5).setDepth(31);
+
+        const CX = COMBO_CX;
+        const comboNumSz = isMobile ? `${Math.round(72 * W / 800 * 4)}px` : '72px';
+
+        this.add.text(CX, COMBO_Y_WORD, 'COMBO', {
+            fontFamily: '"Arial Black", Impact, sans-serif',
+            fontStyle:  'italic',
+            fontSize:   '14px',
+            color:      '#FFCC00',
+            stroke:     '#000000',
+            strokeThickness: 4,
+        }).setOrigin(COMBO_ORIGIN_X, 0.5).setDepth(32).setName('comboWord').setVisible(false);
+        this._comboWord = this.children.getByName('comboWord');
+
+        this._comboNum = this.add.text(CX, COMBO_Y_NUM, '', {
+            fontFamily:      '"Arial Black", Impact, sans-serif',
+            fontStyle:       'italic',
+            fontSize:        comboNumSz,
+            color:           '#FF3300',
+            stroke:          '#150000',
+            strokeThickness: 10,
+            shadow: { offsetX:3, offsetY:4, color:'#FF0000', blur:8, fill:true }
+        }).setOrigin(COMBO_ORIGIN_X, 0.5).setDepth(32);
+
+        this._comboLv = this.add.text(CX, COMBO_Y_LV, '', {
+            fontFamily:      '"Arial Black", Impact, sans-serif',
+            fontStyle:       'italic',
+            fontSize:        '16px',
+            color:           '#FF8800',
+            stroke:          '#000000',
+            strokeThickness: 4,
+        }).setOrigin(COMBO_ORIGIN_X, 0.5).setDepth(32);
+
+        this._savedLabel = this.add.text(ANV_CX, ANV_CY - 62, '', {
+            fontFamily:      '"Arial Black", Impact, sans-serif',
+            fontStyle:       'italic',
+            fontSize:        '13px',
+            color:           '#00FF88',
+            stroke:          '#002200',
+            strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(34);
+
+        this.msgText = this.add.text(W/2, H - 22, '點擊左邊熔爐加熱劍身', {
+            fontSize:'13px', color:'#AA8855', fontFamily:'serif'
+        }).setOrigin(0.5).setDepth(50);
+
+        if (!isMobile) this.input.on('pointermove', p => { st.mouse.x = p.x; st.mouse.y = p.y; });
+        this.input.on('pointerdown', p => this.onDown(p.x, p.y));
+        this._bindControls();
+    }
+
+    _bindControls() {
+        if (window._controlsBound) return;
+        window._controlsBound = true;
+        const mhBtn = document.getElementById('mobileHeatBtn');
+        if (mhBtn) {
+            mhBtn.addEventListener('click', () => {
+                st.infiniteHeat = !st.infiniteHeat;
+                if (st.infiniteHeat) st.heat = 1.0;
+                mhBtn.textContent = `🔥 永久加熱：${st.infiniteHeat ? 'ON' : 'OFF'}`;
+                mhBtn.classList.toggle('active', st.infiniteHeat);
+            });
+        }
+    }
+
+    applyForgeSkin() {
+        this.skin = currentForgeSkin();
+        this.drawStaticBG();
+        if (this.frnGfx) this.drawFurnace();
+        if (this.anvGfx) this.drawAnvil();
+        if (this.cursorGfx) this.drawCursor(st.mouse.x, st.mouse.y);
+    }
+
+    drawStaticBG() {
+        if (!this.bgGfx) this.bgGfx = this.add.graphics().setDepth(0);
+        const g = this.bgGfx;
+        g.clear();
+        if (this.skin && this.skin.id === 'artisan') {
+            g.fillStyle(0x140d07);
+            g.fillRect(0, 0, W, H);
+            g.fillStyle(0x1f1409);
+            for (let y = 0; y < H; y += 34) {
+                for (let x = (Math.floor(y / 34) % 2) * -38; x < W; x += 76) {
+                    g.fillRect(x, y, 72, 30);
+                }
+            }
+            g.lineStyle(1, 0x5a3514, 0.18);
+            for (let y = 0; y < H; y += 34) g.lineBetween(0, y, W, y);
+            for (let x = 0; x < W; x += 38) g.lineBetween(x, 0, x + 18, H);
+            g.fillStyle(0x080604, 0.68);
+            g.fillRect(0, H - 58, W, 58);
+            g.lineStyle(2, 0xb4762a, 0.32);
+            g.lineBetween(0, H - 58, W, H - 58);
+            g.fillStyle(0xd08a35, 0.05);
+            g.fillEllipse(ANV_CX, ANV_CY + 48, 390, 118);
+            g.fillEllipse(FRN_CX, FRN_CY, 230, 230);
+            return;
+        }
+        g.fillStyle(0x2b1d0e);
+        g.fillRect(0, 0, W, H);
+        g.lineStyle(1, 0x3c2a14, 0.35);
+        for (let i = 0; i < 18; i++) {
+            const y = i * 36;
+            g.lineBetween(0, y, W, y + Phaser.Math.Between(6, 16));
+        }
+        g.fillStyle(0x190f06, 0.9);
+        g.fillRect(0, H - 42, W, 42);
+        g.lineStyle(1, 0x4a3010, 0.45);
+        g.lineBetween(0, H - 42, W, H - 42);
+    }
+
+    drawFurnace() {
+        const g = this.frnGfx;
+        g.clear();
+        const cx = FRN_CX, cy = FRN_CY, r = FRN_R;
+        if (this.skin && this.skin.id === 'artisan') {
+            g.fillStyle(0x000000, 0.32);
+            g.fillEllipse(cx, cy + r * 0.82, r * 2.35, r * 0.5);
+            g.fillStyle(0x23160b);
+            g.fillRoundedRect(cx - r - 16, cy - r - 12, (r + 16) * 2, (r + 18) * 2, 14);
+            g.lineStyle(2, 0x7b4d1f, 0.8);
+            g.strokeRoundedRect(cx - r - 16, cy - r - 12, (r + 16) * 2, (r + 18) * 2, 14);
+            for (let i = -2; i <= 2; i++) {
+                g.lineStyle(1, 0x5a3514, 0.65);
+                g.lineBetween(cx - r - 9, cy + i * 18, cx + r + 9, cy + i * 18);
+            }
+            g.fillStyle(0x080503);
+            g.fillRoundedRect(cx - r * 0.72, cy - r * 0.62, r * 1.44, r * 1.25, 18);
+            const pv = this._pv;
+            const f = st.furnacing ? 1.0 : 0.32;
+            g.fillStyle(0xff2200, (.18 + pv*.10) * f); g.fillEllipse(cx, cy + 4, r * 1.18, r * 1.02);
+            g.fillStyle(0xff7700, (.34 + pv*.14) * f); g.fillEllipse(cx, cy + 6, r * .86, r * .78);
+            g.fillStyle(0xffd66a, (.42 + pv*.18) * f); g.fillEllipse(cx, cy + 10, r * .45, r * .56);
+            g.lineStyle(3, 0x0c0804, 0.9);
+            g.strokeRoundedRect(cx - r * 0.72, cy - r * 0.62, r * 1.44, r * 1.25, 18);
+            return;
+        }
+        g.fillStyle(0x3e3930);
+        g.fillCircle(cx, cy, r + 13);
+        for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * Math.PI * 2;
+            g.fillStyle(0x2e2a24, 0.9);
+            g.fillCircle(cx + Math.cos(a)*(r+7), cy + Math.sin(a)*(r+7), 4);
+        }
+        g.lineStyle(2, 0x555045, 0.6);
+        g.strokeCircle(cx, cy, r + 13);
+        g.fillStyle(0x110d08);
+        g.fillCircle(cx, cy, r);
+        {
+            const pv = this._pv;
+            const f = st.furnacing ? 1.0 : 0.28;
+            g.fillStyle(0xFF1100, (.10+pv*.08)*f); g.fillCircle(cx, cy, r+7);
+            g.fillStyle(0xFF4400, (.22+pv*.11)*f); g.fillCircle(cx, cy, r-4);
+            g.fillStyle(0xFF7700, (.34+pv*.14)*f); g.fillCircle(cx, cy, r-16);
+            g.fillStyle(0xFFAA00, (.44+pv*.17)*f); g.fillCircle(cx, cy, r-28);
+            g.fillStyle(0xFFEE44, (.30+pv*.22)*f); g.fillCircle(cx, cy, r-40);
+        }
+        g.lineStyle(3, 0x1a1510, 0.9);
+        g.strokeCircle(cx, cy, r);
+    }
+
+    drawAnvil() {
+        const g = this.anvGfx;
+        g.clear();
+        const cx = ANV_CX, cy = ANV_CY, fw = ANV_FW, fh = ANV_FH;
+        if (this.skin && this.skin.id === 'artisan') {
+            const faceX = cx - fw / 2;
+            const faceY = cy - fh / 2;
+            g.fillStyle(0x000000, 0.34);
+            g.fillEllipse(cx + 8, cy + fh/2 + 24, fw + 135, 48);
+            g.fillStyle(0x241508);
+            g.fillRoundedRect(cx - fw * .42, cy + fh * .38, fw * .84, fh * .34, 7);
+            g.lineStyle(2, 0x7a4f21, .88);
+            g.strokeRoundedRect(cx - fw * .42, cy + fh * .38, fw * .84, fh * .34, 7);
+            g.fillStyle(0x2e1e10);
+            g.fillRoundedRect(cx - fw * .34, cy + fh * .16, fw * .68, fh * .30, 6);
+            g.fillStyle(0x222725);
+            g.fillTriangle(faceX + fw, cy - fh * .34, faceX + fw + 62 * SWORD_SC, cy - fh * .03, faceX + fw, cy + fh * .34);
+            g.fillTriangle(faceX, cy - fh * .25, faceX - 42 * SWORD_SC, cy + fh * .02, faceX, cy + fh * .25);
+            g.fillStyle(0x3f4644);
+            g.fillRoundedRect(faceX, faceY, fw, fh, 11);
+            g.fillStyle(0x5b6461, .55);
+            g.fillRoundedRect(faceX + 6 * SWORD_SC, faceY + 5 * SWORD_SC, fw - 12 * SWORD_SC, fh * .40, 8);
+            g.fillStyle(0x202321, .50);
+            g.fillRoundedRect(faceX + 8 * SWORD_SC, cy + fh * .12, fw - 16 * SWORD_SC, fh * .28, 7);
+            g.lineStyle(3, 0x151817, .92);
+            g.strokeRoundedRect(faceX, faceY, fw, fh, 11);
+            g.lineStyle(2, 0xb7c1bb, .62);
+            g.lineBetween(faceX + 10 * SWORD_SC, faceY + 9 * SWORD_SC, faceX + fw - 12 * SWORD_SC, faceY + 9 * SWORD_SC);
+            g.lineStyle(1, 0x242827, .72);
+            g.lineBetween(faceX + fw * .16, faceY + fh * .30, faceX + fw * .66, faceY + fh * .72);
+            g.lineBetween(faceX + fw * .34, faceY + fh * .76, faceX + fw * .76, faceY + fh * .27);
+            return;
+        }
+        g.fillStyle(0x000000, 0.28);
+        g.fillEllipse(cx+6, cy+fh/2+17, fw+85, 36);
+        g.fillStyle(0x363636);
+        g.fillRect(cx-60, cy+fh/2-4, 120, 28);
+        g.lineStyle(2, 0x202020);
+        g.strokeRect(cx-60, cy+fh/2-4, 120, 28);
+        g.fillStyle(0x545454);
+        g.fillTriangle(cx+fw/2, cy-fh/4, cx+fw/2+58, cy+4, cx+fw/2, cy+fh/4);
+        g.lineStyle(2, 0x2e2e2e);
+        g.strokeTriangle(cx+fw/2, cy-fh/4, cx+fw/2+58, cy+4, cx+fw/2, cy+fh/4);
+        g.fillStyle(0x606060);
+        g.fillRect(cx-fw/2, cy-fh/2, fw, fh);
+        g.lineStyle(3, 0x2a2a2a);
+        g.strokeRect(cx-fw/2, cy-fh/2, fw, fh);
+        g.lineStyle(2, 0x979797, 0.8);
+        g.lineBetween(cx-fw/2+3, cy-fh/2+3, cx+fw/2-3, cy-fh/2+3);
+        g.lineBetween(cx-fw/2+3, cy-fh/2+3, cx-fw/2+3, cy+fh/2-3);
+        g.lineStyle(1, 0x484848, 0.65);
+        g.lineBetween(cx-42, cy-18, cx+28, cy+14);
+        g.lineBetween(cx-58, cy+7, cx+16, cy-5);
+    }
+
+    drawSword(now) {
+        const g = this.swordGfx;
+        g.clear();
+        let cx, cy, a = 1;
+        if (st.furnacing) {
+            const prog = Math.min(1, (now - st.furnaceT) / (HEAT_MS * 0.6));
+            cx = Phaser.Math.Linear(ANV_CX, FRN_CX, Phaser.Math.Easing.Sine.Out(prog));
+            cy = Phaser.Math.Linear(ANV_CY - 8, FRN_CY, Phaser.Math.Easing.Sine.Out(prog));
+            a  = 1 - prog * 0.65;
+        } else {
+            cx = ANV_CX; cy = ANV_CY - 8;
+        }
+        const h = st.heat;
+
+        let r, gv, bv;
+        if (h < 0.5) {
+            const t = h * 2;
+            r  = Math.round(0x72 + (0xFF - 0x72) * t);
+            gv = Math.round(0x72 + (0x55 - 0x72) * t);
+            bv = Math.round(0x72 * (1 - t));
+        } else {
+            const t = (h - 0.5) * 2;
+            r = 0xFF; gv = Math.round(0x55 * (1 - t*0.75)); bv = 0;
+        }
+        const col = (r << 16) | (gv << 8) | bv;
+        const sc = SWORD_SC;
+        if (this.skin && this.skin.id === 'artisan') {
+            const coldCol = 0x59615e;
+            const warmCol = h > MIN_HOT ? col : coldCol;
+            const bladeCol = st.furnacing || h > MIN_HOT ? warmCol : coldCol;
+            if (h > 0.42) {
+                const ga = Math.min(0.42, Math.max(0, (h - 0.42) * 0.9));
+                g.fillStyle(0xFF6A18, ga);
+                g.fillEllipse(cx - 2*sc, cy, 158*sc, 32*sc);
+                g.fillStyle(0xFFD36A, ga * 0.35);
+                g.fillEllipse(cx + 18*sc, cy, 116*sc, 16*sc);
+            }
+            g.fillStyle(0x4b2a18, a);
+            g.fillRoundedRect(cx - 94*sc, cy - 5*sc, 30*sc, 10*sc, 3*sc);
+            g.fillStyle(0x2a1a12, a * .85);
+            g.fillRoundedRect(cx - 100*sc, cy - 8*sc, 10*sc, 16*sc, 3*sc);
+            g.fillStyle(0x7b6137, a);
+            g.fillRoundedRect(cx - 68*sc, cy - 15*sc, 10*sc, 30*sc, 3*sc);
+            g.lineStyle(Math.max(1, 1.5*sc), 0x1b120d, a * .82);
+            g.strokeRoundedRect(cx - 68*sc, cy - 15*sc, 10*sc, 30*sc, 3*sc);
+            g.fillStyle(bladeCol, a);
+            g.fillPoints([
+                new Phaser.Geom.Point(cx - 59*sc, cy - 10*sc),
+                new Phaser.Geom.Point(cx + 44*sc, cy - 8*sc),
+                new Phaser.Geom.Point(cx + 70*sc, cy),
+                new Phaser.Geom.Point(cx + 44*sc, cy + 8*sc),
+                new Phaser.Geom.Point(cx - 59*sc, cy + 10*sc),
+            ], true);
+            g.lineStyle(Math.max(1, 1.4*sc), 0x201715, a * .72);
+            g.lineBetween(cx - 58*sc, cy - 10*sc, cx + 44*sc, cy - 8*sc);
+            g.lineBetween(cx - 58*sc, cy + 10*sc, cx + 44*sc, cy + 8*sc);
+            g.lineBetween(cx + 44*sc, cy - 8*sc, cx + 70*sc, cy);
+            g.lineBetween(cx + 44*sc, cy + 8*sc, cx + 70*sc, cy);
+            g.lineStyle(Math.max(1, sc), 0x2f3634, a * .48);
+            g.lineBetween(cx - 42*sc, cy, cx + 45*sc, cy);
+            return;
+        }
+        if (h > 0.5) {
+            const ga = (h-0.5)*2*0.3;
+            g.fillStyle(0xFF6600, ga);
+            g.fillEllipse(cx + (-10)*sc, cy, 150*sc, 28*sc);
+        }
+        g.fillStyle(st.furnacing ? col : 0x7B4A2F, a);
+        g.fillRect(cx + (-90)*sc, cy + (-4)*sc, 28*sc, 8*sc);
+        g.fillStyle(col, a);
+        g.fillRect(cx + (-63)*sc, cy + (-14)*sc, 9*sc, 28*sc);
+        g.lineStyle(Math.max(1, sc), 0x222222, a*0.7);
+        g.strokeRect(cx + (-63)*sc, cy + (-14)*sc, 9*sc, 28*sc);
+        g.fillStyle(col, a);
+        g.fillRect(cx + (-54)*sc, cy + (-5)*sc, 94*sc, 10*sc);
+        if (h < 0.7) {
+            g.fillStyle(0xAAAAAA, (1-h/0.7)*a*0.35);
+            g.fillRect(cx + (-54)*sc, cy + (-5)*sc, 94*sc, 4*sc);
+        }
+        g.fillStyle(col, a);
+        g.fillTriangle(cx + 40*sc, cy + (-5)*sc, cx + 40*sc, cy + 5*sc, cx + 63*sc, cy);
+        g.lineStyle(Math.max(1, sc), 0x222222, a*0.75);
+        g.strokeRect(cx + (-54)*sc, cy + (-5)*sc, 94*sc, 10*sc);
+        g.strokeTriangle(cx + 40*sc, cy + (-5)*sc, cx + 40*sc, cy + 5*sc, cx + 63*sc, cy);
+    }
+
+    drawComboSaved(now) {
+        const g = this.savedGfx;
+        g.clear();
+        if (!st.comboSaved) {
+            this._savedLabel.setText('');
+            return;
+        }
+        const pulse = 0.55 + 0.45 * Math.sin(now / 280);
+        const cx = ANV_CX, cy = ANV_CY - 8;
+        const sc = SWORD_SC;
+        g.lineStyle(Math.max(2, 3*sc), 0x00FF88, pulse * 0.85);
+        g.strokeRect(cx - 70*sc, cy - 18*sc, 140*sc, 26*sc);
+        g.lineStyle(Math.max(1, 1.5*sc), 0x00CC66, pulse * 0.4);
+        g.strokeRect(cx - 76*sc, cy - 24*sc, 152*sc, 38*sc);
+
+        const corners = [[cx-70*sc,cy-18*sc],[cx+70*sc,cy-18*sc],[cx-70*sc,cy+8*sc],[cx+70*sc,cy+8*sc]];
+        g.fillStyle(0x00FF88, pulse * 0.9);
+        corners.forEach(([x,y]) => g.fillRect(x-2*sc, y-2*sc, 4*sc, 4*sc));
+
+        this._savedLabel.setText(`✓ COMBO SAVED ×${st.comboSavedHits}`);
+        this._savedLabel.setAlpha(0.65 + 0.35 * Math.sin(now / 210));
+    }
+
+    drawBorder(now) {
+        const g   = this.borderGfx;
+        g.clear();
+        const bf  = st.borderFlash;
+        const ra  = borderRhythmAlpha(now);
+        const lvC = [0, 0xFF9900, 0xFF5500, 0xFF2200, 0xFF0055, 0xBB00FF];
+
+        this._strokeBorder(g, 0xFFFFFF, ra, 'beat');
+
+        if (st.comboLv > 0) {
+            this._strokeBorder(g, lvC[st.comboLv], 0.10 + st.comboLv * 0.055, 'beat');
+        }
+
+        if (bf.alpha > 0) {
+            const FADE_MS = 120;
+            const t = Math.max(0, 1 - (now - bf.startTime) / FADE_MS);
+            const a = bf.alpha * t;
+            if (a > 0.01) this._strokeBorder(g, bf.color, a, 'click', 1 - t);
+            if (t <= 0) bf.alpha = 0;
+        }
+    }
+
+    _strokeBorder(g, color, alpha, mode = 'beat', progress = 0) {
+        if (alpha < 0.01) return;
+        if (st.anvilFlash) {
+            const sc = SWORD_SC;
+            const cx = ANV_CX, cy = ANV_CY, fw = ANV_FW, fh = ANV_FH;
+            const clickExpand = mode === 'click' ? (6 * sc + progress * 13 * sc) : 0;
+            const ix = cx - fw/2 - clickExpand;
+            const iy = cy - fh/2 - clickExpand;
+            const iw = fw + clickExpand * 2;
+            const ih = fh + clickExpand * 2;
+            if (this.skin && this.skin.id === 'artisan') {
+                const x = ix, y = iy;
+                if (mode === 'beat') {
+                    g.fillStyle(color, alpha * 0.06);
+                    g.fillRoundedRect(x, y, iw, ih, 10 * sc);
+                }
+                if (mode === 'click') {
+                    g.lineStyle(Math.max(3, 4.5 * sc), color, alpha * 0.94);
+                    g.strokeRoundedRect(x, y, iw, ih, 12 * sc);
+                    g.lineStyle(Math.max(1.5, 2.4 * sc), color, alpha * 0.38);
+                    g.strokeRoundedRect(x - 4*sc, y - 4*sc, iw + 8*sc, ih + 8*sc, 15 * sc);
+                    return;
+                }
+                g.lineStyle(Math.max(4, 7 * sc), color, alpha * 0.78);
+                g.strokeRoundedRect(x, y, iw, ih, 10 * sc);
+                g.lineStyle(Math.max(2, 3 * sc), color, alpha * 0.40);
+                g.strokeRoundedRect(x - 7*sc, y - 7*sc, iw + 14*sc, ih + 14*sc, 14 * sc);
+                const len = 24 * sc;
+                g.lineStyle(Math.max(2, 3 * sc), 0xFFE8A6, alpha * 0.72);
+                g.lineBetween(x, y, x + len, y);
+                g.lineBetween(x, y, x, y + len);
+                g.lineBetween(x + iw, y, x + iw - len, y);
+                g.lineBetween(x + iw, y, x + iw, y + len);
+                g.lineBetween(x, y + ih, x + len, y + ih);
+                g.lineBetween(x, y + ih, x, y + ih - len);
+                g.lineBetween(x + iw, y + ih, x + iw - len, y + ih);
+                g.lineBetween(x + iw, y + ih, x + iw, y + ih - len);
+                return;
+            }
+            if (mode === 'click') {
+                g.lineStyle(Math.max(3, 4.5 * sc), color, alpha);
+                g.strokeRect(ix, iy, iw, ih);
+                g.lineStyle(Math.max(1.5, 2.4 * sc), color, alpha * 0.36);
+                g.strokeRect(ix - 4*sc, iy - 4*sc, iw + 8*sc, ih + 8*sc);
+                return;
+            }
+            g.lineStyle(Math.max(3, 6 * sc), color, alpha);
+            g.strokeRect(ix, iy, iw, ih);
+            g.lineStyle(Math.max(1.5, 3 * sc), color, alpha * 0.4);
+            g.strokeRect(cx - fw/2 - 5*sc, cy - fh/2 - 5*sc, fw + 10*sc, fh + 10*sc);
+        } else {
+            g.lineStyle(7, color, alpha);
+            g.strokeRect(3, 3, W-6, H-6);
+            g.lineStyle(3, color, alpha * 0.38);
+            g.strokeRect(11, 11, W-22, H-22);
+        }
+    }
+
+    drawBeatDot(now) {
+        const g   = this.beatGfx;
+        g.clear();
+        if (!window._devOpen) return;
+        const inW = isOnBeat(now);
+        const a   = Math.min(1, borderRhythmAlpha(now) * 1.3 + 0.12);
+        g.fillStyle(inW ? 0x88FF88 : 0xCCCCCC, a);
+        g.fillCircle(W/2, H-14, inW ? 7 : 5);
+    }
+
+    drawTimingBar(now) {
+        const g = this.timingGfx;
+        g.clear();
+        if (!window._devOpen) return;
+
+        const BW = 380, BH = 10;
+        const BX = W/2 - BW/2, BY = H - 58;
+
+        g.fillStyle(0x0a0a0a, 0.92);
+        g.fillRect(BX - 36, BY - 1, BW + 72, BH + 2);
+
+        const flashFrac = FLASH_MS / BEAT_MS;
+        g.fillStyle(0x999999, 0.55);
+        g.fillRect(BX, BY, flashFrac * BW, BH);
+
+        const winFrac  = (HIT_WIN * 2) / BEAT_MS;
+        const q        = TIMING_OFFSET / BEAT_MS;
+        const hitStart = ((1 - q) % 1 + 1) % 1;
+        const hitEnd   = hitStart + winFrac;
+        g.fillStyle(0x00EE55, 0.80);
+        if (hitEnd <= 1) {
+            g.fillRect(BX + hitStart * BW, BY, winFrac * BW, BH);
+        } else {
+            g.fillRect(BX + hitStart * BW, BY, (1 - hitStart) * BW, BH);
+            g.fillRect(BX, BY, (hitEnd - 1) * BW, BH);
+        }
+
+        const phase = beatPhase(now);
+        const cx    = Math.round(BX + phase * BW);
+        const inWin = isOnBeat(now);
+        g.lineStyle(2, inWin ? 0x00FF88 : 0xFFFFFF, 0.95);
+        g.lineBetween(cx, BY - 3, cx, BY + BH + 3);
+
+        g.lineStyle(1, 0x444444, 0.7);
+        g.strokeRect(BX, BY, BW, BH);
+
+        g.fillStyle(0x00EE55, 0.8);
+        g.fillRect(BX + BW + 6,  BY,     8, 4);
+        g.fillStyle(0x999999, 0.6);
+        g.fillRect(BX + BW + 6,  BY + 6, 8, 4);
+    }
+
+    drawQualityBar() {
+        const g = this.qbarGfx;
+        g.clear();
+        const cap   = FORGE_CONFIG ? FORGE_CONFIG.qualityCap : 100;
+        const q     = st.quality;
+        const ratio = Phaser.Math.Clamp(q / cap, 0, 1);
+        const fillH = (QB_H - 6) * ratio;
+        const frameX = QB_X - 6, frameY = QB_TOP - 7;
+        g.fillStyle(0x050403, .84);
+        g.fillRoundedRect(frameX, frameY, QB_W + 12, QB_H + 14, 8);
+        g.lineStyle(2, 0x8f6a28, .72);
+        g.strokeRoundedRect(frameX, frameY, QB_W + 12, QB_H + 14, 8);
+        g.lineStyle(1, 0xf4ce76, .30);
+        g.strokeRoundedRect(frameX + 3, frameY + 3, QB_W + 6, QB_H + 8, 6);
+        g.fillStyle(0x16100a);
+        g.fillRoundedRect(QB_X, QB_TOP, QB_W, QB_H, 5);
+        g.fillStyle(0x000000, .35);
+        g.fillRoundedRect(QB_X + 4, QB_TOP + 4, Math.max(3, QB_W - 8), QB_H - 8, 4);
+        if (q > 0) {
+            const fillY = QB_TOP + QB_H - 3 - fillH;
+            const fillColor = this._qColor(q);
+            g.fillStyle(fillColor, .96);
+            g.fillRoundedRect(QB_X + 3, fillY, QB_W - 6, fillH, 4);
+            g.fillStyle(0xFFFFFF, .18);
+            g.fillRoundedRect(QB_X + 5, fillY + 3, Math.max(2, QB_W * .28), Math.max(0, fillH - 6), 3);
+            if (ratio > .72) {
+                g.lineStyle(2, 0xFFDD66, .25 + .22 * Math.sin(Date.now() / 130));
+                g.strokeRoundedRect(QB_X + 2, fillY - 1, QB_W - 4, fillH + 2, 5);
+            }
+        }
+        g.lineStyle(1, 0xc8973b, 0.34);
+        for (let i = 1; i < 10; i++) {
+            const y  = QB_TOP + QB_H * (1 - i/10);
+            const lw = (i%5 === 0) ? QB_W + 8 : QB_W*0.55;
+            g.lineBetween(QB_X + QB_W - lw, y, QB_X+QB_W, y);
+        }
+        if (q >= cap) {
+            g.fillStyle(0xFFDD55, .22 + .10 * Math.sin(Date.now() / 90));
+            g.fillRoundedRect(frameX - 2, frameY - 2, QB_W + 16, QB_H + 18, 10);
+            g.lineStyle(2, 0xFFEE88);
+            g.lineBetween(frameX + 3, frameY + 3, frameX + QB_W + 9, frameY + 3);
+        }
+        this.qualityNum.setText(Math.floor(q));
+        this.qualityCapNum.setText(cap);
+    }
+
+    _qColor(q) {
+        const cap = FORGE_CONFIG ? FORGE_CONFIG.qualityCap : 100;
+        const r = q / cap;
+        if (r < 0.5) {
+            const t = r / 0.5;
+            return ((Math.round(0x22+(0xFF-0x22)*t)<<16)|(Math.round(0xAA-0x55*t)<<8)|0x22);
+        } else if (r < 0.8) {
+            const t = (r-0.5)/0.3;
+            return ((0xFF<<16)|(Math.round(0x88-0x44*t)<<8)|0x00);
+        }
+        return 0xFFCC00;
+    }
+
+    drawRC(now) {
+        const g = this.rcGfx;
+        g.clear();
+        if (!st.rc.active) return;
+        const pulse = 0.65 + 0.35 * Math.sin(now / 110);
+        g.lineStyle(3, 0xFF0000, pulse);
+        g.strokeCircle(st.rc.x, st.rc.y, 20);
+        g.lineStyle(1.5, 0xFF4444, pulse * 0.45);
+        g.strokeCircle(st.rc.x, st.rc.y, 28);
+        g.fillStyle(0xFF0000, 0.75);
+        g.fillCircle(st.rc.x, st.rc.y, 4);
+        if (st.rc.hitsLeft === 1) {
+            g.lineStyle(2, 0xFF0000, 0.45);
+            g.strokeCircle(st.rc.x, st.rc.y, 20 + 8*Math.sin(now/60));
+        }
+    }
+
+    drawCursor(x, y) {
+        const off = st.hammer.offset;
+        if (this.skin && this.skin.id === 'artisan') {
+            const g = this.cursorGfx;
+            g.clear();
+            const yy = y + off;
+            const hx = x, hy = yy;
+            const ux = 0.707, uy = -0.707;
+            const vx = 0.707, vy = 0.707;
+            const halfLen = 18 * SWORD_SC;
+            const halfThick = 7 * SWORD_SC;
+            const pts = [
+                new Phaser.Geom.Point(hx + ux * halfLen + vx * halfThick, hy + uy * halfLen + vy * halfThick),
+                new Phaser.Geom.Point(hx - ux * halfLen + vx * halfThick, hy - uy * halfLen + vy * halfThick),
+                new Phaser.Geom.Point(hx - ux * halfLen - vx * halfThick, hy - uy * halfLen - vy * halfThick),
+                new Phaser.Geom.Point(hx + ux * halfLen - vx * halfThick, hy + uy * halfLen - vy * halfThick)
+            ];
+            g.lineStyle(7, 0x5b3218);
+            g.lineBetween(x + 5 * SWORD_SC, yy + 5 * SWORD_SC, x + 43 * SWORD_SC, yy + 43 * SWORD_SC);
+            g.lineStyle(2, 0xc58a4d, 0.48);
+            g.lineBetween(x + 9 * SWORD_SC, yy + 8 * SWORD_SC, x + 37 * SWORD_SC, yy + 36 * SWORD_SC);
+            g.fillStyle(0x272b2a);
+            g.fillPoints(pts, true);
+            g.fillStyle(0x5a615f);
+            g.fillPoints([
+                new Phaser.Geom.Point(hx + ux * halfLen + vx * halfThick, hy + uy * halfLen + vy * halfThick),
+                new Phaser.Geom.Point(hx + ux * (halfLen + 7 * SWORD_SC) + vx * (halfThick * .55), hy + uy * (halfLen + 7 * SWORD_SC) + vy * (halfThick * .55)),
+                new Phaser.Geom.Point(hx + ux * (halfLen + 7 * SWORD_SC) - vx * (halfThick * .55), hy + uy * (halfLen + 7 * SWORD_SC) - vy * (halfThick * .55)),
+                new Phaser.Geom.Point(hx + ux * halfLen - vx * halfThick, hy + uy * halfLen - vy * halfThick)
+            ], true);
+            g.fillStyle(0x7f8a85, 0.55);
+            g.lineStyle(3, 0x7f8a85, 0.55);
+            g.lineBetween(hx - ux * 12 * SWORD_SC, hy - uy * 12 * SWORD_SC, hx + ux * 12 * SWORD_SC, hy + uy * 12 * SWORD_SC);
+            g.lineStyle(2, 0x121514);
+            g.strokePoints(pts, true, true);
+            return;
+        }
+        const g = this.cursorGfx;
+        g.clear();
+        g.lineStyle(5, 0x6B3A1F);
+        g.lineBetween(x, y+off, x+24, y-24+off);
+        g.lineStyle(1.5, 0x9B6040, 0.5);
+        g.lineBetween(x+4, y-4+off, x+20, y-20+off);
+        g.fillStyle(0x454545);
+        g.fillEllipse(x-10, y+off, 24, 15);
+        g.fillStyle(0x7e7e7e, 0.65);
+        g.fillEllipse(x-14, y-3+off, 11, 6);
+        g.lineStyle(1.5, 0x222222);
+        g.strokeEllipse(x-10, y+off, 24, 15);
+    }
+
+    refreshComboLabel() {
+        if (st.combo === 0) {
+            this._comboWord.setVisible(false);
+            this._comboNum.setText('');
+            this._comboLv.setText('');
+            return;
+        }
+        this._comboWord.setVisible(true);
+        this._comboNum.setText(String(st.combo));
+        const lvNames = ['','🔥 FIRE','🔥🔥 BLAZE','🔥🔥🔥 INFERNO','💥 OVERDRIVE','⚡ LEGENDARY'];
+        this._comboLv.setText(st.comboLv > 0 ? `+${gainPerHit()}  ${lvNames[st.comboLv]}` : '');
+        const numCols = ['#FF3300','#FF3300','#FF8800','#FFAA00','#FF0055','#CC00FF'];
+        this._comboNum.setColor(numCols[st.comboLv] || '#FF3300');
+    }
+
+    comboPulseVFX(levelUp) {
+        if (!this._comboNum || st.combo === 0) return;
+        const targets = [this._comboNum];
+        if (this._comboLv && this._comboLv.text) targets.push(this._comboLv);
+        this.tweens.killTweensOf(targets);
+        this._comboNum.setScale(levelUp ? 1.42 : 1.22);
+        if (this._comboLv) this._comboLv.setScale(levelUp ? 1.18 : 1.08);
+        this.tweens.add({
+            targets,
+            scaleX: 1,
+            scaleY: 1,
+            duration: levelUp ? 260 : 180,
+            ease: 'Back.Out'
+        });
+        if (levelUp) {
+            const pop = this.add.text(COMBO_CX, COMBO_Y_WORD + 28, 'LEVEL UP', {
+                fontFamily: '"Arial Black", Impact, sans-serif',
+                fontStyle:  'italic',
+                fontSize:   '20px',
+                color:      '#FFDD66',
+                stroke:     '#2a0900',
+                strokeThickness: 5,
+            }).setOrigin(COMBO_ORIGIN_X, 0.5).setDepth(86);
+            this.tweens.add({
+                targets: pop,
+                y: pop.y - 44,
+                alpha: 0,
+                scaleX: 1.25,
+                scaleY: 1.25,
+                duration: 700,
+                ease: 'Power2',
+                onComplete: () => pop.destroy()
+            });
+        }
+    }
+
+    onDown(px, py) {
+        if (Phaser.Math.Distance.Between(px, py, FRN_CX, FRN_CY) <= FRN_R + 12) {
+            this.clickFurnace(); return;
+        }
+        const ar = new Phaser.Geom.Rectangle(
+            ANV_CX - ANV_FW/2, ANV_CY - ANV_FH/2, ANV_FW, ANV_FH
+        );
+        if (Phaser.Geom.Rectangle.Contains(ar, px, py)) this.clickAnvil(px, py);
+    }
+
+    clickFurnace() {
+        if (st.furnacing) return;
+        if (st.furnaceDisabled) {
+            openForgeResult();
+            return;
+        }
+        if (st.combo > 0 && !st.comboSaved) {
+            const lost = st.combo;
+            st.combo = 0; st.comboLv = 0;
+            this.setMsg(`Combo 中斷（${lost} 次）！建議先擊中紅圈再加熱`);
+            this.flashBorder(0xFF2200, 0.9);
+            this.refreshComboLabel();
+        } else if (st.comboSaved) {
+            this.setMsg('✓ Combo 帶走！加熱中…');
+            this.flashBorder(0x00FF88, 0.6);
+        } else {
+            this.setMsg('加熱中…');
+        }
+        st.comboSaved = false;
+        st.rc.active  = false;
+        st.gc.active  = false;
+        st.furnacing  = true;
+        st.furnaceT   = Date.now();
+        SFX_MANAGER.play('heat');
+        this.time.delayedCall(HEAT_MS, () => {
+            st.furnacing     = false;
+            st.heat          = 1.0;
+            st.postHeatGrace = true;
+            st.heatsUsed++;
+            const _maxH = FORGE_CONFIG ? FORGE_CONFIG.maxHeats : 3;
+            if (st.heatsUsed >= _maxH) st.furnaceDisabled = true;
+            const _t = Date.now();
+            st.lastBeatIdx      = Math.floor((_t - st.beatOrigin) / BEAT_MS);
+            st.lastWindowIdx    = Math.floor((_t - st.beatOrigin + TIMING_OFFSET) / BEAT_MS);
+            st.hitThisWindow    = true;
+            st.lastClickWinIdx  = st.lastWindowIdx;
+            this.cameras.main.flash(220, 90, 35, 0, false);
+            this._updateHeatsText();
+            if (st.furnaceDisabled) {
+                this.setMsg(`加熱次數已用盡・再點擊熔爐或按「完成鍛造」離開`);
+            } else {
+                this.setMsg(`劍身燒紅！還剩 ${_maxH - st.heatsUsed} 次加熱・配合節奏敲打`);
+            }
+        });
+    }
+
+    clickAnvil(px, py) {
+        if (st.furnacing) { this.setMsg('劍正在加熱，請稍候'); return; }
+        if (!st.hammer.canHit) return;
+
+        const now    = Date.now();
+        const onBeat = isOnBeat(now);
+        const _tInB  = Math.round((now - st.beatOrigin) % BEAT_MS);
+        const _winI  = Math.floor((now - st.beatOrigin + TIMING_OFFSET) / BEAT_MS);
+        this._log(onBeat ? 'HIT' : 'SKIP',
+            `CLICK tInBeat=${_tInB}ms winIdx=${_winI} onBeat=${onBeat?'✓':'✗'} hitWin_before=${st.hitThisWindow} grace=${st.postHeatGrace}`);
+        st.lastClickWinIdx = _winI;
+
+        const RC_HIT_R = Math.max(22, Math.round(28 * SWORD_SC));
+        let hitRC = false;
+        if (st.rc.active) {
+            if (Phaser.Math.Distance.Between(px, py, st.rc.x, st.rc.y) <= RC_HIT_R) hitRC = true;
+            st.rc.hitsLeft--;
+            if (st.rc.hitsLeft <= 0) st.rc.active = false;
+        }
+        if (hitRC) {
+            st.rc.active      = false;
+            st.comboSaved     = true;
+            st.comboSavedHits = 3;
+            this.rcHitVFX(st.rc.x || px, st.rc.y || py);
+        }
+
+        const GC_HIT_R = Math.max(22, Math.round(28 * SWORD_SC));
+        let hitGC = false;
+        if (st.gc.active) {
+            if (Phaser.Math.Distance.Between(px, py, st.gc.x, st.gc.y) <= GC_HIT_R) {
+                hitGC = true;
+                st.gc.active = false;
+                st.gcUsed    = true;
+                this.gcHitVFX(st.gc.x, st.gc.y);
+            }
+        }
+
+        st.hitThisWindow = true;
+        st.postHeatGrace = false;
+
+        st.hammer.canHit = false;
+        const sparkType = st.heat < MIN_HOT ? 'cold' : (!onBeat && !hitRC) ? 'wrong' : 'good';
+        this.tweens.add({ targets: st.hammer, offset: 18, duration: 55, ease: 'Cubic.In', yoyo: true });
+        this.time.delayedCall(55, () => {
+            const adjPhase = beatPhase(Date.now() + TIMING_OFFSET);
+            const WIN_END  = (HIT_WIN * 2) / BEAT_MS;
+            const hitEarly = adjPhase > (WIN_END + 1.0) / 2;
+            this.spawnSparks(px, py, sparkType);
+            this.cameras.main.shake(65, 0.0035);
+            this.resolveHit(onBeat, hitRC, hitEarly, hitGC);
+        });
+        this.time.delayedCall(120, () => { st.hammer.canHit = true; });
+    }
+
+    resolveHit(onBeat, hitRC, hitEarly, hitGC) {
+        if (st.heat < MIN_HOT) {
+            if (hitRC) {
+                st.rc.hitsLeft--;
+                if (st.rc.hitsLeft <= 0) st.rc.active = false;
+                st.comboSaved = true;
+                st.comboSavedHits = 3;
+                this.setMsg('✓ 絕妙時機！劍身剛冷卻，紅圈命中保住了 Combo！');
+                this.flashBorder(0x00FF88, 0.95);
+                return;
+            }
+            SFX_MANAGER.play('hitFail');
+            st.quality = Math.max(0, st.quality - COLD_PEN);
+            st.combo = 0; st.comboLv = 0; st.comboSaved = false;
+            this.setMsg(`劍身太冷！品質 −${COLD_PEN}，Combo 歸零`);
+            this.flashBorder(0xFF0000, 0.9);
+            this.refreshComboLabel();
+            return;
+        }
+        if (!onBeat) {
+            if (hitRC) {
+                SFX_MANAGER.play('hitSuccess');
+                this.setMsg(`✓ 紅圈命中！COMBO SAVED  ‧  節奏稍差（${hitEarly ? '太早' : '太晚'}）`);
+                this.flashBorder(0x00FF88, 0.7);
+                return;
+            }
+            SFX_MANAGER.play('hitFail');
+            this.showTimingHint(hitEarly ? '太早' : '太晚');
+            if (st.comboSaved) {
+                this._log('SAVE', `WRONG-TIMING saved combo=${st.combo} hint=${hitEarly?'太早':'太晚'}`);
+                this.setMsg(`⚡ 節奏不對！COMBO SAVED 保護（剩餘 ${st.comboSavedHits} 次）`);
+                this.flashBorder(0x00FF88, 0.7);
+            } else {
+                this._log('MISS', `WRONG-TIMING combo=${st.combo} → BREAK  hint=${hitEarly?'太早':'太晚'}`);
+                const pen = gainPerHit() * 2;
+                st.quality = Math.max(0, st.quality - pen);
+                st.combo = 0; st.comboLv = 0;
+                this.setMsg(`節奏不對！品質 −${pen}，Combo 歸零`);
+                this.flashBorder(0xFF0000, 0.85);
+                this.refreshComboLabel();
+            }
+            return;
+        }
+        const gain  = gainPerHit();
+        const gcBonus = hitGC && (FORGE_CONFIG && FORGE_CONFIG.useGreenPowder);
+        const cap   = FORGE_CONFIG ? FORGE_CONFIG.qualityCap : 100;
+        const prevQ = st.quality;
+        if (gcBonus) {
+            st.quality = Math.min(cap, Math.round(st.quality * 1.5) + gain);
+        } else {
+            st.quality = Math.min(cap, st.quality + gain);
+        }
+        SFX_MANAGER.play('hitSuccess');
+        st.combo++;
+        const prevLv = st.comboLv;
+        st.comboLv  = Math.min(MAX_LV, Math.floor(st.combo / COMBO_LV));
+        const lvC = [0xFFFFFF, 0xFFCC00, 0xFF8800, 0xFF5500, 0xFF2200, 0xCC00FF];
+        this.flashBorder(gcBonus ? 0x00FF44 : lvC[st.comboLv], 0.95);
+        const justLvUp = st.comboLv > prevLv;
+        if (justLvUp) st.lastLvUpTime = Date.now();
+        if (gcBonus) {
+            const gcGain = Math.floor(st.quality) - Math.floor(prevQ);
+            this.setMsg(`✦ 綠圈命中！品質 ×1.5 (+${gcGain})  ‧  Combo ${st.combo}`);
+        } else if (!hitRC) {
+            this.setMsg(justLvUp
+                ? `🔥 火熱 ${st.comboLv} 階解鎖！ +${gain}  ‧  Combo ${st.combo}`
+                : st.comboLv > 0
+                    ? `🔥 火熱 ${st.comboLv} 階！ +${gain}  ‧  Combo ${st.combo}`
+                    : `+${gain}　Combo ${st.combo}`
+            );
+        }
+        this.refreshComboLabel();
+        this.comboPulseVFX(justLvUp);
+        const lvUpGrace = (Date.now() - (st.lastLvUpTime || 0)) < BEAT_MS * 1.5;
+        const heatCooldownMs = st.heat * COOL_MS;
+        const justCooledDown = st.lastHeat > 0 && st.heat === 0;
+        const inLastBeat = heatCooldownMs > 0 && heatCooldownMs <= BEAT_MS;
+        const rcChanceEffective = RC_CHANCE + (inLastBeat || justCooledDown ? RC_BONUS_CHANCE : 0);
+        if (!st.rc.active && !st.gc.active && !hitRC && RC_HITS > 0 && !lvUpGrace && Math.random() < rcChanceEffective) this.spawnRC();
+        const beatIdx      = Math.floor((Date.now() - st.beatOrigin) / BEAT_MS);
+        const gcCooldownOk = beatIdx > st.gc.expiredBeatIdx;
+        if (FORGE_CONFIG && FORGE_CONFIG.useGreenPowder && !st.gcUsed && !st.gc.active && !st.rc.active && !hitGC && !lvUpGrace && gcCooldownOk && Math.random() < 0.12) {
+            this.spawnGC();
+        }
+    }
+
+    spawnRC() {
+        st.rc.x        = ANV_CX + Phaser.Math.Between(-45, 38);
+        st.rc.y        = ANV_CY - 8 + Phaser.Math.Between(-5, 5);
+        st.rc.hitsLeft = RC_HITS;
+        st.rc.active   = true;
+        if (!st.comboSaved) this.setMsg(`⚠ 紅圈出現！${RC_HITS} 次內擊中可保留 Combo`);
+    }
+
+    spawnGC() {
+        st.gc.x            = ANV_CX + Phaser.Math.Between(-45, 38);
+        st.gc.y            = ANV_CY - 8 + Phaser.Math.Between(-5, 5);
+        st.gc.active       = true;
+        st.gc.spawnBeatIdx = Math.floor((Date.now() - st.beatOrigin) / BEAT_MS);
+        this.setMsg('✦ 綠圈出現！命中可獲得品質 ×1.5 加成（本場唯一機會）');
+    }
+
+    drawGC(now) {
+        const g = this.gcGfx;
+        g.clear();
+        if (!st.gc.active) return;
+        const pulse = 0.65 + 0.35 * Math.sin(now / 100);
+        g.lineStyle(3, 0x00FF44, pulse);
+        g.strokeCircle(st.gc.x, st.gc.y, 20);
+        g.lineStyle(1.5, 0x44FF88, pulse * 0.45);
+        g.strokeCircle(st.gc.x, st.gc.y, 28);
+        g.fillStyle(0x00FF44, 0.80);
+        g.fillCircle(st.gc.x, st.gc.y, 4);
+    }
+
+    gcHitVFX(x, y) {
+        const cols = [0x00FF44, 0x44FFAA, 0xFFFF88, 0x88FF66, 0xFFFFFF];
+        for (let i = 0; i < 26; i++) {
+            const g = this.add.graphics().setDepth(88);
+            g.fillStyle(Phaser.Utils.Array.GetRandom(cols));
+            g.fillCircle(0, 0, Math.random() * 4.5 + 1);
+            g.x = x + Phaser.Math.Between(-6, 6);
+            g.y = y + Phaser.Math.Between(-6, 6);
+            const a   = Math.random() * Math.PI * 2;
+            const spd = Phaser.Math.Between(80, 230);
+            this.tweens.add({
+                targets: g,
+                x: g.x + Math.cos(a) * spd * 0.5,
+                y: g.y + Math.sin(a) * spd * 0.5 - 30 + Math.random() * 20,
+                alpha: 0, scaleX: 0, scaleY: 0,
+                duration: Phaser.Math.Between(300, 650), ease: 'Power2',
+                onComplete: () => g.destroy()
+            });
+        }
+        this.cameras.main.flash(160, 0, 80, 20, false);
+        this.flashBorder(0x00FF44, 1.0);
+        const pop = this.add.text(x, y - 5, '✦ QUALITY\n×1.5!', {
+            fontFamily:      '"Arial Black", Impact, sans-serif',
+            fontStyle:       'italic',
+            fontSize:        '22px',
+            color:           '#00FF66',
+            stroke:          '#002200',
+            strokeThickness: 6,
+            align:           'center',
+        }).setOrigin(0.5).setDepth(90);
+        this.tweens.add({
+            targets: pop, y: y - 80, alpha: 0, scaleX: 1.5, scaleY: 1.5,
+            duration: 950, ease: 'Power2',
+            onComplete: () => pop.destroy()
+        });
+    }
+
+    _updateHeatsText() {
+        if (!this._heatsText) return;
+        const _maxH = FORGE_CONFIG ? FORGE_CONFIG.maxHeats : 3;
+        const remaining = _maxH - st.heatsUsed;
+        if (st.furnaceDisabled) {
+            this._heatsText.setText('加熱次數已用盡').setColor('#FF6644');
+        } else {
+            this._heatsText.setText(`加熱 ${remaining}/${_maxH}`).setColor('#CCAA66');
+        }
+    }
+
+    rcHitVFX(x, y) {
+        const cols = [0x00FF88, 0x44FFCC, 0xFFFF44, 0x88FF44, 0xFFFFFF];
+        for (let i = 0; i < 26; i++) {
+            const g = this.add.graphics().setDepth(88);
+            g.fillStyle(Phaser.Utils.Array.GetRandom(cols));
+            g.fillCircle(0, 0, Math.random() * 4.5 + 1);
+            g.x = x + Phaser.Math.Between(-6, 6);
+            g.y = y + Phaser.Math.Between(-6, 6);
+            const a   = Math.random() * Math.PI * 2;
+            const spd = Phaser.Math.Between(80, 230);
+            this.tweens.add({
+                targets: g,
+                x: g.x + Math.cos(a) * spd * 0.5,
+                y: g.y + Math.sin(a) * spd * 0.5 - 30 + Math.random() * 20,
+                alpha: 0, scaleX: 0, scaleY: 0,
+                duration: Phaser.Math.Between(300, 650), ease: 'Power2',
+                onComplete: () => g.destroy()
+            });
+        }
+        this.cameras.main.flash(160, 0, 60, 25, false);
+        this.flashBorder(0x00FF88, 1.0);
+
+        const pop = this.add.text(x, y - 5, 'COMBO\nSAVED!', {
+            fontFamily:      '"Arial Black", Impact, sans-serif',
+            fontStyle:       'italic',
+            fontSize:        '24px',
+            color:           '#00FF88',
+            stroke:          '#002200',
+            strokeThickness: 6,
+            align:           'center',
+        }).setOrigin(0.5).setDepth(90);
+        this.tweens.add({
+            targets: pop, y: y - 80, alpha: 0, scaleX: 1.5, scaleY: 1.5,
+            duration: 950, ease: 'Power2',
+            onComplete: () => pop.destroy()
+        });
+
+        this.setMsg('✓ 紅圈命中！COMBO SAVED ─ 可以去加熱了！');
+    }
+
+    flashBorder(color, alpha) {
+        st.borderFlash.color     = color;
+        st.borderFlash.alpha     = alpha;
+        st.borderFlash.startTime = Date.now();
+    }
+
+    setMsg(msg) { this.msgText.setText(msg); }
+
+    _log(type, msg) {
+        if (!window._logEnabled) return;
+        const now      = Date.now();
+        const tInBeat  = Math.round((now - st.beatOrigin) % BEAT_MS);
+        const winIdx   = Math.floor((now - st.beatOrigin + TIMING_OFFSET) / BEAT_MS);
+        const COLORS   = { HIT:'#00EE88', MISS:'#FF4422', SKIP:'#FF9933', PASS:'#336644', SAVE:'#FFCC00', INFO:'#666655' };
+        const col      = COLORS[type] || '#888877';
+        const tStr     = String(tInBeat).padStart(3);
+        const line     = `<span style="color:${col}">[${type}]</span>`
+                       + ` <span style="color:#445544">t=${tStr}</span>`
+                       + ` <span style="color:#443322">w=${winIdx}</span>`
+                       + ` <span style="color:#998866">${msg}</span>`;
+        if (!this._logLines) this._logLines = [];
+        this._logLines.unshift(line);
+        if (this._logLines.length > 80) this._logLines.pop();
+        const el = document.getElementById('devLog');
+        if (el) el.innerHTML = this._logLines.join('<br>');
+    }
+
+    showTimingHint(text) {
+        const isEarly = text === '太早';
+        const hx = COMBO_CX;
+        const hy = isMobile ? COMBO_Y_WORD - 28 : ANV_CY - 100;
+        const hint = this.add.text(hx, hy, isEarly ? '▶ 太早' : '太晚 ◀', {
+            fontFamily: '"Arial Black", Impact, sans-serif',
+            fontStyle:  'italic',
+            fontSize:   '20px',
+            color:      isEarly ? '#FFAA33' : '#FF5555',
+            stroke:     '#000000',
+            strokeThickness: 5,
+        }).setOrigin(COMBO_ORIGIN_X, 0.5).setDepth(40).setAlpha(0.95);
+        this.tweens.add({
+            targets: hint,
+            y: hy - 36,
+            alpha: 0,
+            duration: 680,
+            ease: 'Power2',
+            onComplete: () => hint.destroy()
+        });
+    }
+
+    spawnSparks(x, y, type) {
+        const fireCols = [0xFFE033, 0xFF9900, 0xFF5500, 0xFFCC66, 0xFFFF99];
+
+        if (type === 'good') {
+            const count = 34;
+            for (let i = 0; i < count; i++) {
+                const g = this.add.graphics().setDepth(80);
+                g.fillStyle(Phaser.Utils.Array.GetRandom(fireCols), 1.0);
+                g.fillCircle(0, 0, (Math.random() * 3.4 + 0.8) * 1.5);
+                g.x = x + Phaser.Math.Between(-12, 12);
+                g.y = y + Phaser.Math.Between(-12, 12);
+                const a = Math.random() * Math.PI * 2;
+                const spd = Phaser.Math.Between(50, 180) * 1.5 * 1.5;
+                this.tweens.add({
+                    targets: g,
+                    x: g.x + Math.cos(a) * spd * 0.45,
+                    y: g.y + Math.sin(a) * spd * 0.45 - Phaser.Math.Between(20, 50) + 28,
+                    alpha: 0, scaleX: 0, scaleY: 0,
+                    duration: Phaser.Math.Between(280, 560), ease: 'Power2',
+                    onComplete: () => g.destroy()
+                });
+            }
+            this.spawnHitFlash(x, y);
+        } else {
+            const smokeCount = type === 'cold' ? 7 : 5;
+            this.spawnSmoke(x, y, smokeCount, type);
+
+            const sparkCols = type === 'cold'
+                ? [0xAAAAAA, 0x999999, 0xCCCCCC, 0xBBBBBB, 0x888888]
+                : fireCols;
+            const sparkCount = type === 'cold' ? 12 : 14;
+            const alpha0     = type === 'cold' ? 0.80 : 0.85;
+            const speedMax   = type === 'cold' ? 130  : 160;
+
+            for (let i = 0; i < sparkCount; i++) {
+                const g = this.add.graphics().setDepth(80);
+                g.fillStyle(Phaser.Utils.Array.GetRandom(sparkCols), alpha0);
+                g.fillCircle(0, 0, (Math.random() * 2.6 + 0.6) * 1.5);
+                g.x = x + Phaser.Math.Between(-10, 10);
+                g.y = y + Phaser.Math.Between(-10, 10);
+                const a = Math.random() * Math.PI * 2;
+                const spd = Phaser.Math.Between(50, speedMax) * 1.5;
+                this.tweens.add({
+                    targets: g,
+                    x: g.x + Math.cos(a) * spd * 0.45,
+                    y: g.y + Math.sin(a) * spd * 0.45 - Phaser.Math.Between(15, 40) + 25,
+                    alpha: 0, scaleX: 0, scaleY: 0,
+                    duration: Phaser.Math.Between(240, 480), ease: 'Power2',
+                    onComplete: () => g.destroy()
+                });
+            }
+        }
+    }
+
+    spawnSmoke(x, y, count, type) {
+        const cols = type === 'cold'
+            ? [0xEEEEEE, 0xDDDDDD, 0xCCCCCC, 0xFFFFFF]
+            : [0x888888, 0x777777, 0x999999, 0x666666];
+        for (let i = 0; i < count; i++) {
+            const g = this.add.graphics().setDepth(78);
+            const size = Math.random() * 9 + 6;
+            g.fillStyle(Phaser.Utils.Array.GetRandom(cols), 0.55);
+            g.fillCircle(0, 0, size);
+            g.x = x + Phaser.Math.Between(-18, 18);
+            g.y = y + Phaser.Math.Between(-6, 8);
+            const driftX = Phaser.Math.Between(-18, 18);
+            this.tweens.add({
+                targets: g,
+                x: g.x + driftX,
+                y: g.y - Phaser.Math.Between(35, 70),
+                alpha: 0,
+                scaleX: 3.0, scaleY: 3.0,
+                duration: Phaser.Math.Between(550, 950),
+                ease: 'Sine.Out',
+                onComplete: () => g.destroy()
+            });
+        }
+    }
+
+    spawnHitFlash(x, y) {
+        const g = this.add.graphics().setDepth(85);
+        if (this.skin && this.skin.id === 'artisan') {
+            g.fillStyle(0xFFF2B5, 0.72);
+            g.fillCircle(0, 0, 20);
+            g.lineStyle(4, 0xFFE18A, .90);
+            g.strokeCircle(0, 0, 18);
+            g.lineStyle(3, 0xFFFFFF, .82);
+            g.lineBetween(-34, 0, 34, 0);
+            g.lineBetween(0, -22, 0, 22);
+            g.lineStyle(2, 0xFF8A22, .68);
+            g.lineBetween(-22, -15, 24, 16);
+            g.lineBetween(-22, 15, 24, -16);
+        } else {
+            g.fillStyle(0xFFFFCC, 0.90);
+            g.fillCircle(0, 0, 16);
+        }
+        g.x = x; g.y = y;
+        this.tweens.add({
+            targets: g,
+            alpha: 0,
+            scaleX: this.skin && this.skin.id === 'artisan' ? 3.15 : 2.8,
+            scaleY: this.skin && this.skin.id === 'artisan' ? 3.15 : 2.8,
+            rotation: this.skin && this.skin.id === 'artisan' ? 0.22 : 0,
+            duration: this.skin && this.skin.id === 'artisan' ? 210 : 160,
+            ease: 'Power2',
+            onComplete: () => g.destroy()
+        });
+    }
+
+    update(_t, delta) {
+        const now = Date.now();
+        st.lastHeat = st.lastHeat !== undefined ? st.lastHeat : st.heat;
+        if (!st.furnacing && st.heat > 0 && !st.infiniteHeat)
+            st.heat = Math.max(0, st.heat - delta / COOL_MS);
+        st.lastHeat = st.heat;
+        this._pv = 0.5 + 0.5 * Math.sin(now / 380);
+
+        const beatIdx   = Math.floor((now - st.beatOrigin) / BEAT_MS);
+        const windowIdx = Math.floor((now - st.beatOrigin + TIMING_OFFSET) / BEAT_MS);
+
+        if (st.lastBeatIdx < 0) {
+            st.lastBeatIdx = beatIdx;
+        } else if (beatIdx !== st.lastBeatIdx) {
+            if (st.comboSaved) {
+                st.comboSavedHits--;
+                if (st.comboSavedHits <= 0) {
+                    st.comboSaved = false;
+                    this.setMsg('COMBO SAVED 已過期');
+                }
+            }
+            if (st.gc.active && st.gc.spawnBeatIdx >= 0 && beatIdx > st.gc.spawnBeatIdx + 1) {
+                st.gc.active        = false;
+                st.gc.expiredBeatIdx = beatIdx;
+            }
+            st.lastBeatIdx = beatIdx;
+        }
+
+        if (st.lastWindowIdx < 0) {
+            st.lastWindowIdx = windowIdx;
+        } else if (windowIdx !== st.lastWindowIdx) {
+            if (!st.hitThisWindow && st.combo > 0 && !st.furnacing && !st.postHeatGrace) {
+                this._log('MISS', `combo=${st.combo} hitWin=✗ → BREAK  furnace=${st.furnacing} grace=${st.postHeatGrace}`);
+                if (st.comboSaved) {
+                    this.setMsg(`⚠ 漏點！COMBO SAVED 保護，剩餘 ${Math.max(0, st.comboSavedHits - 1)} 次`);
+                } else {
+                    const lost = st.combo;
+                    st.combo = 0; st.comboLv = 0;
+                    this.setMsg(`漏點！Combo ×${lost} 中斷`);
+                    this.flashBorder(0xFF4400, 0.7);
+                    this.refreshComboLabel();
+                }
+            } else if (st.hitThisWindow && st.combo > 0) {
+                this._log('PASS', `combo=${st.combo} hitWin=✓ → ok`);
+            }
+            st.lastWindowIdx = windowIdx;
+            if (st.lastClickWinIdx !== windowIdx) {
+                st.hitThisWindow = false;
+            }
+        }
+
+        // 加熱次數用盡且金屬冷卻 → 自動顯示結果
+        if (st.furnaceDisabled && st.heat <= 0.001 && !st.furnacing && !window._resultShown) {
+            window._resultShown = true;
+            this.time.delayedCall(600, () => openForgeResult());
+        }
+
+        this.drawFurnace();
+        this.drawBorder(now);
+        this.drawBeatDot(now);
+        this.drawTimingBar(now);
+        this.drawSword(now);
+        this.drawComboSaved(now);
+        this.drawRC(now);
+        this.drawGC(now);
+        this.drawQualityBar();
+        if (!isMobile) this.drawCursor(st.mouse.x, st.mouse.y);
+    }
+}
+
+function initForgeGame() {
+    forgeGame = new Phaser.Game({
+        type: Phaser.AUTO,
+        width: W, height: H,
+        backgroundColor: '#2b1d0e',
+        scene: ForgeScene,
+        parent: document.getElementById('gameWrap'),
+        scale: isMobile
+            ? { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH,
+                width: W, height: H }
+            : { mode: Phaser.Scale.NONE, autoCenter: Phaser.Scale.NO_CENTER }
+    });
+}
+
+// #endregion [系統：鍛造系統 / Forge System]
+
+// ── 完成鍛造按鈕（玩家主動結束）──────────────────────
+document.getElementById('btnEndForge').addEventListener('click', () => {
+    confirmEndForge();
+});
+
+// ── 結果面板顯示時隱藏完成按鈕 ────────────────────────
+function openForgeResultWithUI() {
+    document.getElementById('btnEndForge').style.display = 'none';
+    const mhBtn = document.getElementById('mobileHeatBtn');
+    if (mhBtn) mhBtn.style.display = 'none';
+    openForgeResult();
+}
+// 覆蓋 confirmEndForge 以同步 UI
+confirmEndForge = () => openForgeResultWithUI();
+
+// ── 重新開始按鈕 ──────────────────────────────────────
+document.getElementById('btnRestart').addEventListener('click', () => {
+    window._resultShown = false;
+    document.getElementById('btnEndForge').style.display = 'block';
+    restartForge();
+});
+
+// ── 啟動 ─────────────────────────────────────────────
+initForgeGame();
+</script>
+</body>
+</html>

@@ -59,8 +59,13 @@ export async function fetchLeaderboard(
 ): Promise<{ entries: LeaderboardEntry[]; myBest: MyBestResult | null }> {
   const qs = new URLSearchParams({ limit: String(limit) }).toString();
   const res = await apiFetch<ListResponse>(`/leaderboard?${qs}`, { auth: withAuth });
-  const entries = (res.entries ?? []).map(toClient).filter(isValidEntry).sort(compareEntries);
-  const myBestEntry = res.me ? toClient(res.me.entry) : null;
+  // 在 filter 之前用 server 順序鎖住每筆的真實名次（i+1）。
+  // filter 會把舊 schema 殘留拿掉，但其他條目的 rank 不會被往前推，
+  // 所以 myBest.rank（server 計算）永遠對得上 list 上某一筆的 entry.rank。
+  const entries = (res.entries ?? [])
+    .map((e, i) => ({ ...toClient(e), rank: i + 1 }))
+    .filter(isValidEntry);
+  const myBestEntry = res.me ? { ...toClient(res.me.entry), rank: res.me.rank } : null;
   const myBest = myBestEntry && isValidEntry(myBestEntry)
     ? { rank: res.me!.rank, entry: myBestEntry }
     : null;

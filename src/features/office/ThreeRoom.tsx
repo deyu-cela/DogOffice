@@ -25,7 +25,12 @@ import grokGar2Url from '@/assets/grok-gar2.jpg';
 import { useUiStore } from '@/store/uiStore';
 import { useGameStore } from '@/store/gameStore';
 import { OFFICE_LEVELS } from '@/constants/officeLevels';
-import { ROLE_IMAGE_MAP, ROLE_WAITING_IMAGE_MAP, ROLE_WAITING_SPRITE_FRAMES, ROLE_WAITING_SPRITE_MAP } from '@/constants/dogRoles';
+import {
+  ROLE_WAITING_SPRITE_FRAMES,
+  getDogProfileImage,
+  getDogWaitingImage,
+  getDogWaitingSprite,
+} from '@/constants/dogRoles';
 import { useWalkerStore } from '@/store/walkerStore';
 import { ROOM_GRID } from './iso';
 import { BUILDING_LAYOUT, PURCHASE_LAYOUT } from './layout';
@@ -1165,8 +1170,8 @@ function HrNotice3D() {
       : candidatePatience <= 1 ? '#c0392b'
         : candidatePatience <= 2 ? '#b45a1c'
           : '#2f7a3a';
-  const waitingSprite = current ? ROLE_WAITING_SPRITE_MAP[current.role] : null;
-  const waitingImage = current ? ROLE_WAITING_IMAGE_MAP[current.role] : null;
+  const waitingSprite = current ? getDogWaitingSprite(current.role, current.rosterId) : null;
+  const waitingImage = current ? getDogWaitingImage(current.role, current.rosterId) : null;
   const waitingSpriteStyle = waitingSprite
     ? ({ '--waiting-dog-sprite': `url("${waitingSprite}")` } as CSSProperties)
     : undefined;
@@ -1233,8 +1238,12 @@ function Walkers3D() {
     <>
       {anyWalking && <DemandPulse rate={12} />}
       {walkers.map((w) => {
-        const sprite = ROLE_WAITING_SPRITE_MAP[w.dogData.role];
-        const image = sprite || ROLE_WAITING_IMAGE_MAP[w.dogData.role] || ROLE_IMAGE_MAP[w.dogData.role];
+        const sprite = getDogWaitingSprite(w.dogData.role, w.dogData.rosterId);
+        const image =
+          sprite ||
+          getDogWaitingImage(w.dogData.role, w.dogData.rosterId) ||
+          w.dogData.image ||
+          getDogProfileImage(w.dogData.role, w.dogData.rosterId);
         const frames = ROLE_WAITING_SPRITE_FRAMES[w.dogData.role] ?? DEFAULT_DOG_SPRITE_FRAMES;
         if (!image) return null;
         const gx = (w.x / bounds.w) * ROOM_GRID;

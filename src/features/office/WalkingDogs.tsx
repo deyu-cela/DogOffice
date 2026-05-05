@@ -1,6 +1,6 @@
 ﻿import { useGameStore } from '@/store/gameStore';
 import { useWalkerStore } from '@/store/walkerStore';
-import { ROLE_IMAGE_MAP } from '@/constants/dogRoles';
+import { getDogProfileImage } from '@/constants/dogRoles';
 
 export function WalkingDogs() {
   const walkers = useWalkerStore((s) => s.walkers);
@@ -15,7 +15,7 @@ export function WalkingDogs() {
   return (
     <div className="absolute inset-0 pointer-events-none">
       {walkers.map((w) => {
-        const image = w.dogData.image || ROLE_IMAGE_MAP[w.dogData.role];
+        const image = w.dogData.image || getDogProfileImage(w.dogData.role, w.dogData.rosterId);
         const walking = w.idleTimer <= 0;
         return (
           <div

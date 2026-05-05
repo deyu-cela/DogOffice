@@ -22,7 +22,9 @@ import { TeamEditModal } from '@/features/staff/TeamEditModal';
 import { TraitChoiceModal } from '@/features/staff/TraitChoiceModal';
 import { ToolPickerModal } from '@/features/staff/ToolPickerModal';
 import { GachaModal } from '@/features/recruit/GachaModal';
+import { LegendarySummonModal } from '@/features/recruit/LegendarySummonModal';
 import { ShopModal } from '@/features/shop/ShopModal';
+import { ForgeModal } from '@/features/forge/ForgeModal';
 import { ProjectDetailModal } from '@/features/clients/ProjectDetailModal';
 import { FrisbeeGame } from '@/features/minigames/FrisbeeGame';
 import { MemoryGame } from '@/features/minigames/MemoryGame';
@@ -152,6 +154,8 @@ export default function App() {
       {teamModalOpen && <TeamEditModal onClose={closeTeamModal} />}
       <GachaModal />
       <ShopModal />
+      <ForgeModal />
+      <LegendarySummonModal />
       <FacilityInfoPopup />
       {projectDetailId && (
         <ProjectDetailModal projectId={projectDetailId} onClose={closeProjectDetail} />

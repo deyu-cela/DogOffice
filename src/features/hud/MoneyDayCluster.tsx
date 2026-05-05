@@ -3,6 +3,8 @@ import {
   useGameStore,
   OFFICE_DAILY_EXPENSE,
   estimateSpecialTaskRemainingDays,
+  isLegendarySummonReady,
+  isLegendarySummoned,
 } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
@@ -133,7 +135,7 @@ export function MoneyDayCluster() {
       </div>
 
       <div className="lhud-sticky-row">
-        <StickyA tilt={-2} variant="day" width={88}>
+        <StickyA tilt={-2} variant="day" width={100}>
           <div className="lhud-sticky__row">
             <span className="lhud-sticky__icon">{CALENDAR_ICON}</span>
             <span className="lhud-sticky__text">第 {day} 天</span>
@@ -155,6 +157,7 @@ export function MoneyDayCluster() {
         </StickyA>
 
         <SpecialTaskBadge />
+        <LegendarySummonBadge />
       </div>
     </div>
   );
@@ -162,8 +165,8 @@ export function MoneyDayCluster() {
 
 type StickyAProps = {
   tilt: number;
-  variant: 'day' | 'time' | 'speed';
-  width: number;
+  variant: 'day' | 'time' | 'speed' | 'legendary';
+  width?: number;
   children: React.ReactNode;
   onClick?: () => void;
   ariaLabel?: string;
@@ -178,7 +181,7 @@ function StickyA({ tilt, variant, width, children, onClick, ariaLabel }: StickyA
     <div className="lhud-hover">
       <Tag
         className={className}
-        style={{ width, transform: `rotate(${tilt}deg)` }}
+        style={{ ...(width != null ? { width } : null), transform: `rotate(${tilt}deg)` }}
         {...(isButton
           ? { type: 'button' as const, onClick, 'aria-label': ariaLabel, title: ariaLabel }
           : {})}
@@ -268,5 +271,26 @@ function SpecialTaskBadge() {
   }
 
   return null;
+}
+
+function LegendarySummonBadge() {
+  const staff = useGameStore((s) => s.staff);
+  const open = useUiStore((s) => s.openLegendarySummonModal);
+
+  if (isLegendarySummoned(staff)) return null;
+  if (!isLegendarySummonReady(staff)) return null;
+
+  return (
+    <StickyA
+      tilt={2}
+      variant="legendary"
+      onClick={open}
+      ariaLabel="四 S 滿級！可召喚傳說中的存在"
+    >
+      <div className="lhud-sticky__row lhud-sticky__row--centered">
+        <span className="lhud-sticky__text">傳說召喚</span>
+      </div>
+    </StickyA>
+  );
 }
 
