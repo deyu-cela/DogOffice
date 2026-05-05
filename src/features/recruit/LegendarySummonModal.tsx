@@ -59,13 +59,6 @@ export function LegendarySummonModal() {
           <span className="ls-tape ls-tape--right" aria-hidden="true" />
 
           <img
-            className="ls-trophy"
-            src={LB_ASSET('trophy-badge.png')}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-          />
-          <img
             className="ls-sparkle ls-sparkle--a"
             src={LB_ASSET('sparkle-b.png')}
             alt=""

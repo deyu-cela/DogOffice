@@ -91,17 +91,6 @@
     #ffc1ce;
 }
 
-.ls-trophy {
-  position: absolute;
-  left: 50%;
-  top: -26px;
-  transform: translateX(-50%) rotate(-4deg);
-  width: 56px;
-  height: 56px;
-  z-index: 6;
-  pointer-events: none;
-  filter: drop-shadow(0 8px 14px rgba(180, 120, 40, 0.4));
-}
 .ls-sparkle {
   position: absolute;
   pointer-events: none;

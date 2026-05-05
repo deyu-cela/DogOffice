@@ -280,7 +280,6 @@ function LegendarySummonBadge() {
   if (isLegendarySummoned(staff)) return null;
   if (!isLegendarySummonReady(staff)) return null;
 
-  const trophy = `${import.meta.env.BASE_URL}assets/leaderboard/trophy-badge.png`;
   return (
     <StickyA
       tilt={2}
@@ -288,14 +287,7 @@ function LegendarySummonBadge() {
       onClick={open}
       ariaLabel="四 S 滿級！可召喚傳說中的存在"
     >
-      <div className="lhud-sticky__row">
-        <img
-          className="lhud-legendary__icon"
-          src={trophy}
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-        />
+      <div className="lhud-sticky__row lhud-sticky__row--centered">
         <span className="lhud-sticky__text">傳說召喚</span>
       </div>
     </StickyA>
