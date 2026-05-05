@@ -174,7 +174,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
                 {rest.map((entry, i) => (
                   <RowSlim
                     key={`${entry.date}-${i}`}
-                    rank={i + 4}
+                    rank={entry.rank ?? i + 4}
                     entry={entry}
                     variant={isMeEntry(entry, myBest) ? 'me' : i % 2 === 1 ? 'zebra' : 'default'}
                   />
@@ -230,7 +230,7 @@ function PodiumCard({
         aria-hidden="true"
         draggable={false}
       />
-      <div className="lb-podiumcard__rank">#{place}</div>
+      <div className="lb-podiumcard__rank">#{entry.rank ?? place}</div>
       <div className="lb-podiumcard__name" title={name}>{name}</div>
       <div className="lb-podiumcard__data">
         <div>第 {entry.days} 天</div>
