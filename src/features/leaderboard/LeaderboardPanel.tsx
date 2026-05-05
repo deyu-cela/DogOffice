@@ -44,7 +44,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
     setLoading(true);
     setError(null);
 
-    fetchLeaderboard(10, !!authedUser)
+    fetchLeaderboard(20, !!authedUser)
       .then((res) => {
         if (cancelled) return;
         setGlobal(res.entries);
@@ -74,7 +74,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
   }, [authedUser]);
 
   const top3 = global.slice(0, 3);
-  const rest = global.slice(3, 10);
+  const rest = global.slice(3, 20);
   const showMyBest = !!authedUser && !!myBest && myBest.rank > 3;
 
   return (
@@ -167,7 +167,7 @@ export function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             <>
               <div className="lb-divider-row">
                 <span className="lb-divider" />
-                <span className="lb-divider-pill">#4 — #10</span>
+                <span className="lb-divider-pill">#4 — #20</span>
                 <span className="lb-divider" />
               </div>
               <div className="lb-rest">
