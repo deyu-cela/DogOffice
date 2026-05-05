@@ -1,7 +1,5 @@
 .forge-backdrop {
-  background: rgba(8, 8, 10, 0.7);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(8, 8, 10, 0.85);
 }
 
 .forge-modal {
