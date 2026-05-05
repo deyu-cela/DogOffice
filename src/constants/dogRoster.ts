@@ -137,7 +137,7 @@ export const DOG_ROSTER: RosterEntry[] = [
   // ===== U 全能型（CEO 等級，跨產業通用）=====
   mk('u-1', '刀霸翎', '鬆獅犬', 'CEO', 'tech', 'U', [13, 13, 12, 12], '傳說中的全能 CEO，每個產業都能扛'),
   // 終局獎勵：四產業 S 級全部滿級 + 滿突破時可召喚（出場 Lv10 + 滿突破，stats 全 30 cap）
-  mk('u-2', '仁勳', '杜賓', 'CEO', 'tech', 'U', [20, 20, 20, 20], '四 S 凝聚而來的傳說，無人能擋', `${BASE}assets/dog-profiles/jensen-doberman.png`),
+  mk('u-2', '仁勳', '杜賓', 'CEO', 'tech', 'U', [20, 20, 20, 20], '皮衣刀客', `${BASE}assets/dog-profiles/jensen-doberman.png`),
 ];
 
 // rosterId → entry 快查
