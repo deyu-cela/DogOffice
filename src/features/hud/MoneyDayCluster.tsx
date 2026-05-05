@@ -165,8 +165,8 @@ export function MoneyDayCluster() {
 
 type StickyAProps = {
   tilt: number;
-  variant: 'day' | 'time' | 'speed';
-  width: number;
+  variant: 'day' | 'time' | 'speed' | 'legendary';
+  width?: number;
   children: React.ReactNode;
   onClick?: () => void;
   ariaLabel?: string;
@@ -181,7 +181,7 @@ function StickyA({ tilt, variant, width, children, onClick, ariaLabel }: StickyA
     <div className="lhud-hover">
       <Tag
         className={className}
-        style={{ width, transform: `rotate(${tilt}deg)` }}
+        style={{ ...(width != null ? { width } : null), transform: `rotate(${tilt}deg)` }}
         {...(isButton
           ? { type: 'button' as const, onClick, 'aria-label': ariaLabel, title: ariaLabel }
           : {})}
@@ -282,21 +282,23 @@ function LegendarySummonBadge() {
 
   const trophy = `${import.meta.env.BASE_URL}assets/leaderboard/trophy-badge.png`;
   return (
-    <button
-      type="button"
+    <StickyA
+      tilt={2}
+      variant="legendary"
       onClick={open}
-      className="shrink-0 lhud-legendary-badge"
-      title="四 S 滿級！可召喚傳說中的存在"
+      ariaLabel="四 S 滿級！可召喚傳說中的存在"
     >
-      <img
-        className="lhud-legendary-badge__icon"
-        src={trophy}
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-      />
-      <span>傳說召喚</span>
-    </button>
+      <div className="lhud-sticky__row">
+        <img
+          className="lhud-legendary__icon"
+          src={trophy}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+        />
+        <span className="lhud-sticky__text">傳說召喚</span>
+      </div>
+    </StickyA>
   );
 }
 
