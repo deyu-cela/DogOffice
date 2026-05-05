@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useWalkerStore } from '@/store/walkerStore';
+import { useUiStore } from '@/store/uiStore';
 
 // walker / 日常 tick 限速：15fps（66ms）就足夠看起來順暢，CPU/GPU 負擔降約 4 倍。
 // 小遊戲（飛盤、翻牌）開啟時保持 60fps 才會手感好。
@@ -26,8 +27,9 @@ export function useGameLoop() {
       if (s.miniGame?.type === 'memory' && s.miniGame.running) memoryTick(dt / 1000);
 
       // 主場景的 walker / 日結算 tick：用累積方式 → 每 SLOW_TICK_MS 跑一次
-      // page 隱藏時不跑（document.hidden 期間累積也歸零）
-      if (typeof document !== 'undefined' && document.hidden) {
+      // page 隱藏 / team modal 開著時不跑（避免大型 modal 後面持續重繪）
+      const teamModalOpen = useUiStore.getState().teamModalOpen;
+      if ((typeof document !== 'undefined' && document.hidden) || teamModalOpen) {
         slowAccum.current = 0;
       } else {
         slowAccum.current += dt;

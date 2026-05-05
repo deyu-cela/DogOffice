@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useGameStore, teamMaxMembers, dogPrimaryIndustry } from '@/store/gameStore';
 import { DogAvatar } from '@/components/DogAvatar';
@@ -88,6 +88,17 @@ const RARITY_BG: Record<DogGradeUI, string> = {
 };
 
 const GRADE_ORDER: Record<DogGradeUI, number> = { U: 0, S: 1, A: 2, B: 3, C: 4, D: 5 };
+
+// 從每張卡 hoist 出來避免重複建物件
+const CELL_BG = 'linear-gradient(180deg, #ffffff 0%, #f8fafc 56%, #eef2f7 100%)';
+const CELL_HIGHLIGHT_BG =
+  'linear-gradient(90deg, rgba(255,255,255,0.85) 0%, transparent 16%, transparent 84%, rgba(15,23,42,0.08) 100%)';
+const CELL_BOTTOM_MASK_BG =
+  'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.78) 42%, rgba(255,255,255,0.96) 100%)';
+const CELL_HIGHLIGHT_STYLE = { background: CELL_HIGHLIGHT_BG } as const;
+const CELL_BOTTOM_MASK_STYLE = { height: 48, background: CELL_BOTTOM_MASK_BG } as const;
+const CELL_IMG_WRAP_STYLE = { inset: '2px -14% 36px -14%' } as const;
+const CELL_IMG_STYLE = { objectFit: 'contain' as const, objectPosition: 'center top' };
 
 function industryTint(industry: ProjectCategory): string {
   const c = INDUSTRY_COLOR[industry];
@@ -895,7 +906,8 @@ function PowerStars({ count, size = 11 }: { count: number; size?: number }) {
   );
 }
 
-function SlotCell({
+const SlotCell = memo(_SlotCell);
+function _SlotCell({
   dog,
   tools,
   teams,
@@ -949,7 +961,7 @@ function SlotCell({
   return (
     <div
       onClick={handleClick}
-      className="relative rounded-sm overflow-hidden transition"
+      className="relative rounded-sm overflow-hidden"
       style={{
         aspectRatio: '0.68',
         minHeight: 132,
@@ -966,20 +978,19 @@ function SlotCell({
     >
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'linear-gradient(90deg, rgba(255,255,255,0.85) 0%, transparent 16%, transparent 84%, rgba(15,23,42,0.08) 100%)',
-        }}
+        style={CELL_HIGHLIGHT_STYLE}
       />
 
-      <div className="absolute" style={{ inset: '2px -14% 36px -14%' }}>
+      <div className="absolute" style={CELL_IMG_WRAP_STYLE}>
         {dog.image ? (
           <img
             src={dog.image}
             alt={dog.name}
             className="block w-full h-full"
-            style={{ objectFit: 'contain', objectPosition: 'center top' }}
+            style={CELL_IMG_STYLE}
             draggable={false}
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="w-full h-full flex items-start justify-center pt-2">
@@ -990,11 +1001,7 @@ function SlotCell({
 
       <div
         className="absolute inset-x-0 bottom-0 pointer-events-none"
-        style={{
-          height: 48,
-          background:
-            'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.78) 42%, rgba(255,255,255,0.96) 100%)',
-        }}
+        style={CELL_BOTTOM_MASK_STYLE}
       />
 
       {isU && <SparkleOverlay />}
@@ -1128,6 +1135,7 @@ function SparkleOverlay() {
             color: '#fff8ff',
             textShadow: '0 0 6px #ffb8e8, 0 0 14px #b577ff',
             animation: `sparkle-twinkle 1.6s ease-in-out ${s.delay}s infinite`,
+            willChange: 'opacity, transform',
           }}
         >
           {s.ch}
@@ -1137,7 +1145,8 @@ function SparkleOverlay() {
   );
 }
 
-function StaffCell({
+const StaffCell = memo(_StaffCell);
+function _StaffCell({
   dog,
   tools,
   teams,
@@ -1184,7 +1193,7 @@ function StaffCell({
   return (
     <div
       onClick={handleClick}
-      className="relative rounded-sm overflow-hidden transition"
+      className="relative rounded-sm overflow-hidden"
       style={{
         aspectRatio: '0.68',
         minHeight: 132,
@@ -1209,21 +1218,20 @@ function StaffCell({
       {/* Highlight bloom（聚光燈感） */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'linear-gradient(90deg, rgba(255,255,255,0.85) 0%, transparent 16%, transparent 84%, rgba(15,23,42,0.08) 100%)',
-        }}
+        style={CELL_HIGHLIGHT_STYLE}
       />
 
       {/* 角色圖：放大 + bleed 出邊界 */}
-      <div className="absolute" style={{ inset: '2px -14% 36px -14%' }}>
+      <div className="absolute" style={CELL_IMG_WRAP_STYLE}>
         {dog.image ? (
           <img
             src={dog.image}
             alt={dog.name}
             className="block w-full h-full"
-            style={{ objectFit: 'contain', objectPosition: 'center top' }}
+            style={CELL_IMG_STYLE}
             draggable={false}
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="w-full h-full flex items-start justify-center pt-2">
@@ -1235,11 +1243,7 @@ function StaffCell({
       {/* 底部漸暗遮罩（降強度，避免吃掉鮮豔背景） */}
       <div
         className="absolute inset-x-0 bottom-0 pointer-events-none"
-        style={{
-          height: 48,
-          background:
-            'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.78) 42%, rgba(255,255,255,0.96) 100%)',
-        }}
+        style={CELL_BOTTOM_MASK_STYLE}
       />
 
       {/* U sparkle overlay */}
@@ -1395,7 +1399,7 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className="staff-chip-btn text-[11px] tracking-wide transition"
+      className="staff-chip-btn text-[11px] tracking-wide"
       data-active={active ? 'true' : 'false'}
       style={{
         color: active ? undefined : accent,
