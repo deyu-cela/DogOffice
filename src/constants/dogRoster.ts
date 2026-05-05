@@ -11,6 +11,8 @@ export type RosterEntry = {
   grade: DogGrade;
   stats: Stats;
   flavor: string;
+  // 可選：覆寫角色預設圖片（特殊狗用）
+  image?: string;
 };
 
 const mk = (
@@ -22,11 +24,15 @@ const mk = (
   grade: DogGrade,
   stats: [number, number, number, number],
   flavor: string,
+  image?: string,
 ): RosterEntry => ({
   rosterId, name, breed, role, industry, grade,
   stats: { speed: stats[0], quality: stats[1], patience: Math.max(1, Math.min(10, stats[2])) },
   flavor,
+  image,
 });
+
+const BASE = import.meta.env.BASE_URL;
 
 // 每產業 16 = 主 10 (1S+2A+2B+2C+3D) + 副 6 (1A+1B+2C+2D)
 //   tech: 工程師(主) + PM(副)
@@ -128,8 +134,10 @@ export const DOG_ROSTER: RosterEntry[] = [
   // S (1)
   mk('svc-S-1', '露西亞', '大白熊', '客服', 'service', 'S', [8, 11, 13, 9], '客戶體驗女王'),
 
-  // ===== U 全能型（1 隻，CEO 等級，跨產業通用）=====
+  // ===== U 全能型（CEO 等級，跨產業通用）=====
   mk('u-1', '刀霸翎', '鬆獅犬', 'CEO', 'tech', 'U', [13, 13, 12, 12], '傳說中的全能 CEO，每個產業都能扛'),
+  // 終局獎勵：四產業 S 級全部滿級 + 滿突破時可召喚（出場 Lv10 + 滿突破，stats 全 30 cap）
+  mk('u-2', '仁勳', '杜賓', 'CEO', 'tech', 'U', [20, 20, 20, 20], '四 S 凝聚而來的傳說，無人能擋', `${BASE}assets/dog-profiles/jensen-doberman.png`),
 ];
 
 // rosterId → entry 快查
@@ -137,4 +145,12 @@ export const ROSTER_BY_ID: Map<string, RosterEntry> = new Map(
   DOG_ROSTER.map((e) => [e.rosterId, e]),
 );
 
-export const ROSTER_TOTAL = DOG_ROSTER.length;
+// 召喚專屬，不出現在 gacha 池與圖鑑統計
+export const SUMMON_ONLY_ROSTER_IDS = new Set<string>(['u-2']);
+
+// gacha 池：扣掉召喚專屬
+export const GACHA_ROSTER: RosterEntry[] = DOG_ROSTER.filter(
+  (e) => !SUMMON_ONLY_ROSTER_IDS.has(e.rosterId),
+);
+
+export const ROSTER_TOTAL = GACHA_ROSTER.length;

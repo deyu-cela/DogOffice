@@ -1,5 +1,6 @@
 import { SHOP_ITEMS } from '@/constants/shopItems';
 import { MAX_SHOP_LEVEL, nextShopCost, useGameStore } from '@/store/gameStore';
+import { useUiStore } from '@/store/uiStore';
 import { FACILITY_ART_BY_ID } from '@/lib/shopEffects';
 import type { ProjectCategory } from '@/types';
 import './shop.css';
@@ -18,6 +19,7 @@ export function ShopPanel() {
   const money = useGameStore((s) => s.money);
   const purchases = useGameStore((s) => s.purchases);
   const buy = useGameStore((s) => s.buyShopItem);
+  const openForge = useUiStore((s) => s.openForgeModal);
 
   return (
     <div className="shop-grid">
@@ -108,6 +110,17 @@ export function ShopPanel() {
             >
               {buttonLabel}
             </button>
+
+            {item.id === 'gym' && isMax && (
+              <button
+                type="button"
+                onClick={openForge}
+                className="shop-forge-btn"
+                title="進入鍛造爐小遊戲"
+              >
+                進入鍛造爐
+              </button>
+            )}
           </div>
         );
       })}

@@ -40,6 +40,16 @@ type UIState = {
   openShopModal: () => void;
   closeShopModal: () => void;
 
+  // 鍛造爐 modal（健身房 Lv5 滿級時點擊啞鈴觸發）
+  forgeModalOpen: boolean;
+  openForgeModal: () => void;
+  closeForgeModal: () => void;
+
+  // 終局召喚 modal（四 S 滿級 + 滿突破時 HUD 徽章觸發）
+  legendarySummonModalOpen: boolean;
+  openLegendarySummonModal: () => void;
+  closeLegendarySummonModal: () => void;
+
   // 辦公室造型 modal（從右上角圖示鈕觸發）
   skinModalOpen: boolean;
   openSkinModal: () => void;
@@ -109,6 +119,14 @@ export const useUiStore = create<UIState>((set, get) => ({
   shopModalOpen: false,
   openShopModal: () => set({ shopModalOpen: true }),
   closeShopModal: () => set({ shopModalOpen: false }),
+
+  forgeModalOpen: false,
+  openForgeModal: () => set({ forgeModalOpen: true }),
+  closeForgeModal: () => set({ forgeModalOpen: false }),
+
+  legendarySummonModalOpen: false,
+  openLegendarySummonModal: () => set({ legendarySummonModalOpen: true }),
+  closeLegendarySummonModal: () => set({ legendarySummonModalOpen: false }),
 
   skinModalOpen: false,
   openSkinModal: () => set({ skinModalOpen: true }),

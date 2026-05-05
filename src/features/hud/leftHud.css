@@ -195,6 +195,7 @@
   color: var(--lhud-sticky-text, currentColor);
   font-size: 12px;
   font-weight: 900;
+  white-space: nowrap;
 }
 .lhud-sticky__text--lg {
   font-size: 13px;
@@ -333,4 +334,50 @@
   padding: 2px 8px;
   border-radius: 999px;
   border: 1px solid rgba(176, 112, 32, 0.3);
+}
+
+.lhud-legendary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff8d8 0%, #ffd86b 60%, #ffb838 100%);
+  color: #5a2a00;
+  border: 1.5px solid rgba(120, 60, 0, 0.45);
+  box-shadow:
+    0 4px 12px rgba(220, 160, 40, 0.5),
+    0 0 18px rgba(255, 220, 100, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  font-family: inherit;
+  animation: lhud-legendary-pulse 1.6s ease-in-out infinite;
+  white-space: nowrap;
+}
+.lhud-legendary-badge:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+.lhud-legendary-badge__icon {
+  font-size: 14px;
+  color: #c9831a;
+}
+
+@keyframes lhud-legendary-pulse {
+  0%, 100% {
+    box-shadow:
+      0 4px 12px rgba(220, 160, 40, 0.45),
+      0 0 14px rgba(255, 220, 100, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  50% {
+    box-shadow:
+      0 6px 16px rgba(220, 160, 40, 0.6),
+      0 0 24px rgba(255, 220, 100, 0.75),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
 }

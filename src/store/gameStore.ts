@@ -46,8 +46,8 @@ import {
   type AchievementCheckPayload,
   type AchievementEvent,
 } from '@/features/achievements/achievementConfigs';
-import { DOG_ROSTER, type RosterEntry } from '@/constants/dogRoster';
-import { ROLE_IMAGE_MAP } from '@/constants/dogRoles';
+import { GACHA_ROSTER, ROSTER_BY_ID, type RosterEntry } from '@/constants/dogRoster';
+import { getDogProfileImage } from '@/constants/dogRoles';
 import {
   computeTierBudget,
   fillInbox,
@@ -127,6 +127,23 @@ export function dogPrimaryIndustry(role: string): ProjectCategory {
 
 // 突破上限：超過後重複抽到 → 自動轉錢
 export const DOG_BREAKTHROUGH_MAX = 10;
+// 終局獎勵：四產業 S 級全部 Lv10 + 滿突破時召喚的特殊狗
+export const LEGENDARY_ROSTER_ID = 'u-2';
+const S_RANK_ROSTER_IDS = ['tech-S-1', 'design-S-1', 'mkt-S-1', 'svc-S-1'] as const;
+
+export function isLegendarySummonReady(staff: Dog[]): boolean {
+  for (const rid of S_RANK_ROSTER_IDS) {
+    const dog = staff.find((d) => d.rosterId === rid);
+    if (!dog) return false;
+    if (dog.level < DOG_LEVEL_MAX) return false;
+    if ((dog.breakthroughs ?? 0) < DOG_BREAKTHROUGH_MAX) return false;
+  }
+  return true;
+}
+
+export function isLegendarySummoned(staff: Dog[]): boolean {
+  return staff.some((d) => d.rosterId === LEGENDARY_ROSTER_ID);
+}
 // 突破滿後再抽到重複的折抵金額
 export const FRAGMENT_TO_MONEY = 10;
 // 突破後 stats 上限放寬（一般升級仍走 20 上限）
@@ -163,7 +180,7 @@ function instantiateRosterDog(entry: RosterEntry): Dog {
     severance: salary * 3,
     patience: 99,
     score: 0,
-    image: ROLE_IMAGE_MAP[entry.role] ?? '',
+    image: entry.image ?? getDogProfileImage(entry.role, entry.rosterId),
     isCEO: entry.grade === 'U',
     fatigue: 0,
     assignedProjectId: null,
@@ -280,6 +297,9 @@ type Actions = {
 
   // === 新手禮包 ===
   claimStarterPack: () => void;
+
+  // === 終局召喚（四 S 滿級 + 滿突破） ===
+  claimLegendaryDog: () => void;
 
   // === 特殊任務 ===
   startSpecialTask: (targetLevel: number) => void;
@@ -1836,8 +1856,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   recruitFromGacha: () => {
     const s = get();
     if (s.money < GACHA_COST) return null;
-    // 從圖鑑隨機抽一條
-    const entry = DOG_ROSTER[Math.floor(Math.random() * DOG_ROSTER.length)];
+    // 從圖鑑隨機抽一條（排除召喚專屬）
+    const entry = GACHA_ROSTER[Math.floor(Math.random() * GACHA_ROSTER.length)];
     const owned = s.staff.find((d) => d.rosterId === entry.rosterId);
 
     if (owned) {
@@ -2055,6 +2075,33 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (get().activeHint === 'starter-pack') get().dismissHint();
   },
 
+  claimLegendaryDog: () => {
+    const s = get();
+    if (isLegendarySummoned(s.staff)) return;
+    if (!isLegendarySummonReady(s.staff)) return;
+    const entry = ROSTER_BY_ID.get(LEGENDARY_ROSTER_ID);
+    if (!entry) return;
+    const baseDog = instantiateRosterDog(entry);
+    // 召喚即頂規：Lv10 + 滿突破，stats 直接拉到 cap 30
+    const dog: Dog = {
+      ...baseDog,
+      level: DOG_LEVEL_MAX,
+      breakthroughs: DOG_BREAKTHROUGH_MAX,
+      stats: {
+        speed: DOG_STAT_BREAKTHROUGH_MAX,
+        quality: DOG_STAT_BREAKTHROUGH_MAX,
+        patience: DOG_STAT_BREAKTHROUGH_MAX,
+      },
+    };
+    let next: GameState = { ...s, staff: [...s.staff, dog] };
+    const attached = attachCeoUTool(next, dog.id);
+    next = { ...next, staff: attached.staff, tools: attached.tools };
+    next = pushLog(next, `✨ 傳說召喚：${dog.name} 加入了狗狗公司！（Lv${DOG_LEVEL_MAX}、滿突破、能力 ${DOG_STAT_BREAKTHROUGH_MAX}/${DOG_STAT_BREAKTHROUGH_MAX}/${DOG_STAT_BREAKTHROUGH_MAX}）`);
+    next.tierBudget = recomputeTierBudget(next);
+    set(next as Partial<GameStore>);
+    get().checkAchievements('hire', { dog, prevStaffCount: s.staff.length });
+  },
+
   startSpecialTask: (targetLevel) => {
     const s = get();
     const task = s.specialTasks[targetLevel];
@@ -2190,3 +2237,8 @@ function applyDogLevelUp(state: GameState, dogId: string): GameState {
 }
 
 const trainingBank = new Map<string, typeof TRAINING_QUESTIONS>();
+
+// dev 自測：可在瀏覽器 console 用 __gameStore.getState().staff 等手動觀察
+if (typeof window !== 'undefined') {
+  (window as unknown as { __gameStore: typeof useGameStore }).__gameStore = useGameStore;
+}

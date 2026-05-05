@@ -3,6 +3,8 @@ import {
   useGameStore,
   OFFICE_DAILY_EXPENSE,
   estimateSpecialTaskRemainingDays,
+  isLegendarySummonReady,
+  isLegendarySummoned,
 } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSaveStore } from '@/store/saveStore';
@@ -133,7 +135,7 @@ export function MoneyDayCluster() {
       </div>
 
       <div className="lhud-sticky-row">
-        <StickyA tilt={-2} variant="day" width={88}>
+        <StickyA tilt={-2} variant="day" width={100}>
           <div className="lhud-sticky__row">
             <span className="lhud-sticky__icon">{CALENDAR_ICON}</span>
             <span className="lhud-sticky__text">第 {day} 天</span>
@@ -155,6 +157,7 @@ export function MoneyDayCluster() {
         </StickyA>
 
         <SpecialTaskBadge />
+        <LegendarySummonBadge />
       </div>
     </div>
   );
@@ -268,5 +271,25 @@ function SpecialTaskBadge() {
   }
 
   return null;
+}
+
+function LegendarySummonBadge() {
+  const staff = useGameStore((s) => s.staff);
+  const open = useUiStore((s) => s.openLegendarySummonModal);
+
+  if (isLegendarySummoned(staff)) return null;
+  if (!isLegendarySummonReady(staff)) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={open}
+      className="shrink-0 lhud-legendary-badge"
+      title="四 S 滿級！可召喚傳說中的存在"
+    >
+      <span className="lhud-legendary-badge__icon">★</span>
+      <span>傳說召喚</span>
+    </button>
+  );
 }
 
