@@ -56,6 +56,11 @@
   display: flex;
   flex-direction: column;
   max-height: 88vh;
+}
+
+.ls-card__inner {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 

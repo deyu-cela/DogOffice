@@ -82,58 +82,60 @@ export function LegendarySummonModal() {
 
           <button type="button" onClick={close} className="ls-close">關閉</button>
 
-          <div className="ls-header">
-            <div className="ls-eyebrow">LEGENDARY · 傳說召喚</div>
-            <h2 id="ls-title" className="ls-title">傳說中的存在登場</h2>
-            <div className="ls-subpill">
-              <span className="ls-subpill__dot" />
-              四 S 滿級 + 滿突破才能召喚
-              <span className="ls-subpill__dot" />
+          <div className="ls-card__inner">
+            <div className="ls-header">
+              <div className="ls-eyebrow">LEGENDARY · 傳說召喚</div>
+              <h2 id="ls-title" className="ls-title">傳說中的存在登場</h2>
+              <div className="ls-subpill">
+                <span className="ls-subpill__dot" />
+                四 S 滿級 + 滿突破才能召喚
+                <span className="ls-subpill__dot" />
+              </div>
             </div>
-          </div>
 
-          <div className="ls-portrait-wrap">
-            <span className="ls-portrait__tape" aria-hidden="true" />
-            <div className="ls-portrait">
-              <div className="ls-portrait__glow" aria-hidden="true" />
-              {image && (
-                <img
-                  src={image}
-                  alt={entry.name}
-                  className="ls-portrait__img"
-                  draggable={false}
-                />
-              )}
+            <div className="ls-portrait-wrap">
+              <span className="ls-portrait__tape" aria-hidden="true" />
+              <div className="ls-portrait">
+                <div className="ls-portrait__glow" aria-hidden="true" />
+                {image && (
+                  <img
+                    src={image}
+                    alt={entry.name}
+                    className="ls-portrait__img"
+                    draggable={false}
+                  />
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="ls-info">
-            <div className="ls-name">{entry.name}</div>
-            <div className="ls-meta">
-              {entry.breed} · {entry.role}
-              <span className="ls-grade-u">U 級</span>
+            <div className="ls-info">
+              <div className="ls-name">{entry.name}</div>
+              <div className="ls-meta">
+                {entry.breed} · {entry.role}
+                <span className="ls-grade-u">U 級</span>
+              </div>
+              <div className="ls-flavor">「{entry.flavor}」</div>
             </div>
-            <div className="ls-flavor">「{entry.flavor}」</div>
-          </div>
 
-          <div className="ls-stats">
-            <StatRow label="速度" value={DOG_STAT_BREAKTHROUGH_MAX} />
-            <StatRow label="專業" value={DOG_STAT_BREAKTHROUGH_MAX} />
-            <StatRow label="耐心" value={DOG_STAT_BREAKTHROUGH_MAX} />
-          </div>
+            <div className="ls-stats">
+              <StatRow label="速度" value={DOG_STAT_BREAKTHROUGH_MAX} />
+              <StatRow label="專業" value={DOG_STAT_BREAKTHROUGH_MAX} />
+              <StatRow label="耐心" value={DOG_STAT_BREAKTHROUGH_MAX} />
+            </div>
 
-          <div className="ls-actions">
-            <button type="button" onClick={close} className="ls-btn ls-btn--ghost">
-              稍後再說
-            </button>
-            <button
-              type="button"
-              onClick={onClaim}
-              disabled={summoned || !ready}
-              className="ls-btn ls-btn--primary"
-            >
-              {summoned ? '已召喚' : '召喚！'}
-            </button>
+            <div className="ls-actions">
+              <button type="button" onClick={close} className="ls-btn ls-btn--ghost">
+                稍後再說
+              </button>
+              <button
+                type="button"
+                onClick={onClaim}
+                disabled={summoned || !ready}
+                className="ls-btn ls-btn--primary"
+              >
+                {summoned ? '已召喚' : '召喚！'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
