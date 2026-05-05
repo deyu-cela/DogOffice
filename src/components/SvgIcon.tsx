@@ -1,5 +1,6 @@
 export type SvgIconName =
   | 'appDog'
+  | 'paw'
   | 'chart'
   | 'money'
   | 'gem'
@@ -82,6 +83,16 @@ export function SvgIcon({ name, size = 24, className }: Props) {
   } as const;
 
   switch (name) {
+    case 'paw':
+      return (
+        <svg {...common} fill="currentColor">
+          <ellipse cx="9" cy="12" rx="2.6" ry="3.4" />
+          <ellipse cx="23" cy="12" rx="2.6" ry="3.4" />
+          <ellipse cx="13" cy="7" rx="2.3" ry="3" />
+          <ellipse cx="19" cy="7" rx="2.3" ry="3" />
+          <path d="M16 14c-4 0-7 3-7 6.6 0 2.6 2 4 4 4 1.3 0 1.7-.6 2.5-.6s1.2.6 2.5.6c2 0 4-1.4 4-4 0-3.6-2.5-6.6-6-6.6z" />
+        </svg>
+      );
     case 'appDog':
       return (
         <svg {...common}>
