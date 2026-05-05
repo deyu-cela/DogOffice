@@ -59,7 +59,9 @@ export async function fetchLeaderboard(
 ): Promise<{ entries: LeaderboardEntry[]; myBest: MyBestResult | null }> {
   const qs = new URLSearchParams({ limit: String(limit) }).toString();
   const res = await apiFetch<ListResponse>(`/leaderboard?${qs}`, { auth: withAuth });
-  const entries = (res.entries ?? []).map(toClient).filter(isValidEntry).sort(compareEntries);
+  // 不要前端再 sort：server 回的順序就是排行榜的真實名次（list index → 名次），
+  // 自己 sort 會和 server 計算的 myBest.rank 不一致。
+  const entries = (res.entries ?? []).map(toClient).filter(isValidEntry);
   const myBestEntry = res.me ? toClient(res.me.entry) : null;
   const myBest = myBestEntry && isValidEntry(myBestEntry)
     ? { rank: res.me!.rank, entry: myBestEntry }
