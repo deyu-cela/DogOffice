@@ -339,45 +339,48 @@
 .lhud-legendary-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   height: 36px;
   padding: 0 12px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #fff8d8 0%, #ffd86b 60%, #ffb838 100%);
-  color: #5a2a00;
-  border: 1.5px solid rgba(120, 60, 0, 0.45);
+  background: linear-gradient(180deg, #fffefe, #ffe9c8);
+  color: #8a4a16;
+  border: 1px solid rgba(214, 150, 90, 0.4);
   box-shadow:
-    0 4px 12px rgba(220, 160, 40, 0.5),
-    0 0 18px rgba(255, 220, 100, 0.55),
+    0 4px 10px rgba(185, 128, 55, 0.18),
+    0 0 14px rgba(255, 220, 100, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 1.5px;
+  line-height: 1;
   cursor: pointer;
   font-family: inherit;
-  animation: lhud-legendary-pulse 1.6s ease-in-out infinite;
+  animation: lhud-legendary-pulse 1.8s ease-in-out infinite;
   white-space: nowrap;
 }
 .lhud-legendary-badge:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.05);
   transform: translateY(-1px);
 }
 .lhud-legendary-badge__icon {
-  font-size: 14px;
-  color: #c9831a;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(180, 120, 40, 0.3));
 }
 
 @keyframes lhud-legendary-pulse {
   0%, 100% {
     box-shadow:
-      0 4px 12px rgba(220, 160, 40, 0.45),
-      0 0 14px rgba(255, 220, 100, 0.42),
+      0 4px 10px rgba(185, 128, 55, 0.18),
+      0 0 12px rgba(255, 220, 100, 0.35),
       inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
   50% {
     box-shadow:
-      0 6px 16px rgba(220, 160, 40, 0.6),
-      0 0 24px rgba(255, 220, 100, 0.75),
+      0 6px 14px rgba(185, 128, 55, 0.28),
+      0 0 22px rgba(255, 220, 100, 0.65),
       inset 0 1px 0 rgba(255, 255, 255, 0.85);
   }
 }
